@@ -1,65 +1,117 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import ConsultationView from '@/components/ConsultationView';
+import DashboardView from '@/components/DashboardView';
 
 export default function Home() {
+  const [currentView, setCurrentView] = useState('consultation'); // 'consultation' atau 'dashboard'
+  const [businessData, setBusinessData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [transactions, setTransactions] = useState([]);
+  const [showAdModal, setShowAdModal] = useState(false);
+  const [marketData, setMarketData] = useState(null);
+
+  const handleConsultAI = async (input, setupBusiness = false) => {
+    if (setupBusiness) {
+      // Pindah ke dashboard
+      setCurrentView('dashboard');
+      return;
+    }
+
+    if (!input) return;
+
+    setLoading(true);
+
+    try {
+      // Simulasi memanggil AI API (Gemini)
+      // Dalam implementasi real, gunakan fetch ke Gemini API
+      // Untuk demo, kita gunakan mock data
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Mock business recommendations
+      const mockBusinesses = [
+        {
+          name: 'Kopi Pintar AI',
+          description:
+            'Warung kopi dengan konsep smart ordering via WhatsApp. Produk berkualitas dengan delivery ke kantor-kantor sekitar. Target market: karyawan dan startup di area komersial.',
+          capital_est: 'Rp 5.000.000 - 10.000.000',
+          target_market: 'Karyawan kantoran & startup muda',
+          challenge: 'Kompetisi dari brand kopi established',
+          category: 'Kuliner',
+        },
+        {
+          name: 'Laundry Express Online',
+          description:
+            'Jasa laundry dengan sistem booking online dan pickup-delivery. Fokus pada efisiensi dan kepuasan pelanggan. Market: mahasiswa, office workers, busy moms.',
+          capital_est: 'Rp 8.000.000 - 15.000.000',
+          target_market: 'Mahasiswa, profesional muda, ibu rumah tangga',
+          challenge: 'Perlu operasional yang teratur dan SDM terlatih',
+          category: 'Jasa',
+        },
+        {
+          name: 'Snack Sehat Organik',
+          description:
+            'Penjualan snack sehat berbahan organik via media sosial dan reseller. Fokus pada kesehatan dan keberlanjutan. Paket bundling yang menarik untuk corporate gifts.',
+          capital_est: 'Rp 3.000.000 - 7.000.000',
+          target_market: 'Health-conscious millennials, corporate buyers',
+          challenge: 'Supply chain yang konsisten untuk bahan organik',
+          category: 'Kuliner',
+        },
+      ];
+
+      const randomBusiness =
+        mockBusinesses[Math.floor(Math.random() * mockBusinesses.length)];
+      setBusinessData(randomBusiness);
+
+      // Mock market data
+      setMarketData({
+        insight:
+          'Tren positif terlihat stabil. Permintaan meningkat menjelang akhir pekan, terutama untuk produk convenience.',
+        price: `Rp ${Math.floor(Math.random() * 50 + 10)}.000`,
+      });
+    } catch (error) {
+      console.error(error);
+      alert('Maaf, AI sedang sibuk. Coba lagi nanti.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddTransaction = (transaction) => {
+    setTransactions([transaction, ...transactions]);
+  };
+
+  const handleLogout = () => {
+    if (confirm('Keluar dari dashboard bisnis?')) {
+      setCurrentView('consultation');
+      setBusinessData(null);
+      setTransactions([]);
+      setShowAdModal(false);
+      setMarketData(null);
+    }
+  };
+
+  if (currentView === 'dashboard' && businessData) {
+    return (
+      <DashboardView
+        businessName={businessData.name}
+        onLogout={handleLogout}
+        transactions={transactions}
+        onAddTransaction={handleAddTransaction}
+        marketData={marketData}
+        showAdModal={showAdModal}
+        onShowAdModal={() => setShowAdModal(true)}
+        onCloseAdModal={() => setShowAdModal(false)}
+      />
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <ConsultationView
+      onSetupBusiness={handleConsultAI}
+      businessData={businessData}
+      loading={loading}
+    />
   );
 }
