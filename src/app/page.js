@@ -4,11 +4,15 @@ import { useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { loginWithGoogle, logoutUser } from '@/lib/auth';
+import { useToast } from '@/components/Toast';
+import { useAlert } from '@/components/Alert';
 
 import ConsultationView from '@/components/ConsultationView';
 import DashboardView from '@/components/DashboardView';
 
 export default function Home() {
+  const toast = useToast();
+  const alert = useAlert();
   const [user, setUser] = useState(null);
   const [currentView, setCurrentView] = useState('consultation'); // 'consultation' atau 'dashboard'
   const [businessData, setBusinessData] = useState(null);
@@ -35,29 +39,39 @@ export default function Home() {
       // onAuthStateChanged will update `user`
     } catch (err) {
       console.error('Login failed', err);
-      alert('Gagal login: ' + err.message);
+      toast.error('Gagal login: ' + err.message);
     }
   };
 
   const handleLogout = async () => {
-    if (!confirm('Keluar dari dashboard bisnis?')) return;
-    try {
-      await logoutUser();
-      setCurrentView('consultation');
-      setBusinessData(null);
-      setTransactions([]);
-      setShowAdModal(false);
-      setMarketData(null);
-    } catch (err) {
-      console.error('Logout failed', err);
-      alert('Gagal logout: ' + err.message);
-    }
+    await alert.warning(
+      'Keluar Akun?',
+      'Apakah Anda yakin ingin keluar dari dashboard bisnis?',
+      async () => {
+        try {
+          await logoutUser();
+          setCurrentView('consultation');
+          setBusinessData(null);
+          setTransactions([]);
+          setShowAdModal(false);
+          setMarketData(null);
+        } catch (err) {
+          console.error('Logout failed', err);
+          alert.error('Gagal Keluar', 'Gagal logout: ' + err.message, () => {
+            // Optional callback setelah error alert ditutup
+          }, null);
+        }
+      },
+      null, // onCancel
+      'Keluar',
+      'Batal'
+    );
   };
 
   const handleConsultAI = async (input, setupBusiness = false) => {
     if (setupBusiness) {
       if (!user) {
-        alert('Silakan login dengan Google untuk memulai bisnis Anda!');
+        toast.warning('Silakan login dengan Google untuk memulai bisnis Anda!');
         await handleLogin();
       }
       setCurrentView('dashboard');
@@ -119,7 +133,7 @@ export default function Home() {
       }
     } catch (error) {
       console.error(error);
-      alert('Maaf, AI sedang sibuk. Coba lagi nanti.');
+      toast.error('Maaf, AI sedang sibuk. Coba lagi nanti.');
     } finally {
       setLoading(false);
     }

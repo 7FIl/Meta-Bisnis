@@ -1,6 +1,9 @@
 'use client';
 
+import { useToast } from './Toast';
+
 export default function AdModal({ onClose }) {
+  const toast = useToast();
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-fade-in">
@@ -44,7 +47,7 @@ export default function AdModal({ onClose }) {
             Batal
           </button>
           <button
-            onClick={() => alert('Simulasi: Anda akan diarahkan ke payment gateway!')}
+            onClick={() => toast.info('Simulasi: Anda akan diarahkan ke payment gateway!')}
             className="flex-1 bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700"
           >
             Pasang Sekarang

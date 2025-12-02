@@ -1,5 +1,8 @@
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { ToastProvider } from "@/components/Toast";
+import { ConfirmDialogProvider } from "@/components/ConfirmDialog";
+import { AlertProvider } from "@/components/Alert";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
@@ -29,7 +32,13 @@ export default function RootLayout({ children }) {
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       </head>
       <body className={`${plusJakartaSans.variable} antialiased text-slate-800 bg-slate-50`}>
-        {children}
+        <AlertProvider>
+          <ConfirmDialogProvider>
+            <ToastProvider>
+              {children}
+            </ToastProvider>
+          </ConfirmDialogProvider>
+        </AlertProvider>
       </body>
     </html>
   );

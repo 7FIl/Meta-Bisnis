@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useToast } from './Toast';
 
 export default function MarketingStudio({ businessName }) {
+  const toast = useToast();
   const [promoInput, setPromoInput] = useState('');
   // captionResult can be null, a string fallback, or an object { instagram, whatsapp }
   const [captionResult, setCaptionResult] = useState(null);
@@ -11,7 +13,7 @@ export default function MarketingStudio({ businessName }) {
 
   const handleGenerateCaption = async () => {
     if (!promoInput) {
-      alert('Isi detail promo dulu!');
+      toast.warning('Isi detail promo dulu!');
       return;
     }
 

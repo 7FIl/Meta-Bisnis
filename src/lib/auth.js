@@ -1,3 +1,5 @@
+'use client';
+
 // src/lib/auth.js
 import {
   signInWithPopup,

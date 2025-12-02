@@ -7,9 +7,11 @@ import {
   loginWithGoogle,
   resendVerificationEmail,
 } from "@/lib/auth";
+import { useToast } from "./Toast";
 
 // Terima props baru: user, onLogin, onLogout
 export default function ConsultationView({ onSetupBusiness, businessData, loading, user, onLogin, onLogout }) {
+  const toast = useToast();
   const inputRef = useRef(null);
   const [showRecommendation, setShowRecommendation] = useState(false);
   // Auth form state
@@ -26,7 +28,7 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
   const handleConsultAI = async () => {
     const input = inputRef.current?.value;
     if (!input) {
-      alert('Mohon isi ide atau kondisi Anda terlebih dahulu.');
+      toast.warning('Mohon isi ide atau kondisi Anda terlebih dahulu.');
       return;
     }
     // Panggil parent function
@@ -46,13 +48,13 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
     e.preventDefault();
     try {
       await registerWithEmail(email, password);
-      alert("Pendaftaran berhasil. Cek inbox Anda untuk link verifikasi email sebelum login.");
+      toast.success("Pendaftaran berhasil. Cek inbox Anda untuk link verifikasi email sebelum login.");
       setShowAuthForm(false);
       setEmail("");
       setPassword("");
     } catch (error) {
       console.error("Register Error:", error);
-      alert(error.message || "Gagal mendaftar.");
+      toast.error(error.message || "Gagal mendaftar.");
     }
   };
 
@@ -60,14 +62,14 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
     e.preventDefault();
     try {
       await loginWithEmail(email, password);
-      alert("Login berhasil.");
+      toast.success("Login berhasil.");
       setShowAuthForm(false);
       setEmail("");
       setPassword("");
     } catch (error) {
       console.error("Login Error:", error);
       const msg = (error && error.message) ? error.message : "Gagal login.";
-      alert(msg);
+      toast.error(msg);
 
       // Jika error karena belum verifikasi, tawarkan resend
       if (msg.toLowerCase().includes('belum terverifikasi')) {
@@ -84,7 +86,7 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
       setShowAuthForm(false);
     } catch (error) {
       console.error("Google Login Error:", error);
-      alert(error.message || "Gagal login dengan Google.");
+      toast.error(error.message || "Gagal login dengan Google.");
     }
   };
 
@@ -106,12 +108,12 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
   const handleResendVerification = async () => {
     try {
       await resendVerificationEmail({ email: attemptedEmail, password: attemptedPassword });
-      alert('Email verifikasi telah dikirim ulang. Periksa inbox Anda.');
+      toast.success('Email verifikasi telah dikirim ulang. Periksa inbox Anda.');
       startResendCooldown(30);
       setShowResendOption(false);
     } catch (err) {
       console.error('Resend error:', err);
-      alert(err.message || 'Gagal mengirim ulang verifikasi.');
+      toast.error(err.message || 'Gagal mengirim ulang verifikasi.');
     }
   };
 
@@ -120,7 +122,7 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
       {/* Navbar Sederhana */}
       <nav className="w-full py-4 px-6 flex justify-between items-center bg-white shadow-sm">
         <div className="font-bold text-xl flex items-center gap-2">
-          <i className="fas fa-robot text-blue-600"></i> UMKM Pintar AI
+          <i className="fas fa-robot text-blue-600"></i> META BISNIS
         </div>
         {/* LOGIC TOMBOL LOGIN/LOGOUT */}
         <div className="relative">
