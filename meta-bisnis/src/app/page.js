@@ -24,52 +24,54 @@ export default function Home() {
     setLoading(true);
 
     try {
-      // Simulasi memanggil AI API (Gemini)
-      // Dalam implementasi real, gunakan fetch ke Gemini API
-      // Untuk demo, kita gunakan mock data
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Kirim permintaan ke backend API yang mem-proxy ke AI provider
+      const payload = {
+        max_tokens: 1000,
+        messages: [
+          { role: 'user', content: input }
+        ],
+        model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+        message: input
+      };
 
-      // Mock business recommendations
-      const mockBusinesses = [
-        {
-          name: 'Kopi Pintar AI',
-          description:
-            'Warung kopi dengan konsep smart ordering via WhatsApp. Produk berkualitas dengan delivery ke kantor-kantor sekitar. Target market: karyawan dan startup di area komersial.',
-          capital_est: 'Rp 5.000.000 - 10.000.000',
-          target_market: 'Karyawan kantoran & startup muda',
-          challenge: 'Kompetisi dari brand kopi established',
-          category: 'Kuliner',
-        },
-        {
-          name: 'Laundry Express Online',
-          description:
-            'Jasa laundry dengan sistem booking online dan pickup-delivery. Fokus pada efisiensi dan kepuasan pelanggan. Market: mahasiswa, office workers, busy moms.',
-          capital_est: 'Rp 8.000.000 - 15.000.000',
-          target_market: 'Mahasiswa, profesional muda, ibu rumah tangga',
-          challenge: 'Perlu operasional yang teratur dan SDM terlatih',
-          category: 'Jasa',
-        },
-        {
-          name: 'Snack Sehat Organik',
-          description:
-            'Penjualan snack sehat berbahan organik via media sosial dan reseller. Fokus pada kesehatan dan keberlanjutan. Paket bundling yang menarik untuk corporate gifts.',
-          capital_est: 'Rp 3.000.000 - 7.000.000',
-          target_market: 'Health-conscious millennials, corporate buyers',
-          challenge: 'Supply chain yang konsisten untuk bahan organik',
-          category: 'Kuliner',
-        },
-      ];
-
-      const randomBusiness =
-        mockBusinesses[Math.floor(Math.random() * mockBusinesses.length)];
-      setBusinessData(randomBusiness);
-
-      // Mock market data
-      setMarketData({
-        insight:
-          'Tren positif terlihat stabil. Permintaan meningkat menjelang akhir pekan, terutama untuk produk convenience.',
-        price: `Rp ${Math.floor(Math.random() * 50 + 10)}.000`,
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error('AI API HTTP error', data);
+        throw new Error(data?.error || 'AI API returned an error');
+      }
+
+      if (!data || data.success === false) {
+        console.error('AI API error payload', data);
+        throw new Error(data?.error || 'AI returned an error');
+      }
+
+      // Backend may return a parsed `structured` object (preferred),
+      // otherwise `reply` may contain JSON or plain text.
+      if (data.structured && typeof data.structured === 'object') {
+        const parsed = data.structured;
+        setBusinessData(parsed.name ? parsed : { name: 'Saran AI', description: JSON.stringify(parsed) });
+        if (parsed.marketData) setMarketData(parsed.marketData);
+      } else {
+        const reply = data.reply || '';
+        try {
+          const parsed = JSON.parse(reply);
+          if (parsed && parsed.name) {
+            setBusinessData(parsed);
+            if (parsed.marketData) setMarketData(parsed.marketData);
+          } else {
+            setBusinessData({ name: 'Saran AI', description: reply });
+          }
+        } catch (e) {
+          setBusinessData({ name: 'Saran AI', description: reply });
+        }
+      }
     } catch (error) {
       console.error(error);
       alert('Maaf, AI sedang sibuk. Coba lagi nanti.');
