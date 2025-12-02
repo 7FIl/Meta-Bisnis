@@ -30,7 +30,7 @@ export default function DashboardView({
           <div className="flex items-center gap-2 font-bold text-xl text-indigo-700">
             <i className="fas fa-store"></i> <span>{businessName}</span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">Managed by AI</p>
+          <p className="text-xs text-slate-500 mt-1">Managed by Meta Bisnis</p>
         </div>
         <nav className="p-4 space-y-1">
           <a

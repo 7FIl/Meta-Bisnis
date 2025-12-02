@@ -1,10 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { loginWithGoogle, logoutUser } from '@/lib/auth';
+
 import ConsultationView from '@/components/ConsultationView';
 import DashboardView from '@/components/DashboardView';
 
 export default function Home() {
+  const [user, setUser] = useState(null);
   const [currentView, setCurrentView] = useState('consultation'); // 'consultation' atau 'dashboard'
   const [businessData, setBusinessData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -12,9 +17,49 @@ export default function Home() {
   const [showAdModal, setShowAdModal] = useState(false);
   const [marketData, setMarketData] = useState(null);
 
+  // Auth listener
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      // Only switch to dashboard automatically if the user's email is verified
+      if (currentUser && currentUser.emailVerified) {
+        setCurrentView('dashboard');
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  const handleLogin = async () => {
+    try {
+      await loginWithGoogle();
+      // onAuthStateChanged will update `user`
+    } catch (err) {
+      console.error('Login failed', err);
+      alert('Gagal login: ' + err.message);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (!confirm('Keluar dari dashboard bisnis?')) return;
+    try {
+      await logoutUser();
+      setCurrentView('consultation');
+      setBusinessData(null);
+      setTransactions([]);
+      setShowAdModal(false);
+      setMarketData(null);
+    } catch (err) {
+      console.error('Logout failed', err);
+      alert('Gagal logout: ' + err.message);
+    }
+  };
+
   const handleConsultAI = async (input, setupBusiness = false) => {
     if (setupBusiness) {
-      // Pindah ke dashboard
+      if (!user) {
+        alert('Silakan login dengan Google untuk memulai bisnis Anda!');
+        await handleLogin();
+      }
       setCurrentView('dashboard');
       return;
     }
@@ -84,20 +129,14 @@ export default function Home() {
     setTransactions([transaction, ...transactions]);
   };
 
-  const handleLogout = () => {
-    if (confirm('Keluar dari dashboard bisnis?')) {
-      setCurrentView('consultation');
-      setBusinessData(null);
-      setTransactions([]);
-      setShowAdModal(false);
-      setMarketData(null);
-    }
-  };
+  // removed duplicate local handleLogout — use the auth-based `handleLogout` above
 
-  if (currentView === 'dashboard' && businessData) {
+  // Show dashboard if user requested it and is logged in. Business data may be empty.
+  if (currentView === 'dashboard' && user) {
     return (
       <DashboardView
-        businessName={businessData.name}
+        businessName={businessData?.name || (user.displayName ? `${user.displayName}'s Business` : 'Dashboard')}
+        userPhoto={user?.photoURL}
         onLogout={handleLogout}
         transactions={transactions}
         onAddTransaction={handleAddTransaction}
@@ -111,6 +150,9 @@ export default function Home() {
 
   return (
     <ConsultationView
+      user={user}
+      onLogin={handleLogin}
+      onLogout={handleLogout}
       onSetupBusiness={handleConsultAI}
       businessData={businessData}
       loading={loading}

@@ -4,8 +4,10 @@ import { useState } from 'react';
 
 export default function MarketingStudio({ businessName }) {
   const [promoInput, setPromoInput] = useState('');
-  const [captionResult, setCaptionResult] = useState('');
+  // captionResult can be null, a string fallback, or an object { instagram, whatsapp }
+  const [captionResult, setCaptionResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(null); // 'instagram' | 'whatsapp' | null
 
   const handleGenerateCaption = async () => {
     if (!promoInput) {
@@ -17,26 +19,76 @@ export default function MarketingStudio({ businessName }) {
     setCaptionResult('AI sedang menulis...');
 
     try {
-      // Simulasi generate caption
-      // Dalam implementasi real, ini akan memanggil Gemini API
-      setTimeout(() => {
-        const captions = [
-          `Haii! 🎉\n\n${promoInput}\n\nJangan lewatkan kesempatan emas ini! 🚀\n\n#${businessName.replace(/\s+/g, '')} #PromoSeru #SupportLokal #BelanjaSekarang`,
-          `Yuk gabung dengan ribuan pelanggan puas kami! 💪\n\n${promoInput}\n\nBerlaku terbatas, jadi segera hubungi kami sebelum kehabisan stok! 📱\n\n#${businessName.replace(/\s+/g, '')} #DealTerbaik #YuDiskon`,
-          `Waktunya upgrade bisnis Anda! ✨\n\n${promoInput}\n\nKunjungi kami atau order online sekarang juga!\n\n#${businessName.replace(/\s+/g, '')} #IndonesiaSupport #UKMCuan`,
-        ];
-        setCaptionResult(captions[Math.floor(Math.random() * captions.length)]);
+      // Build a system prompt that instructs the AI to return a short caption suitable for IG/WA
+      const systemPrompt = `Kamu adalah seorang Marketing Specialist profesional untuk UMKM Indonesia. Berikan dua caption singkat dalam Bahasa Indonesia: satu untuk Instagram (lebih kasual, sertakan emoji dan hashtag) dan satu untuk WhatsApp (lebih personal, singkat, tanpa banyak hashtag). Gunakan nada ramah dan panggilan aksi jelas. OUTPUT REQUIREMENT: Kembalikan sebuah JSON tunggal saja, tanpa penjelasan tambahan, dengan format: { "instagram": "...", "whatsapp": "..." }. Pastikan setiap value adalah string maksimum 280 karakter.`;
+
+      const payload = {
+        max_tokens: 300,
+        model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Detail promo: ${promoInput}\nBusiness: ${businessName || 'UMKM'}` }
+        ]
+      };
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        console.error('Caption API error', data);
+        setCaptionResult('Gagal membuat caption. Coba lagi.');
         setLoading(false);
-      }, 1500);
+        return;
+      }
+
+      // Prefer structured if provided, otherwise use reply text
+      // Prefer structured (already parsed JSON) from backend
+      let resultObj = null;
+      if (data.structured && typeof data.structured === 'object') {
+        resultObj = data.structured;
+      } else {
+        const replyText = (data.reply || '') + '';
+        // Try parse JSON from reply text
+        try {
+          resultObj = JSON.parse(replyText);
+        } catch (e) {
+          // try extract JSON substring
+          const first = replyText.indexOf('{');
+          const last = replyText.lastIndexOf('}');
+          if (first !== -1 && last !== -1 && last > first) {
+            try {
+              resultObj = JSON.parse(replyText.slice(first, last + 1));
+            } catch (e2) {
+              resultObj = null;
+            }
+          }
+        }
+      }
+
+      if (resultObj && (resultObj.instagram || resultObj.whatsapp)) {
+        setCaptionResult({ instagram: resultObj.instagram || '', whatsapp: resultObj.whatsapp || '' });
+      } else {
+        // Fallback: show raw reply text
+        const fallback = data.reply || JSON.stringify(data.providerBody || data.choices || data);
+        setCaptionResult({ instagram: String(fallback).trim(), whatsapp: '' });
+      }
+      setLoading(false);
     } catch (e) {
+      console.error('Generate caption error', e);
       setCaptionResult('Gagal membuat caption. Coba lagi.');
       setLoading(false);
     }
   };
 
-  const handleCopyCaption = () => {
-    navigator.clipboard.writeText(captionResult);
-    alert('Caption disalin!');
+  const copyText = (text, which) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopied(which || 'instagram');
+    setTimeout(() => setCopied(null), 2000);
   };
 
   return (
@@ -79,18 +131,42 @@ export default function MarketingStudio({ businessName }) {
         <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 relative">
           <p className="text-xs font-bold text-slate-400 mb-2">HASIL GENERATE:</p>
           <div className="text-sm text-slate-600 whitespace-pre-wrap h-24 overflow-y-auto italic">
-            {captionResult ||
-              'Hasil caption akan muncul di sini. Tulis detail promo di sebelah kiri lalu klik tombol.'}
+            {!captionResult && 'Hasil caption akan muncul di sini. Tulis detail promo di sebelah kiri lalu klik tombol.'}
+            {captionResult && typeof captionResult === 'object' && (
+              <div className="space-y-3">
+                <div>
+                  <div className="text-xs font-bold text-slate-400 mb-1">Instagram</div>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => copyText(captionResult.instagram, 'instagram')}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') copyText(captionResult.instagram, 'instagram'); }}
+                    className={`p-3 rounded-md border border-slate-100 cursor-pointer hover:bg-slate-50 ${copied === 'instagram' ? 'bg-slate-200' : 'bg-white'}`}
+                    title="Klik untuk menyalin caption Instagram"
+                  >
+                    {captionResult.instagram}
+                  </div>
+                  {copied === 'instagram' && <div className="text-xs text-green-600 mt-1">Disalin!</div>}
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-slate-400 mb-1">WhatsApp</div>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => copyText(captionResult.whatsapp, 'whatsapp')}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') copyText(captionResult.whatsapp, 'whatsapp'); }}
+                    className={`p-3 rounded-md border border-slate-100 cursor-pointer hover:bg-slate-50 ${copied === 'whatsapp' ? 'bg-slate-200' : 'bg-white'}`}
+                    title="Klik untuk menyalin caption WhatsApp"
+                  >
+                    {captionResult.whatsapp}
+                  </div>
+                  {copied === 'whatsapp' && <div className="text-xs text-green-600 mt-1">Disalin!</div>}
+                </div>
+              </div>
+            )}
+            {captionResult && typeof captionResult === 'string' && captionResult}
           </div>
-          {captionResult && (
-            <button
-              onClick={handleCopyCaption}
-              className="absolute top-2 right-2 text-slate-400 hover:text-purple-600"
-              title="Copy caption"
-            >
-              <i className="fas fa-copy"></i>
-            </button>
-          )}
+          {/* Clicking the caption blocks copies them; feedback shown inline */}
         </div>
       </div>
     </div>

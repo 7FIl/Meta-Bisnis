@@ -1,10 +1,27 @@
-'use client';
+"use client";
 
-import { useRef, useState } from 'react';
+import { useRef, useState } from "react";
+import {
+  registerWithEmail,
+  loginWithEmail,
+  loginWithGoogle,
+  resendVerificationEmail,
+} from "@/lib/auth";
 
-export default function ConsultationView({ onSetupBusiness, businessData, loading }) {
+// Terima props baru: user, onLogin, onLogout
+export default function ConsultationView({ onSetupBusiness, businessData, loading, user, onLogin, onLogout }) {
   const inputRef = useRef(null);
   const [showRecommendation, setShowRecommendation] = useState(false);
+  // Auth form state
+  const [showAuthForm, setShowAuthForm] = useState(false);
+  const [authMode, setAuthMode] = useState("register"); // or 'login'
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showResendOption, setShowResendOption] = useState(false);
+  const [attemptedEmail, setAttemptedEmail] = useState("");
+  const [attemptedPassword, setAttemptedPassword] = useState("");
+  const [resendRemaining, setResendRemaining] = useState(0);
+  const resendTimerRef = useRef(null);
 
   const handleConsultAI = async () => {
     const input = inputRef.current?.value;
@@ -24,6 +41,80 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
     setShowRecommendation(false);
   };
 
+  // --- AUTH HANDLERS ---
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    try {
+      await registerWithEmail(email, password);
+      alert("Pendaftaran berhasil. Cek inbox Anda untuk link verifikasi email sebelum login.");
+      setShowAuthForm(false);
+      setEmail("");
+      setPassword("");
+    } catch (error) {
+      console.error("Register Error:", error);
+      alert(error.message || "Gagal mendaftar.");
+    }
+  };
+
+  const handleLoginEmail = async (e) => {
+    e.preventDefault();
+    try {
+      await loginWithEmail(email, password);
+      alert("Login berhasil.");
+      setShowAuthForm(false);
+      setEmail("");
+      setPassword("");
+    } catch (error) {
+      console.error("Login Error:", error);
+      const msg = (error && error.message) ? error.message : "Gagal login.";
+      alert(msg);
+
+      // Jika error karena belum verifikasi, tawarkan resend
+      if (msg.toLowerCase().includes('belum terverifikasi')) {
+        setShowResendOption(true);
+        setAttemptedEmail(email);
+        setAttemptedPassword(password);
+      }
+    }
+  };
+
+  const handleLoginWithGoogle = async () => {
+    try {
+      await loginWithGoogle();
+      setShowAuthForm(false);
+    } catch (error) {
+      console.error("Google Login Error:", error);
+      alert(error.message || "Gagal login dengan Google.");
+    }
+  };
+
+  const startResendCooldown = (seconds = 30) => {
+    setResendRemaining(seconds);
+    if (resendTimerRef.current) clearInterval(resendTimerRef.current);
+    resendTimerRef.current = setInterval(() => {
+      setResendRemaining((s) => {
+        if (s <= 1) {
+          clearInterval(resendTimerRef.current);
+          resendTimerRef.current = null;
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+  };
+
+  const handleResendVerification = async () => {
+    try {
+      await resendVerificationEmail({ email: attemptedEmail, password: attemptedPassword });
+      alert('Email verifikasi telah dikirim ulang. Periksa inbox Anda.');
+      startResendCooldown(30);
+      setShowResendOption(false);
+    } catch (err) {
+      console.error('Resend error:', err);
+      alert(err.message || 'Gagal mengirim ulang verifikasi.');
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Navbar Sederhana */}
@@ -31,9 +122,121 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
         <div className="font-bold text-xl flex items-center gap-2">
           <i className="fas fa-robot text-blue-600"></i> UMKM Pintar AI
         </div>
-        <button className="text-sm text-slate-500 hover:text-blue-600">
-          Masuk
-        </button>
+        {/* LOGIC TOMBOL LOGIN/LOGOUT */}
+        <div className="relative">
+          {user ? (
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-slate-600 hidden md:block">Halo, {user.displayName}</span>
+            <img 
+              src={user.photoURL} 
+              alt="Profile" 
+              className="w-8 h-8 rounded-full border border-blue-200"
+            />
+            <button 
+              onClick={onLogout}
+              className="text-sm text-red-500 hover:text-red-700 font-medium"
+            >
+              Keluar
+            </button>
+          </div>
+          ) : (
+            <>
+              <button
+                onClick={() => setShowAuthForm((s) => !s)}
+                className="text-sm bg-blue-50 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-100 font-medium transition"
+              >
+                <i className="fab fa-google mr-2"></i> Masuk / Daftar
+              </button>
+
+              {/* Simple dropdown auth form */}
+              {showAuthForm && (
+                <div className="absolute right-0 mt-3 w-80 bg-white border border-slate-100 rounded-lg shadow-lg p-4 z-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-sm font-semibold">Masuk / Daftar</div>
+                    <div className="text-xs text-slate-500">Pilih metode</div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <button
+                      onClick={handleLoginWithGoogle}
+                      className="w-full flex items-center justify-center gap-2 border border-slate-200 rounded-md py-2 text-sm hover:bg-slate-50"
+                    >
+                      <i className="fab fa-google"></i>
+                      Masuk dengan Google
+                    </button>
+
+                    <div className="text-center text-xs text-slate-400">— atau —</div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setAuthMode("login")}
+                        className={`flex-1 py-1 rounded-md text-sm ${authMode === "login" ? "bg-slate-100" : "bg-transparent"}`}
+                      >
+                        Email Login
+                      </button>
+                      <button
+                        onClick={() => setAuthMode("register")}
+                        className={`flex-1 py-1 rounded-md text-sm ${authMode === "register" ? "bg-slate-100" : "bg-transparent"}`}
+                      >
+                        Daftar
+                      </button>
+                    </div>
+
+                    <form onSubmit={authMode === "register" ? handleRegister : handleLoginEmail}>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Email"
+                        required
+                        className="w-full px-3 py-2 border border-slate-200 rounded-md text-sm"
+                      />
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Password"
+                        required
+                        minLength={6}
+                        className="w-full mt-2 px-3 py-2 border border-slate-200 rounded-md text-sm"
+                      />
+
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          type="submit"
+                          className="flex-1 bg-blue-600 text-white py-2 rounded-md text-sm"
+                        >
+                          {authMode === "register" ? "Daftar" : "Masuk"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setShowAuthForm(false); setEmail(""); setPassword(""); }}
+                          className="flex-1 border border-slate-200 py-2 rounded-md text-sm"
+                        >
+                          Batal
+                        </button>
+                      </div>
+                      {/* Resend option for users who attempted login but haven't verified */}
+                      {authMode === 'login' && showResendOption && (
+                        <div className="mt-3 text-center">
+                          <p className="text-xs text-slate-500 mb-2">Email belum terverifikasi? Kirim ulang verifikasi.</p>
+                          <button
+                            type="button"
+                            onClick={handleResendVerification}
+                            disabled={resendRemaining > 0}
+                            className={`px-3 py-2 rounded-md text-sm ${resendRemaining > 0 ? 'bg-slate-200 text-slate-500' : 'bg-yellow-500 text-white'}`}
+                          >
+                            {resendRemaining > 0 ? `Kirim ulang (${resendRemaining}s)` : 'Kirim Ulang Verifikasi'}
+                          </button>
+                        </div>
+                      )}
+                    </form>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </nav>
 
       {/* Hero Section */}
@@ -138,9 +341,10 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
                   </button>
                   <button
                     onClick={() => onSetupBusiness(null, true)}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg shadow-indigo-200 transition-all transform hover:scale-105"
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg transition-all"
                   >
-                    <i className="fas fa-rocket mr-2"></i> Jalankan Bisnis Ini
+                    <i className="fas fa-rocket mr-2"></i> 
+                    {user ? 'Jalankan Bisnis Ini' : 'Login untuk Mulai'}
                   </button>
                 </div>
               </div>
