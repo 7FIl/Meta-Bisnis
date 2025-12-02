@@ -8,7 +8,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata = {
-  title: "UMKM Pintar AI - Solusi Bisnis Terintegrasi",
+  title: "Meta Bisnis",
   description: "Platform AI untuk konsultasi ide bisnis, manajemen operasional, dan pemasaran otomatis untuk UMKM Indonesia.",
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75' fill='%232563eb'>🤖</text></svg>",
