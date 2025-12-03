@@ -40,24 +40,55 @@ export default function MenuChatAI({ businessName, onSend }) {
     if (onSend) {
       return await onSend({ topic, prompt });
     }
+    // Build payload (compatible with server route)
+    const canned = sampleReplyFor(topic, prompt);
+    const payload = {
+      message: prompt,
+      messages: [{ role: 'user', content: prompt }],
+      model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+      max_tokens: 800,
+      temperature: 0.7,
+      topic,
+    };
 
-    // Fallback: local canned reply first, then try /api/ai if exists
-    try {
-      // optimistic canned reply fast-path
-      const canned = sampleReplyFor(topic, prompt);
-      // attempt server call
-      const res = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, prompt }),
-      });
-      if (!res.ok) throw new Error("API no response");
-      const json = await res.json();
-      return { text: json.text || canned };
-    } catch {
-      // return canned if network/server fails
-      return { text: sampleReplyFor(topic, prompt) };
+    // Use absolute URL to avoid issues when app runs under a basePath or proxy
+    const url = typeof window !== 'undefined' ? new URL('/api/chat', window.location.origin).href : '/api/chat';
+
+    // POST to server and let HTTP errors propagate so UI can show status/details
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      let bodyText = '';
+      try { bodyText = await res.text(); } catch (e) { bodyText = String(e); }
+      throw new Error(`AI proxy returned ${res.status}: ${bodyText}`);
     }
+
+    const data = await res.json().catch((e) => {
+      console.error('Failed to parse /api/chat JSON', e);
+      return null;
+    });
+
+    // Prefer backend's structured field, otherwise parse reply or use canned
+    if (data && data.structured && typeof data.structured === 'object') {
+      if (data.structured.summary) return { text: data.structured.summary };
+      return { text: JSON.stringify(data.structured) };
+    }
+
+    const reply = data?.reply || '';
+    try {
+      const parsed = JSON.parse(reply);
+      if (parsed && parsed.text) return { text: parsed.text };
+      if (parsed && parsed.name) return { text: parsed.description || JSON.stringify(parsed) };
+    } catch (e) {
+      // not JSON — continue
+    }
+
+    // Final fallback: if server didn't error but didn't return usable reply
+    return { text: reply || canned };
   };
 
   const handleSend = async () => {
@@ -74,10 +105,12 @@ export default function MenuChatAI({ businessName, onSend }) {
       const aiMsg = { id: `a-${Date.now()}`, role: "ai", text: aiText, topic };
       setMessages((m) => [...m, aiMsg]);
     } catch (err) {
+      const msg = String(err?.message || 'Terjadi kesalahan saat memanggil AI.');
       setMessages((m) => [
         ...m,
-        { id: `a-err-${Date.now()}`, role: "ai", text: "Terjadi kesalahan saat memanggil AI.", topic },
+        { id: `a-err-${Date.now()}`, role: "ai", text: msg, topic },
       ]);
+      showToast(msg);
     } finally {
       setLoading(false);
     }

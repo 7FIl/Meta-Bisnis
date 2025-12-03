@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from "next/image";
 import {
   registerWithEmail,
@@ -12,6 +13,8 @@ import { useToast } from "./Toast";
 
 // Terima props baru: user, onLogin, onLogout
 export default function ConsultationView({ onSetupBusiness, businessData, loading, user, onLogin, onLogout }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const toast = useToast();
   const inputRef = useRef(null);
   const [showRecommendation, setShowRecommendation] = useState(false);
@@ -24,6 +27,9 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showConfirmPasswordField, setShowConfirmPasswordField] = useState(false);
   const [showResendOption, setShowResendOption] = useState(false);
   const [attemptedEmail, setAttemptedEmail] = useState("");
   const [attemptedPassword, setAttemptedPassword] = useState("");
@@ -51,10 +57,21 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
   // --- AUTH HANDLERS ---
   const handleRegister = async (e) => {
     e.preventDefault();
+    // Validate confirm password locally before attempting registration
+    if (password !== confirmPassword) {
+      toast.error('Password konfirmasi tidak cocok. Mohon periksa kembali.');
+      return;
+    }
     try {
       await registerWithEmail(email, password);
-      toast.success("Pendaftaran berhasil. Cek inbox Anda untuk link verifikasi email sebelum login.");
-      setShowAuthForm(false);
+      // Redirect user to verification page and prefill email
+      setShowRegisterForm(false);
+      try {
+        router.push(`/verify?email=${encodeURIComponent(email)}`);
+      } catch (e) {
+        // fallback: show toast
+        toast.success("Pendaftaran berhasil. Cek inbox Anda untuk kode verifikasi sebelum login.");
+      }
       setEmail("");
       setPassword("");
     } catch (error) {
@@ -62,6 +79,35 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
       toast.error(error.message || "Gagal mendaftar.");
     }
   };
+
+  // Auto-open register modal when redirected after failed verification
+  useEffect(() => {
+    try {
+      const needRe = searchParams?.get('needReRegister');
+      const e = searchParams?.get('email');
+      if (needRe) {
+        setShowRegisterForm(true);
+        if (e) setEmail(e);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [searchParams]);
+
+  // Auto-open login modal when redirected after successful verification
+  useEffect(() => {
+    try {
+      const openLogin = searchParams?.get('openLogin');
+      const e = searchParams?.get('email');
+      if (openLogin === '1') {
+        if (e) setEmail(e);
+        setShowAuthForm(true);
+        setShowResendOption(false);
+      }
+    } catch (err) {
+      // ignore
+    }
+  }, [searchParams]);
 
   const handleLoginEmail = async (e) => {
     e.preventDefault();
@@ -74,14 +120,21 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
     } catch (error) {
       console.error("Login Error:", error);
       const msg = (error && error.message) ? error.message : "Gagal login.";
-      toast.error(msg);
+      const code = (error && error.code) ? error.code : '';
 
-      // Jika error karena belum verifikasi, tawarkan resend
-      if (msg.toLowerCase().includes('belum terverifikasi')) {
+      // Jika error karena belum verifikasi, jangan tunjukkan toast error umum —
+      // tampilkan inline peringatan (showResendOption) agar user tahu harus verifikasi dulu.
+      if (code === 'auth/email-not-verified' || msg.toLowerCase().includes('belum terverifikasi')) {
         setShowResendOption(true);
         setAttemptedEmail(email);
         setAttemptedPassword(password);
+        // Also show a subtle toast info (optional)
+        toast.info('Silakan verifikasi email Anda terlebih dahulu sebelum login. Jika perlu, kirim ulang link verifikasi.');
+        return;
       }
+
+      // Other errors: show toast
+      toast.error(msg);
     }
   };
 
@@ -215,15 +268,25 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
                             Forgot password?
                           </a>
                         </div>
-                        <input
-                          type="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder="••••••••"
-                          required
-                          minLength={6}
-                          className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-slate-900 placeholder-slate-400"
-                        />
+                        <div className="relative">
+                          <input
+                            type={showLoginPassword ? 'text' : 'password'}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="••••••••"
+                            required
+                            minLength={6}
+                            className="w-full px-4 py-2.5 pr-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-slate-900 placeholder-slate-400"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowLoginPassword((s) => !s)}
+                            className="absolute right-3 top-1/4  text-slate-500"
+                            aria-label={showLoginPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                          >
+                            <i className={`fas ${showLoginPassword ? 'fa-eye' : 'fa-eye-slash'}`}></i>
+                          </button>
+                        </div>
                       </div>
 
                       {/* Resend Verification Option */}
@@ -375,30 +438,50 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
                       {/* Password Field */}
                       <div>
                         <label className="block text-sm font-semibold text-slate-900 mb-2">Password</label>
-                        <input
-                          type="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          placeholder="••••••••"
-                          required
-                          minLength={6}
-                          className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-slate-900 placeholder-slate-400"
-                        />
+                        <div className="relative">
+                          <input
+                            type={showRegisterPassword ? 'text' : 'password'}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="••••••••"
+                            required
+                            minLength={6}
+                            className="w-full px-4 py-2.5 pr-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-slate-900 placeholder-slate-400"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowRegisterPassword((s) => !s)}
+                            className="absolute right-3 top-1/4 text-slate-500"
+                            aria-label={showRegisterPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                          >
+                            <i className={`fas ${showRegisterPassword ? 'fa-eye' : 'fa-eye-slash'}`}></i>
+                          </button>
+                        </div>
                         <p className="text-xs text-slate-500 mt-1">At least 6 characters</p>
                       </div>
 
                       {/* Confirm Password Field */}
                       <div>
                         <label className="block text-sm font-semibold text-slate-900 mb-2">Confirm password</label>
-                        <input
-                          type="password"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          placeholder="••••••••"
-                          required
-                          minLength={6}
-                          className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-slate-900 placeholder-slate-400"
-                        />
+                        <div className="relative">
+                          <input
+                            type={showConfirmPasswordField ? 'text' : 'password'}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="••••••••"
+                            required
+                            minLength={6}
+                            className="w-full px-4 py-2.5 pr-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-slate-900 placeholder-slate-400"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPasswordField((s) => !s)}
+                            className="absolute right-3 top-1/4 text-slate-500"
+                            aria-label={showConfirmPasswordField ? 'Sembunyikan konfirmasi password' : 'Tampilkan konfirmasi password'}
+                          >
+                            <i className={`fas ${showConfirmPasswordField ? 'fa-eye' : 'fa-eye-slash'}`}></i>
+                          </button>
+                        </div>
                       </div>
 
                       {/* Submit Button */}

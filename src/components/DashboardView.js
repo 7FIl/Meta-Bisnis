@@ -103,16 +103,34 @@ export default function DashboardView({
             <MenuChatAI
               businessName={businessName}
               onSend={async ({ topic, prompt }) => {
-                // contoh integrasi: panggil API server untuk response AI (ubah sesuai backend)
+                // Integrasi: panggil API server `/api/chat` (sesuai route yang tersedia)
                 try {
-                  const res = await fetch('/api/ai', {
+                  const url = new URL('/api/chat', window.location.origin).href;
+                  const payload = {
+                    // include both `message` and `messages` for compatibility with the server route
+                    message: prompt,
+                    messages: [{ role: 'user', content: prompt }],
+                    topic,
+                  };
+
+                  const res = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ topic, prompt }),
+                    body: JSON.stringify(payload),
                   });
-                  if (!res.ok) throw new Error('AI API error');
-                  const json = await res.json();
-                  return { text: json.text };
+
+                  if (!res.ok) {
+                    const txt = await res.text().catch(() => '');
+                    throw new Error(`Server returned ${res.status}: ${txt}`);
+                  }
+
+                  const json = await res.json().catch(() => null);
+                  // Prefer structured summary or reply field
+                  if (json && json.structured && json.structured.summary) return { text: json.structured.summary };
+                  if (json && json.reply) return { text: json.reply };
+                  if (json && json.text) return { text: json.text };
+
+                  return { text: 'AI tidak mengembalikan jawaban yang dapat diproses.' };
                 } catch (err) {
                   return { text: `Gagal memanggil AI: ${err.message}` };
                 }

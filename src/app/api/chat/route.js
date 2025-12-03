@@ -13,8 +13,26 @@ export async function POST(req) {
     // history opsional: array percakapan sebelumnya jika frontend support context aware
 
     // 2. Setup Payload ke Kolosal AI
-    // Instruksi system meminta output berupa JSON yang konsisten agar frontend mudah memproses.
-    const systemPrompt = `Kamu adalah 'Meta Bisnis', asisten bisnis AI profesional untuk UMKM Indonesia. Berikan saran yang praktis, ramah, hemat biaya, dan gunakan Bahasa Indonesia yang mudah dimengerti. Fokus pada strategi digital marketing dan manajemen keuangan sederhana. RESPONS FORMAT: Always reply with a single valid JSON object ONLY (no surrounding explanation). The JSON must contain these fields: name (string), description (string), capital_est (string), target_market (string), challenge (string), category (string). Optionally include marketData (object with keys 'insight' and 'price').`; 
+    // System prompt berubah berdasarkan topik supaya client bisa meminta
+    // teks analisis biasa (plain text) untuk `analysis`, atau JSON untuk
+    // topik lain seperti `finance`.
+    let systemPrompt;
+    // Provide tailored, plain-text prompts per topic so frontend receives readable
+    // answers for all three contexts: analysis, finance, sales.
+    switch (body.topic) {
+      case 'analysis':
+        systemPrompt = `Kamu adalah 'Meta Bisnis', asisten analisis bisnis untuk UMKM Indonesia. Untuk permintaan user, berikan ANALISIS BISNIS yang rapi dan mudah dibaca dalam Bahasa Indonesia. Struktur jawaban menjadi: (1) Ringkasan singkat 2-3 kalimat; (2) Temuan/insight utama (3-5 poin singkat); (3) Rekomendasi tindakan praktis (2-4 poin). Jangan bungkus jawaban dengan JSON, kode, atau penjelasan panjang — berikan teks saja dengan baris baru dan tanda '-' untuk poin.`;
+        break;
+      case 'finance':
+        systemPrompt = `Kamu adalah 'Meta Bisnis', asisten keuangan untuk UMKM Indonesia. Berikan jawaban TEKS dalam Bahasa Indonesia yang terstruktur: mulai dengan ringkasan singkat (1-2 kalimat), lalu langkah-langkah praktis untuk mengelola keuangan (2-5 poin), rekomendasi prioritas (2 poin), dan estimasi dampak singkat jika relevan. Gunakan bahasa yang sederhana dan bullet '-' untuk setiap poin. Jangan keluarkan JSON atau format kode.`;
+        break;
+      case 'sales':
+        systemPrompt = `Kamu adalah 'Meta Bisnis', asisten penjualan untuk UMKM Indonesia. Jawab dalam Bahasa Indonesia berupa strategi penjualan yang rapi: (1) ringkasan singkat, (2) 3-5 ide aksi (contoh materi promosi, kanal, taktik diskon), (3) contoh kalimat promosi singkat (1-2). Format jawaban sebagai teks biasa dengan baris baru dan bullet '-' untuk poin.`;
+        break;
+      default:
+        // Fallback: preserve the original JSON-mode behavior for unspecified topics
+        systemPrompt = `Kamu adalah 'Meta Bisnis', asisten bisnis AI profesional untuk UMKM Indonesia. Berikan saran yang praktis, ramah, hemat biaya, dan gunakan Bahasa Indonesia yang mudah dimengerti. Fokus pada strategi digital marketing dan manajemen keuangan sederhana. RESPONS FORMAT: Always reply with a single valid JSON object ONLY (no surrounding explanation). The JSON must contain these fields: name (string), description (string), capital_est (string), target_market (string), challenge (string), category (string). Optionally include marketData (object with keys 'insight' and 'price').`;
+    }
 
     // Gabungkan pesan: System Prompt + History (jika ada) + User Message Baru
     const messages = [
@@ -145,4 +163,14 @@ export async function POST(req) {
       error: 'Terjadi kesalahan pada server AI.' 
     }, { status: 500 });
   }
+}
+
+// Simple GET handler so developers can verify route existence in browser
+export async function GET() {
+  return NextResponse.json({ success: true, message: 'Chat API route is active. Use POST to send messages.' });
+}
+
+// Respond to OPTIONS (useful for preflight or probes)
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: { Allow: 'GET, POST, OPTIONS' } });
 }
