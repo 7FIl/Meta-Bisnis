@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-export default function MenuPemasaranAI({ businessName, onSave }) {
+export default function MenuPemasaranAI({ businessName, onSave, salesData }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [duration, setDuration] = useState("00:30"); // format mm:ss
@@ -12,6 +12,21 @@ export default function MenuPemasaranAI({ businessName, onSave }) {
   const [toast, setToast] = useState("");
   const toastRef = useRef(null);
 
+  // Chart refs & state
+  const chartRef = useRef(null);
+  const chartInstanceRef = useRef(null);
+  const [chartType, setChartType] = useState("radar"); // 'radar' | 'line' | 'bar'
+
+  // fallback sample sales data (weekly)
+  const SAMPLE_SALES = {
+    labels: ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"],
+    values: [12, 19, 7, 14, 22, 18, 16],
+  };
+
+  const sales = salesData && salesData.length
+    ? { labels: salesData.map(s => s.label), values: salesData.map(s => s.value) }
+    : SAMPLE_SALES;
+
   const showToast = (msg = "Sukses") => {
     setToast(msg);
     clearTimeout(toastRef.current);
@@ -19,7 +34,6 @@ export default function MenuPemasaranAI({ businessName, onSave }) {
   };
 
   const handleGenerate = () => {
-    // contoh generation sederhana — ganti dengan panggilan API jika perlu
     if (!title) {
       showToast("Isi judul konten terlebih dahulu");
       return;
@@ -53,6 +67,63 @@ export default function MenuPemasaranAI({ businessName, onSave }) {
     if (onSave) onSave(payload);
     showToast("Konten disimpan");
   };
+
+  // render chart helper
+  const renderChart = (type = chartType) => {
+    if (typeof window === "undefined" || !window.Chart || !chartRef.current) return;
+
+    if (chartInstanceRef.current) {
+      chartInstanceRef.current.destroy();
+      chartInstanceRef.current = null;
+    }
+
+    const ctx = chartRef.current.getContext("2d");
+
+    const commonDataset = {
+      label: "Penjualan",
+      data: sales.values,
+      backgroundColor: type === "radar"
+        ? "rgba(59,130,246,0.15)"
+        : "rgba(59,130,246,0.25)",
+      borderColor: "rgb(59,130,246)",
+      tension: 0.3,
+      fill: type !== "bar" ? true : false,
+    };
+
+    const config = {
+      type: type,
+      data: {
+        labels: sales.labels,
+        datasets: [commonDataset],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: type !== "line" ? true : false } },
+        scales: type === "radar" ? {} : {
+          y: { beginAtZero: true, grid: { color: "rgba(15,23,42,0.05)" } },
+          x: { grid: { display: false } },
+        },
+      },
+    };
+
+    chartInstanceRef.current = new window.Chart(ctx, config);
+  };
+
+  useEffect(() => {
+    // initial render
+    renderChart(chartType);
+    return () => {
+      if (chartInstanceRef.current) chartInstanceRef.current.destroy();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    // re-render when chart type or sales data changes
+    renderChart(chartType);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chartType, sales.labels.join(","), sales.values.join(",")]);
 
   useEffect(() => {
     return () => clearTimeout(toastRef.current);
@@ -140,8 +211,40 @@ export default function MenuPemasaranAI({ businessName, onSave }) {
         </div>
 
         <div className="space-y-3">
+          {/* Chart controls */}
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700">Grafik Penjualan</label>
+              <div className="text-xs text-slate-500">Tampilkan data penjualan dalam bentuk grafik</div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setChartType("radar")}
+                className={`px-3 py-1 text-xs rounded ${chartType === "radar" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
+              >
+                Radar
+              </button>
+              <button
+                onClick={() => setChartType("line")}
+                className={`px-3 py-1 text-xs rounded ${chartType === "line" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
+              >
+                Line
+              </button>
+              <button
+                onClick={() => setChartType("bar")}
+                className={`px-3 py-1 text-xs rounded ${chartType === "bar" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
+              >
+                Bar
+              </button>
+            </div>
+          </div>
+
+          <div className="w-full h-44 p-2 border border-slate-100 rounded-lg bg-white">
+            <canvas ref={chartRef} className="w-full h-full" />
+          </div>
+
           <label className="block text-xs font-semibold text-slate-700 mb-1">Preview Isi Konten</label>
-          <div className="w-full h-64 p-3 border border-slate-100 rounded-lg bg-slate-50 text-sm overflow-y-auto whitespace-pre-wrap">
+          <div className="w-full h-44 p-3 border border-slate-100 rounded-lg bg-slate-50 text-sm overflow-y-auto whitespace-pre-wrap">
             {content || <span className="text-slate-400">Preview akan muncul di sini setelah generate.</span>}
           </div>
 

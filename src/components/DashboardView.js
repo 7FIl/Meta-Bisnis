@@ -5,6 +5,8 @@ import EmployeeAbsence from './EmployeeAbsence';
 import MarketIntelligence from './MarketIntelligence';
 import MarketingStudio from './MarketingStudio';
 import MenuPemasaranAI from './MenuPemasaranAI';
+import MenuChatAI from './MenuChatAI';
+import MenuKeuangan from './MenuKeuangan'; // <-- added import
 
 export default function DashboardView({
   businessName,
@@ -15,10 +17,10 @@ export default function DashboardView({
   marketData,
 }) {
   const chartRef = useRef(null);
-  const [selectedMenu, setSelectedMenu] = useState('beranda'); // 'beranda' | 'pemasaran' | ...
+  const [selectedMenu, setSelectedMenu] = useState('beranda'); // 'beranda' | 'pemasaran' | 'chat' | 'keuangan' | ...
 
   useEffect(() => {
-    // Chart akan diinisialisasi di MarketIntelligence component
+    // initializations...
   }, []);
 
   return (
@@ -31,7 +33,7 @@ export default function DashboardView({
           </div>
           <p className="text-xs text-slate-500 mt-1">Managed by Meta Bisnis</p>
         </div>
-        {/* nav: gunakan setSelectedMenu untuk navigasi */}
+
         <nav className="p-4 space-y-1">
           <button
             onClick={() => setSelectedMenu('beranda')}
@@ -68,6 +70,7 @@ export default function DashboardView({
             <i className="fas fa-cog w-5"></i> Pengaturan
           </button>
         </nav>
+
         <div className="mt-auto p-4 border-t border-slate-100">
           <button
             onClick={onLogout}
@@ -78,24 +81,63 @@ export default function DashboardView({
         </div>
       </aside>
 
-      {/* Main Content - render berdasarkan selectedMenu */}
+      {/* Main Content */}
       <main className="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto">
         {selectedMenu === 'pemasaran' ? (
           <MenuPemasaranAI
             businessName={businessName}
+            salesData={marketData?.sales}
             onSave={(payload) => {
               console.log('Konten disimpan:', payload);
-              // TODO: simpan ke backend atau state global jika perlu
-              setSelectedMenu('beranda'); // opsional: kembali ke beranda setelah simpan
             }}
           />
         ) : selectedMenu === 'chat' ? (
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <h2 className="font-bold text-lg">Chat AI</h2>
-            <p className="text-sm text-slate-600 mt-2">Fitur chat AI akan dikembangkan di sini.</p>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 mb-2">
+              <button onClick={() => setSelectedMenu('beranda')} className="text-sm text-slate-600 hover:text-slate-800">
+                ← Kembali ke Dashboard
+              </button>
+              <h2 className="text-xl font-bold">Chat AI — {businessName}</h2>
+            </div>
+
+            <MenuChatAI
+              businessName={businessName}
+              onSend={async ({ topic, prompt }) => {
+                // contoh integrasi: panggil API server untuk response AI (ubah sesuai backend)
+                try {
+                  const res = await fetch('/api/ai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ topic, prompt }),
+                  });
+                  if (!res.ok) throw new Error('AI API error');
+                  const json = await res.json();
+                  return { text: json.text };
+                } catch (err) {
+                  return { text: `Gagal memanggil AI: ${err.message}` };
+                }
+              }}
+            />
+          </div>
+        ) : selectedMenu === 'keuangan' ? (
+          // NEW: Keuangan view
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <button onClick={() => setSelectedMenu('beranda')} className="text-sm text-slate-600 hover:text-slate-800">
+                ← Kembali ke Dashboard
+              </button>
+              <h2 className="text-xl font-bold">Keuangan — {businessName}</h2>
+            </div>
+
+            <MenuKeuangan
+              businessName={businessName}
+              period={marketData?.period || new Date().toISOString().slice(0,7)}
+              salesData={marketData?.sales || []}
+              incomes={marketData?.incomes || []}
+              marketingExpenses={marketData?.marketing || []}
+            />
           </div>
         ) : (
-          // ...existing dashboard content (beranda)...
           <>
             <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl p-6 mb-8 shadow-lg flex justify-between items-center">
               <div>
@@ -105,7 +147,6 @@ export default function DashboardView({
                   <span className="font-bold underline">{businessName}</span>.
                 </p>
               </div>
-              {/* tombol lain jika ada */}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
