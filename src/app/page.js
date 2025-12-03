@@ -1,7 +1,8 @@
+// src/app/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, deleteUser } from 'firebase/auth'; 
 import { auth } from '@/lib/firebase';
 import { loginWithGoogle, logoutUser } from '@/lib/auth';
 import { useToast } from '@/components/Toast';
@@ -16,22 +17,52 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [currentView, setCurrentView] = useState('consultation'); // 'consultation' atau 'dashboard'
   const [businessData, setBusinessData] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [absences, setAbsences] = useState([]);
   const [showAdModal, setShowAdModal] = useState(false);
   const [marketData, setMarketData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
+  // State mock untuk nama pengguna dan bisnis yang bisa diubah di Pengaturan
+  const [currentBusinessName, setCurrentBusinessName] = useState('Dashboard');
+  const [currentUserName, setCurrentUserName] = useState('Pengguna');
+  const [currentBusinessTitle, setCurrentBusinessTitle] = useState('Platform AI untuk UMKM');
+  const [currentBusinessLocation, setCurrentBusinessLocation] = useState('Lokasi Tidak Diketahui');
+  const [currentBusinessImage, setCurrentBusinessImage] = useState('/globe.svg');
+  
   // Auth listener
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      // Only switch to dashboard automatically if the user's email is verified
       if (currentUser && currentUser.emailVerified) {
+        // Set initial user name from firebase/email
+        setCurrentUserName(currentUser.displayName || currentUser.email.split('@')[0]);
         setCurrentView('dashboard');
+        
+        // Set initial business name (from consultation data or default)
+        if (!businessData?.name) {
+            setCurrentBusinessName(currentUser.displayName ? `${currentUser.displayName}'s Business` : 'Dashboard Bisnis');
+            // Set default initial values for new fields
+            setCurrentBusinessTitle('Platform AI untuk UMKM');
+            setCurrentBusinessLocation('Lokasi Tidak Diketahui');
+            setCurrentBusinessImage('/globe.svg'); 
+        } else {
+            setCurrentBusinessName(businessData.name);
+            // Derive/set new fields from businessData if available, otherwise default
+            setCurrentBusinessTitle(businessData.title || 'Platform AI untuk UMKM');
+            setCurrentBusinessLocation(businessData.location || 'Lokasi Tidak Diketahui');
+            setCurrentBusinessImage(businessData.image || '/globe.svg');
+        }
+      } else {
+        // Reset to default mock names if no user or unverified
+        setCurrentUserName('Pengguna');
+        setCurrentBusinessName('Dashboard');
+        setCurrentBusinessTitle('Platform AI untuk UMKM');
+        setCurrentBusinessLocation('Lokasi Tidak Diketahui');
+        setCurrentBusinessImage('/globe.svg');
       }
     });
     return () => unsub();
-  }, []);
+  }, [businessData]);
 
   const handleLogin = async () => {
     try {
@@ -55,6 +86,11 @@ export default function Home() {
           setAbsences([]);
           setShowAdModal(false);
           setMarketData(null);
+          setCurrentBusinessName('Dashboard'); // Reset custom name
+          setCurrentUserName('Pengguna'); // Reset custom name
+          setCurrentBusinessTitle('Platform AI untuk UMKM');
+          setCurrentBusinessLocation('Lokasi Tidak Diketahui');
+          setCurrentBusinessImage('/globe.svg');
         } catch (err) {
           console.error('Logout failed', err);
           alert.error('Gagal Keluar', 'Gagal logout: ' + err.message, () => {
@@ -67,6 +103,40 @@ export default function Home() {
       'Batal'
     );
   };
+  
+  // Handler to delete account
+  const handleDeleteAccount = async () => {
+      if (auth.currentUser) {
+          try {
+              // Delete user in Firebase
+              await deleteUser(auth.currentUser);
+              // Clear local state and force logout view
+              await handleLogout(); 
+              toast.success("Akun berhasil dihapus permanen.");
+          } catch (error) {
+              console.error("Delete account error:", error);
+              // Firebase requires recent re-authentication for deletion
+              if (error.code === 'auth/requires-recent-login') {
+                alert.error(
+                  'Gagal Hapus', 
+                  'Untuk keamanan, silakan logout dan login kembali sebelum mencoba menghapus akun.',
+                  null, null
+                );
+              } else {
+                alert.error(
+                  'Gagal Hapus', 
+                  error.message || 'Terjadi kesalahan saat menghapus akun. Coba lagi nanti.',
+                  null, null
+                );
+              }
+              throw error; // Re-throw to handle error state in MenuPengaturan
+          }
+      } else {
+          // Should not happen if coming from DashboardView
+          toast.error("Tidak ada user aktif untuk dihapus.");
+      }
+  };
+
 
   const handleConsultAI = async (input, setupBusiness = false) => {
     if (setupBusiness) {
@@ -74,6 +144,10 @@ export default function Home() {
         toast.warning('Silakan login dengan Google untuk memulai bisnis Anda!');
         await handleLogin();
       }
+      
+      const finalBusinessName = businessData?.name || currentBusinessName;
+
+      setCurrentBusinessName(finalBusinessName);
       setCurrentView('dashboard');
       return;
     }
@@ -111,26 +185,34 @@ export default function Home() {
         throw new Error(data?.error || 'AI returned an error');
       }
 
-      // Backend may return a parsed `structured` object (preferred),
-      // otherwise `reply` may contain JSON or plain text.
+      let newBusinessData = null;
+      // Handle AI response parsing
       if (data.structured && typeof data.structured === 'object') {
         const parsed = data.structured;
-        setBusinessData(parsed.name ? parsed : { name: 'Saran AI', description: JSON.stringify(parsed) });
+        newBusinessData = parsed.name ? parsed : { name: 'Saran AI', description: JSON.stringify(parsed) };
         if (parsed.marketData) setMarketData(parsed.marketData);
+        // Set new states based on parsed data (if available)
+        setCurrentBusinessTitle(parsed.title || 'Platform AI untuk UMKM');
+        setCurrentBusinessLocation(parsed.location || 'Lokasi Tidak Diketahui');
+        setCurrentBusinessImage(parsed.image || '/globe.svg');
       } else {
         const reply = data.reply || '';
         try {
           const parsed = JSON.parse(reply);
           if (parsed && parsed.name) {
-            setBusinessData(parsed);
+            newBusinessData = parsed;
             if (parsed.marketData) setMarketData(parsed.marketData);
           } else {
-            setBusinessData({ name: 'Saran AI', description: reply });
+            newBusinessData = { name: 'Saran AI', description: reply };
           }
         } catch (e) {
-          setBusinessData({ name: 'Saran AI', description: reply });
+            newBusinessData = { name: 'Saran AI', description: reply };
         }
       }
+
+      setBusinessData(newBusinessData);
+      setCurrentBusinessName(newBusinessData.name); // Set current name from the new data
+      
     } catch (error) {
       console.error(error);
       toast.error('Maaf, AI sedang sibuk. Coba lagi nanti.');
@@ -142,15 +224,62 @@ export default function Home() {
   const handleAddAbsence = (absence) => {
     setAbsences([absence, ...absences]);
   };
+  
+  // Handler for updating settings (mocking update logic)
+  const handleUpdateSettings = async ({ 
+    businessName, 
+    userName, 
+    businessLocation, 
+    businessTitle,    
+    businessImage     
+  }) => {
+    // 1. Update mock user name state
+    setCurrentUserName(userName);
 
-  // removed duplicate local handleLogout — use the auth-based `handleLogout` above
+    // 2. Update business details state
+    setCurrentBusinessName(businessName);
+    setCurrentBusinessLocation(businessLocation);
+    setCurrentBusinessTitle(businessTitle);
+    setCurrentBusinessImage(businessImage);
+    
+    // 3. Update businessData object (if exists)
+    if (businessData) {
+        setBusinessData(prev => ({ 
+            ...prev, 
+            name: businessName, 
+            location: businessLocation, 
+            title: businessTitle,
+            image: businessImage
+        }));
+    } else {
+        // If businessData is null, create a minimal version
+        setBusinessData({ 
+            name: businessName, 
+            description: 'Nama bisnis diatur manual', 
+            capital_est: 'N/A', 
+            target_market: 'N/A', 
+            challenge: 'N/A',
+            location: businessLocation,
+            title: businessTitle,
+            image: businessImage
+        });
+    }
+    
+    // Simulate API delay
+    return new Promise(resolve => setTimeout(resolve, 500));
+  };
 
-  // Show dashboard if user requested it and is logged in. Business data may be empty.
+
+  // Show dashboard if user requested it and is logged in.
   if (currentView === 'dashboard' && user) {
     return (
       <DashboardView
-        businessName={businessData?.name || (user.displayName ? `${user.displayName}'s Business` : 'Dashboard')}
-        userPhoto={user?.photoURL}
+        businessName={currentBusinessName}
+        userName={currentUserName}
+        currentUserEmail={user.email}
+        businessTitle={currentBusinessTitle}
+        businessLocation={currentBusinessLocation}
+        businessImage={currentBusinessImage}
         onLogout={handleLogout}
         absences={absences}
         onAddAbsence={handleAddAbsence}
@@ -158,6 +287,8 @@ export default function Home() {
         showAdModal={showAdModal}
         onShowAdModal={() => setShowAdModal(true)}
         onCloseAdModal={() => setShowAdModal(false)}
+        onUpdateSettings={handleUpdateSettings}
+        onDeleteAccount={handleDeleteAccount}
       />
     );
   }

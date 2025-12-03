@@ -1,3 +1,4 @@
+// src/components/MenuKeuangan.js
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -105,11 +106,11 @@ export default function MenuKeuangan({
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+    <div className="bg-white bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 border-slate-700">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="font-bold text-slate-800">Laporan Keuangan</h3>
-          <div className="text-xs text-slate-500">{businessName} • Periode: {period}</div>
+          <h3 className="font-bold text-slate-800 text-slate-100">Laporan Keuangan</h3>
+          <div className="text-xs text-slate-500 text-slate-400">{businessName} • Periode: {period}</div>
         </div>
         <div className="flex gap-2">
           <button onClick={handleExportCSV} disabled={exporting} className="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg">
@@ -119,45 +120,45 @@ export default function MenuKeuangan({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="p-4 rounded-lg bg-slate-50 border">
-          <div className="text-xs text-slate-500">Total Penjualan</div>
-          <div className="text-xl font-bold text-slate-800">{currency(totals.totalSales)}</div>
+        <div className="p-4 rounded-lg bg-slate-50 bg-slate-700 border border-slate-600">
+          <div className="text-xs text-slate-500 text-slate-400">Total Penjualan</div>
+          <div className="text-xl font-bold text-slate-800 text-slate-100">{currency(totals.totalSales)}</div>
         </div>
-        <div className="p-4 rounded-lg bg-slate-50 border">
-          <div className="text-xs text-slate-500">Total Pendapatan</div>
-          <div className="text-xl font-bold text-slate-800">{currency(totals.totalIncome)}</div>
+        <div className="p-4 rounded-lg bg-slate-50 bg-slate-700 border border-slate-600">
+          <div className="text-xs text-slate-500 text-slate-400">Total Pendapatan</div>
+          <div className="text-xl font-bold text-slate-800 text-slate-100">{currency(totals.totalIncome)}</div>
         </div>
-        <div className="p-4 rounded-lg bg-slate-50 border">
-          <div className="text-xs text-slate-500">Total Pemasaran</div>
-          <div className="text-xl font-bold text-slate-800">{currency(totals.totalMarketing)}</div>
+        <div className="p-4 rounded-lg bg-slate-50 bg-slate-700 border border-slate-600">
+          <div className="text-xs text-slate-500 text-slate-400">Total Pemasaran</div>
+          <div className="text-xl font-bold text-slate-800 text-slate-100">{currency(totals.totalMarketing)}</div>
         </div>
       </div>
 
       <div className="mb-6">
-        <h4 className="font-semibold mb-2">Rincian Penjualan</h4>
-        <div className="overflow-x-auto border rounded-lg">
+        <h4 className="font-semibold text-slate-700 dark:text-slate-300 mb-2">Rincian Penjualan</h4>
+        <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg">
           <table className="w-full text-sm">
-            <thead className="bg-slate-100 text-left">
+            <thead className="bg-slate-100 dark:bg-slate-700 text-left">
               <tr>
-                <th className="px-3 py-2">Tanggal</th>
-                <th className="px-3 py-2">Order</th>
-                <th className="px-3 py-2">Produk</th>
-                <th className="px-3 py-2">Qty</th>
-                <th className="px-3 py-2">Harga</th>
-                <th className="px-3 py-2">Total</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-300">Tanggal</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-300">Order</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-300">Produk</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-300">Qty</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-300">Harga</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-300">Total</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="bg-white dark:bg-slate-800">
               {sales.map((r, i) => {
                 const total = r.qty ? r.qty * (r.price || 0) : r.amount || 0;
                 return (
-                  <tr key={i} className="border-t">
-                    <td className="px-3 py-2">{r.date}</td>
-                    <td className="px-3 py-2">{r.orderId || "-"}</td>
-                    <td className="px-3 py-2">{r.product || "-"}</td>
-                    <td className="px-3 py-2">{r.qty ?? "-"}</td>
-                    <td className="px-3 py-2">{r.price ? currency(r.price) : "-"}</td>
-                    <td className="px-3 py-2 font-semibold">{currency(total)}</td>
+                  <tr key={i} className="border-t border-slate-100 dark:border-slate-700">
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{r.date}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{r.orderId || "-"}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{r.product || "-"}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{r.qty ?? "-"}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{r.price ? currency(r.price) : "-"}</td>
+                    <td className="px-3 py-2 font-semibold text-slate-800 dark:text-slate-200">{currency(total)}</td>
                   </tr>
                 );
               })}
@@ -167,22 +168,22 @@ export default function MenuKeuangan({
       </div>
 
       <div className="mb-6">
-        <h4 className="font-semibold mb-2">Pendapatan Lain</h4>
-        <div className="overflow-x-auto border rounded-lg">
+        <h4 className="font-semibold text-slate-700 dark:text-slate-300 mb-2">Pendapatan Lain</h4>
+        <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg">
           <table className="w-full text-sm">
-            <thead className="bg-slate-100 text-left">
+            <thead className="bg-slate-100 dark:bg-slate-700 text-left">
               <tr>
-                <th className="px-3 py-2">Tanggal</th>
-                <th className="px-3 py-2">Sumber</th>
-                <th className="px-3 py-2">Jumlah</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-300">Tanggal</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-300">Sumber</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-300">Jumlah</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="bg-white dark:bg-slate-800">
               {incs.map((r, i) => (
-                <tr key={i} className="border-t">
-                  <td className="px-3 py-2">{r.date}</td>
-                  <td className="px-3 py-2">{r.source}</td>
-                  <td className="px-3 py-2 font-semibold">{currency(r.amount)}</td>
+                <tr key={i} className="border-t border-slate-100 dark:border-slate-700">
+                  <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{r.date}</td>
+                  <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{r.source}</td>
+                  <td className="px-3 py-2 font-semibold text-slate-800 dark:text-slate-200">{currency(r.amount)}</td>
                 </tr>
               ))}
             </tbody>
@@ -191,24 +192,24 @@ export default function MenuKeuangan({
       </div>
 
       <div className="mb-4">
-        <h4 className="font-semibold mb-2">Pengeluaran Pemasaran</h4>
-        <div className="overflow-x-auto border rounded-lg">
+        <h4 className="font-semibold text-slate-700 dark:text-slate-300 mb-2">Pengeluaran Pemasaran</h4>
+        <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg">
           <table className="w-full text-sm">
-            <thead className="bg-slate-100 text-left">
+            <thead className="bg-slate-100 dark:bg-slate-700 text-left">
               <tr>
-                <th className="px-3 py-2">Tanggal</th>
-                <th className="px-3 py-2">Kanal</th>
-                <th className="px-3 py-2">Jumlah</th>
-                <th className="px-3 py-2">Catatan</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-300">Tanggal</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-300">Kanal</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-300">Jumlah</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-300">Catatan</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="bg-white dark:bg-slate-800">
               {mkt.map((r, i) => (
-                <tr key={i} className="border-t">
-                  <td className="px-3 py-2">{r.date}</td>
-                  <td className="px-3 py-2">{r.channel}</td>
-                  <td className="px-3 py-2 font-semibold">{currency(r.amount)}</td>
-                  <td className="px-3 py-2">{r.note || "-"}</td>
+                <tr key={i} className="border-t border-slate-100 dark:border-slate-700">
+                  <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{r.date}</td>
+                  <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{r.channel}</td>
+                  <td className="px-3 py-2 font-semibold text-slate-800 dark:text-slate-200">{currency(r.amount)}</td>
+                  <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{r.note || "-"}</td>
                 </tr>
               ))}
             </tbody>
@@ -216,10 +217,10 @@ export default function MenuKeuangan({
         </div>
       </div>
 
-      <div className="pt-3 border-t">
+      <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
         <div className="flex justify-between items-center">
-          <div className="text-sm text-slate-600">NET (Pendapatan - Pemasaran)</div>
-          <div className="text-lg font-bold">{currency(totals.net)}</div>
+          <div className="text-sm text-slate-600 dark:text-slate-300">NET (Pendapatan - Pemasaran)</div>
+          <div className="text-lg font-bold text-slate-800 dark:text-slate-100">{currency(totals.net)}</div>
         </div>
       </div>
     </div>
