@@ -109,8 +109,8 @@ export default function MenuKeuangan({
     <div className="bg-white bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 border-slate-700">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="font-bold text-slate-800 text-slate-100">Laporan Keuangan</h3>
-          <div className="text-xs text-slate-500 text-slate-400">{businessName} • Periode: {period}</div>
+          <h3 className="font-bold text-xl text-slate-800 dark:text-slate-100">Laporan Keuangan</h3>
+          <div className="text-xs text-slate-500 dark:text-slate-400">{businessName} • Periode: {period}</div>
         </div>
         <div className="flex gap-2">
           <button onClick={handleExportCSV} disabled={exporting} className="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg">
@@ -120,17 +120,17 @@ export default function MenuKeuangan({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="p-4 rounded-lg bg-slate-50 bg-slate-700 border border-slate-600">
-          <div className="text-xs text-slate-500 text-slate-400">Total Penjualan</div>
-          <div className="text-xl font-bold text-slate-800 text-slate-100">{currency(totals.totalSales)}</div>
+        <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
+          <div className="text-xs text-slate-500 dark:text-slate-400">Total Penjualan</div>
+          <div className="text-xl font-bold text-slate-800 dark:text-slate-100 mt-1">{currency(totals.totalSales)}</div>
         </div>
-        <div className="p-4 rounded-lg bg-slate-50 bg-slate-700 border border-slate-600">
-          <div className="text-xs text-slate-500 text-slate-400">Total Pendapatan</div>
-          <div className="text-xl font-bold text-slate-800 text-slate-100">{currency(totals.totalIncome)}</div>
+        <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
+          <div className="text-xs text-slate-500 dark:text-slate-400">Total Pendapatan</div>
+          <div className="text-xl font-bold text-slate-800 dark:text-slate-100 mt-1">{currency(totals.totalIncome)}</div>
         </div>
-        <div className="p-4 rounded-lg bg-slate-50 bg-slate-700 border border-slate-600">
-          <div className="text-xs text-slate-500 text-slate-400">Total Pemasaran</div>
-          <div className="text-xl font-bold text-slate-800 text-slate-100">{currency(totals.totalMarketing)}</div>
+        <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
+          <div className="text-xs text-slate-500 dark:text-slate-400">Total Pemasaran</div>
+          <div className="text-xl font-bold text-slate-800 dark:text-slate-100 mt-1">{currency(totals.totalMarketing)}</div>
         </div>
       </div>
 

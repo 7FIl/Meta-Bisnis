@@ -116,20 +116,6 @@ export default function MenuPengaturan({
         
         {/* TOP RIGHT ICONS CONTAINER (Theme Toggle & Delete Account) */}
         <div className="absolute top-4 right-4 flex gap-3">
-             {/* Theme Toggle Icon (Sun/Moon) */}
-            <button 
-                type="button"
-                onClick={handleThemeToggle}
-                title={isDarkMode ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
-                className="text-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 transition-colors"
-            >
-                {isDarkMode ? 
-                    <i className="fas fa-sun text-yellow-500"></i> : 
-                    <i className="fas fa-moon text-indigo-700"></i>
-                }
-            </button>
-            
-            {/* Delete Account Icon (Trash) */}
             <button 
                 type="button"
                 onClick={handleDeleteAccount}
