@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import FinancePanel from './FinancePanel';
+import EmployeeAbsence from './EmployeeAbsence';
 import MarketIntelligence from './MarketIntelligence';
 import MarketingStudio from './MarketingStudio';
 import AdModal from './AdModal';
@@ -9,8 +9,8 @@ import AdModal from './AdModal';
 export default function DashboardView({
   businessName,
   onLogout,
-  transactions,
-  onAddTransaction,
+  absences,
+  onAddAbsence,
   marketData,
   showAdModal,
   onShowAdModal,
@@ -98,10 +98,10 @@ export default function DashboardView({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* KOLOM 1: KEUANGAN (Input & Ringkasan) */}
-          <FinancePanel
-            transactions={transactions}
-            onAddTransaction={onAddTransaction}
+          {/* KOLOM 1: ABSEN KARYAWAN (Input & Ringkasan) */}
+          <EmployeeAbsence
+            absences={absences}
+            onAddAbsence={onAddAbsence}
           />
 
           {/* KOLOM 2 & 3: MARKET INTELLIGENCE & MARKETING */}

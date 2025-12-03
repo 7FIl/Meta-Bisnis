@@ -17,7 +17,7 @@ export default function Home() {
   const [currentView, setCurrentView] = useState('consultation'); // 'consultation' atau 'dashboard'
   const [businessData, setBusinessData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [transactions, setTransactions] = useState([]);
+  const [absences, setAbsences] = useState([]);
   const [showAdModal, setShowAdModal] = useState(false);
   const [marketData, setMarketData] = useState(null);
 
@@ -52,7 +52,7 @@ export default function Home() {
           await logoutUser();
           setCurrentView('consultation');
           setBusinessData(null);
-          setTransactions([]);
+          setAbsences([]);
           setShowAdModal(false);
           setMarketData(null);
         } catch (err) {
@@ -139,8 +139,8 @@ export default function Home() {
     }
   };
 
-  const handleAddTransaction = (transaction) => {
-    setTransactions([transaction, ...transactions]);
+  const handleAddAbsence = (absence) => {
+    setAbsences([absence, ...absences]);
   };
 
   // removed duplicate local handleLogout — use the auth-based `handleLogout` above
@@ -152,8 +152,8 @@ export default function Home() {
         businessName={businessData?.name || (user.displayName ? `${user.displayName}'s Business` : 'Dashboard')}
         userPhoto={user?.photoURL}
         onLogout={handleLogout}
-        transactions={transactions}
-        onAddTransaction={handleAddTransaction}
+        absences={absences}
+        onAddAbsence={handleAddAbsence}
         marketData={marketData}
         showAdModal={showAdModal}
         onShowAdModal={() => setShowAdModal(true)}

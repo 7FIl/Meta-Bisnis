@@ -16,20 +16,34 @@ export function useAlert() {
 // Alert Provider
 export function AlertProvider({ children }) {
   const [alerts, setAlerts] = useState([]);
+  const MAX_ALERTS = 3; // Batasan maksimal alert yang dapat ditampilkan
 
   const show = (title, message, onConfirm, onCancel, options = {}) => {
     const id = Date.now();
-    setAlerts((prev) => [...prev, { 
-      id, 
-      title, 
-      message, 
-      onConfirm,
-      onCancel,
-      type: options.type || 'info', // 'info', 'success', 'warning', 'error'
-      confirmText: options.confirmText || 'OK',
-      cancelText: options.cancelText || 'Batal',
-      hasCancel: options.hasCancel !== false, // default true
-    }]);
+    
+    // Jika sudah mencapai batas maksimal, hapus alert tertua terlebih dahulu
+    setAlerts((prev) => {
+      let newAlerts = [...prev];
+      if (newAlerts.length >= MAX_ALERTS) {
+        // Hapus alert pertama (tertua)
+        newAlerts.shift();
+      }
+      
+      newAlerts.push({ 
+        id, 
+        title, 
+        message, 
+        onConfirm,
+        onCancel,
+        type: options.type || 'info', // 'info', 'success', 'warning', 'error'
+        confirmText: options.confirmText || 'OK',
+        cancelText: options.cancelText || 'Batal',
+        hasCancel: options.hasCancel !== false, // default true
+      });
+      
+      return newAlerts;
+    });
+    
     return id;
   };
 
