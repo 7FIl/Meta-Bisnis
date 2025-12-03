@@ -136,47 +136,28 @@ export default function MarketIntelligence({ businessName, marketData }) {
           <canvas ref={chartRef}></canvas>
         </div>
 
-        {/* AI Analysis Text + News */}
+        {/* Berita Tren Pasar Hari Ini */}
         <div className="w-full md:w-1/2 flex flex-col">
           <h4 className="font-semibold text-sm text-slate-700 mb-2">
-            Insight AI Hari Ini:
+            Berita Tren Pasar Hari Ini
           </h4>
-          <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-            <p className="text-sm text-slate-600 leading-snug">
-              {marketData?.insight ||
-                'Tren positif terlihat stabil. Permintaan meningkat menjelang akhir pekan.'}
-            </p>
-          </div>
-          <div className="mt-3 flex gap-2">
-            <div className="flex-1 bg-slate-50 p-2 rounded border border-slate-100 text-center">
-              <div className="text-xs text-slate-500">Harga Rata-rata</div>
-              <div className="font-bold text-slate-700">
-                {marketData?.price || 'Rp 25.000'}
-              </div>
-            </div>
-            <div className="flex-1 bg-slate-50 p-2 rounded border border-slate-100 text-center">
-              <div className="text-xs text-slate-500">Pencarian</div>
-              <div className="font-bold text-green-600">Naik 12%</div>
-            </div>
-          </div>
 
-          {/* News panel */}
-          <div className="mt-4">
-            <h5 className="text-sm font-semibold text-slate-700 mb-2">Berita Tren Pasar Terkini</h5>
-            <div className="bg-white border border-slate-100 rounded-lg divide-y">
-              {newsList.map((n) => (
-                <div key={n.id} className="p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-800 truncate">{n.title}</p>
-                      <p className="text-xs text-slate-500">{n.source} • {n.time} • {n.location}</p>
-                      <p className="text-xs text-slate-600 mt-1 line-clamp-2">{n.snippet}</p>
-                    </div>
+          {/* News panel (replaces Insight AI) */}
+          <div className="bg-white border border-slate-100 rounded-lg divide-y">
+            {newsList.map((n) => (
+              <div key={n.id} className="p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-800 truncate">{n.title}</p>
+                    <p className="text-xs text-slate-500">{n.source} • {n.time} • {n.location}</p>
+                    {/* ringkasan berita dihapus */}
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
+
+          {/* Bagian "iklan cepat" dihapus */}
         </div>
       </div>
     </div>

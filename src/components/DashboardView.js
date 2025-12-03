@@ -1,22 +1,21 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import EmployeeAbsence from './EmployeeAbsence';
 import MarketIntelligence from './MarketIntelligence';
 import MarketingStudio from './MarketingStudio';
-import AdModal from './AdModal';
+import MenuPemasaranAI from './MenuPemasaranAI';
 
 export default function DashboardView({
   businessName,
+  userName,
   onLogout,
   absences,
   onAddAbsence,
   marketData,
-  showAdModal,
-  onShowAdModal,
-  onCloseAdModal,
 }) {
   const chartRef = useRef(null);
+  const [selectedMenu, setSelectedMenu] = useState('beranda'); // 'beranda' | 'pemasaran' | ...
 
   useEffect(() => {
     // Chart akan diinisialisasi di MarketIntelligence component
@@ -32,31 +31,42 @@ export default function DashboardView({
           </div>
           <p className="text-xs text-slate-500 mt-1">Managed by Meta Bisnis</p>
         </div>
+        {/* nav: gunakan setSelectedMenu untuk navigasi */}
         <nav className="p-4 space-y-1">
-          <a
-            href="#"
-            className="flex items-center gap-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg font-medium"
+          <button
+            onClick={() => setSelectedMenu('beranda')}
+            className={`w-full text-left flex items-center gap-3 px-4 py-3 ${selectedMenu === 'beranda' ? 'bg-blue-50 text-blue-700 rounded-lg font-medium' : 'text-slate-600 hover:bg-slate-50 rounded-lg font-medium transition-colors'}`}
           >
             <i className="fas fa-home w-5"></i> Beranda
-          </a>
-          <a
-            href="#"
-            className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-lg font-medium transition-colors"
+          </button>
+
+          <button
+            onClick={() => setSelectedMenu('pemasaran')}
+            className={`w-full text-left flex items-center gap-3 px-4 py-3 ${selectedMenu === 'pemasaran' ? 'bg-blue-50 text-blue-700 rounded-lg font-medium' : 'text-slate-600 hover:bg-slate-50 rounded-lg font-medium transition-colors'}`}
           >
             <i className="fas fa-bullhorn w-5"></i> Pemasaran AI
-          </a>
-          <a
-            href="#"
-            className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-lg font-medium transition-colors"
+          </button>
+
+          <button
+            onClick={() => setSelectedMenu('keuangan')}
+            className={`w-full text-left flex items-center gap-3 px-4 py-3 ${selectedMenu === 'keuangan' ? 'bg-blue-50 text-blue-700 rounded-lg font-medium' : 'text-slate-600 hover:bg-slate-50 rounded-lg font-medium transition-colors'}`}
           >
             <i className="fas fa-calculator w-5"></i> Keuangan
-          </a>
-          <a
-            href="#"
-            className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-50 rounded-lg font-medium transition-colors"
+          </button>
+
+          <button
+            onClick={() => setSelectedMenu('chat')}
+            className={`w-full text-left flex items-center gap-3 px-4 py-3 ${selectedMenu === 'chat' ? 'bg-blue-50 text-blue-700 rounded-lg font-medium' : 'text-slate-600 hover:bg-slate-50 rounded-lg font-medium transition-colors'}`}
+          >
+            <i className="fas fa-comments w-5"></i> Chat AI
+          </button>
+
+          <button
+            onClick={() => setSelectedMenu('pengaturan')}
+            className={`w-full text-left flex items-center gap-3 px-4 py-3 ${selectedMenu === 'pengaturan' ? 'bg-blue-50 text-blue-700 rounded-lg font-medium' : 'text-slate-600 hover:bg-slate-50 rounded-lg font-medium transition-colors'}`}
           >
             <i className="fas fa-cog w-5"></i> Pengaturan
-          </a>
+          </button>
         </nav>
         <div className="mt-auto p-4 border-t border-slate-100">
           <button
@@ -68,52 +78,46 @@ export default function DashboardView({
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Main Content - render berdasarkan selectedMenu */}
       <main className="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto">
-        {/* Header Mobile */}
-        <div className="md:hidden flex justify-between items-center mb-6">
-          <h1 className="font-bold text-lg">{businessName}</h1>
-          <button className="text-slate-600">
-            <i className="fas fa-bars"></i>
-          </button>
-        </div>
-
-        {/* Welcome Banner */}
-        <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl p-6 mb-8 shadow-lg flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold mb-1 text-slate-900">Halo, Bos! 👋</h1>
-            <p className="text-slate-800 text-sm">
-              AI telah menyiapkan strategi hari ini untuk{' '}
-              <span className="font-bold underline">{businessName}</span>.
-            </p>
-          </div>
-          <div className="hidden sm:block">
-            <button
-              onClick={onShowAdModal}
-              className="bg-white text-indigo-600 px-4 py-2 rounded-lg font-bold text-sm shadow hover:bg-blue-50 transition"
-            >
-              <i className="fas fa-ad mr-1"></i> Buat Iklan Cepat
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* KOLOM 1: ABSEN KARYAWAN (Input & Ringkasan) */}
-          <EmployeeAbsence
-            absences={absences}
-            onAddAbsence={onAddAbsence}
+        {selectedMenu === 'pemasaran' ? (
+          <MenuPemasaranAI
+            businessName={businessName}
+            onSave={(payload) => {
+              console.log('Konten disimpan:', payload);
+              // TODO: simpan ke backend atau state global jika perlu
+              setSelectedMenu('beranda'); // opsional: kembali ke beranda setelah simpan
+            }}
           />
-
-          {/* KOLOM 2 & 3: MARKET INTELLIGENCE & MARKETING */}
-          <div className="lg:col-span-2 space-y-6">
-            <MarketIntelligence businessName={businessName} marketData={marketData} />
-            <MarketingStudio businessName={businessName} />
+        ) : selectedMenu === 'chat' ? (
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h2 className="font-bold text-lg">Chat AI</h2>
+            <p className="text-sm text-slate-600 mt-2">Fitur chat AI akan dikembangkan di sini.</p>
           </div>
-        </div>
-      </main>
+        ) : (
+          // ...existing dashboard content (beranda)...
+          <>
+            <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl p-6 mb-8 shadow-lg flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold mb-1 text-slate-900">Halo, {userName}!</h1>
+                <p className="text-slate-800 text-sm">
+                  AI telah menyiapkan strategi hari ini untuk{' '}
+                  <span className="font-bold underline">{businessName}</span>.
+                </p>
+              </div>
+              {/* tombol lain jika ada */}
+            </div>
 
-      {/* Ad Modal */}
-      {showAdModal && <AdModal onClose={onCloseAdModal} />}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <EmployeeAbsence absences={absences} onAddAbsence={onAddAbsence} />
+              <div className="lg:col-span-2 space-y-6">
+                <MarketIntelligence businessName={businessName} marketData={marketData} />
+                <MarketingStudio businessName={businessName} />
+              </div>
+            </div>
+          </>
+        )}
+      </main>
     </div>
   );
 }
