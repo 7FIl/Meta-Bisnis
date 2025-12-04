@@ -3,7 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-export default function MenuPemasaranAI({ businessName, onSave, salesData }) {
+export default function MenuPemasaranAI({ businessName, onSave, salesData, onBack }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [duration, setDuration] = useState("00:30"); // format mm:ss
@@ -115,7 +115,21 @@ export default function MenuPemasaranAI({ businessName, onSave, salesData }) {
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-slate-800">Studio Konten Otomatis</h3>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              if (typeof onBack === "function") return onBack();
+              if (typeof window !== "undefined" && window.history && window.history.length) window.history.back();
+            }}
+            className="text-sm text-slate-00 hover:text-slate-900 flex items-center gap-2"
+          >
+            <i className="fas fa-arrow-left"></i>
+            <span>Kembali ke Dashboard</span>
+          </button>
+
+          <h1 className="text-xl font-bold">Pemasaran AI</h1>
+        </div>
+
         <span className="text-xs text-slate-500">{businessName}</span>
       </div>
 
@@ -209,19 +223,19 @@ export default function MenuPemasaranAI({ businessName, onSave, salesData }) {
             <div className="flex gap-2">
               <button
                 onClick={() => setChartType("radar")}
-                className={`px-3 py-1 text-xs rounded ${chartType === "radar" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
+                className={`px-3 py-1 text-xs rounded ${chartType === "radar" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-900"}`}
               >
                 Radar
               </button>
               <button
                 onClick={() => setChartType("line")}
-                className={`px-3 py-1 text-xs rounded ${chartType === "line" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
+                className={`px-3 py-1 text-xs rounded ${chartType === "line" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-900"}`}
               >
                 Line
               </button>
               <button
                 onClick={() => setChartType("bar")}
-                className={`px-3 py-1 text-xs rounded ${chartType === "bar" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
+                className={`px-3 py-1 text-xs rounded ${chartType === "bar" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-900"}`}
               >
                 Bar
               </button>

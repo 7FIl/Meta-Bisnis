@@ -146,18 +146,18 @@ export default function MenuChatAI({ businessName, onSend }) {
       <div className="flex items-center justify-between mb-3">
         <div>
           <h3 className="font-bold text-slate-800">Chat AI</h3>
-          <div className="text-xs text-slate-500">Analisis • Ide Keuangan • Penjualan — {businessName}</div>
+          <div className="text-xs text-slate 500">Analisis • Ide Keuangan • Penjualan — {businessName}</div>
         </div>
 
         <div className="flex gap-2">
-          <button onClick={() => setTopic("analysis")} className={`px-3 py-1 text-xs rounded ${topic === "analysis" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}>Analisis</button>
-          <button onClick={() => setTopic("finance")} className={`px-3 py-1 text-xs rounded ${topic === "finance" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}>Ide Keuangan</button>
-          <button onClick={() => setTopic("sales")} className={`px-3 py-1 text-xs rounded ${topic === "sales" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}>Penjualan</button>
+          <button onClick={() => setTopic("analysis")} className={`px-3 py-1 text-xs rounded ${topic === "analysis" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-900"}`}>Analisis</button>
+          <button onClick={() => setTopic("finance")} className={`px-3 py-1 text-xs rounded ${topic === "finance" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-900"}`}>Ide Keuangan</button>
+          <button onClick={() => setTopic("sales")} className={`px-3 py-1 text-xs rounded ${topic === "sales" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-900"}`}>Penjualan</button>
         </div>
       </div>
 
       <div ref={listRef} className="h-56 overflow-y-auto p-3 border border-slate-100 rounded-lg bg-slate-50 mb-3 space-y-3">
-        {messages.length === 0 && <div className="text-xs text-slate-500">Mulai percakapan atau pilih contoh cepat.</div>}
+        {messages.length === 0 && <div className="text-xs text-slate 500">Mulai percakapan atau pilih contoh cepat.</div>}
         {messages.map((m) => (
           <div key={m.id} className={m.role === "user" ? "text-right" : "text-left"}>
             <div className={`inline-block max-w-[85%] px-3 py-2 rounded-lg ${m.role === "user" ? "bg-blue-600 text-white" : "bg-white text-slate-800 border border-slate-100"}`}>

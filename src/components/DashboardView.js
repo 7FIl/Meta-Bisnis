@@ -137,11 +137,12 @@ export default function DashboardView({
             onSave={(payload) => {
               console.log('Konten disimpan:', payload);
             }}
+            onBack={() => setSelectedMenu('beranda')} 
           />
         ) : selectedMenu === 'chat' ? (
           <div className="space-y-4">
             <div className="flex items-center gap-3 mb-2">
-              <button onClick={() => setSelectedMenu('beranda')} className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
+              <button onClick={() => setSelectedMenu('beranda')} className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-900">
                 ← Kembali ke Dashboard
               </button>
               <h2 className="text-xl font-bold">Chat AI — {businessName}</h2>
@@ -226,7 +227,7 @@ export default function DashboardView({
           <>
             <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl p-6 mb-8 shadow-lg flex justify-between items-center">
               <div>
-                <h1 className="text-2xl font-bold mb-1 text-slate-900">Halo, {userName}!</h1>
+                <h1 className="text-xl font-bold">Halo, {userName}!</h1>
                 <p className="text-slate-800 text-sm">
                   AI telah menyiapkan strategi hari ini untuk{' '}
                   <span className="font-bold underline">{businessName}</span>.

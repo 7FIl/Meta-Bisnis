@@ -112,7 +112,7 @@ export default function MenuPengaturan({
   return (
     <div className="space-y-6">
       {/* Main Settings Card */}
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 animate-fade-in relative">
+      <div className="bg-white:bg-slate-600 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 animate-fade-in relative">
         
         {/* TOP RIGHT ICONS CONTAINER (Theme Toggle & Delete Account) */}
         <div className="absolute top-4 right-4 flex gap-3">
@@ -127,7 +127,7 @@ export default function MenuPengaturan({
         </div>
 
 
-        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-6 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-900 mb-6 flex items-center gap-2">
           <i className="fas fa-cog text-blue-600"></i> Pengaturan Akun & Bisnis
         </h2>
 
@@ -135,7 +135,7 @@ export default function MenuPengaturan({
           
           {/* User Name Setting */}
           <div className="p-4 border border-slate-100 dark:border-slate-700 rounded-lg">
-            <label htmlFor="userName" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+            <label htmlFor="userName" className="block text-sm font-semibold text-slate-700 dark:text-slate-900 mb-2">
               Nama Pengguna (Tampil di Dashboard)
             </label>
             <input
@@ -146,15 +146,15 @@ export default function MenuPengaturan({
               placeholder="Cth: Budi Santoso"
               required
               // Light mode: bg-white, text-slate-800
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white text-slate-800 dark:bg-slate-700 dark:text-slate-200"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white text-slate-900 dark:bg-slate-00 dark:text-slate-900"
               disabled={loading}
             />
-            <p className="text-xs text-slate-500 mt-1">Email: <span className="font-mono text-slate-600 dark:text-slate-400">{currentUserEmail}</span></p>
+            <p className="text-xs text-slate-900 mt-1">Email: <span className="font-mono text-slate-600 dark:text-slate-900">{currentUserEmail}</span></p>
           </div>
 
           {/* Business Name Setting (Name in Sidebar) */}
           <div className="p-4 border border-slate-100 dark:border-slate-700 rounded-lg">
-            <label htmlFor="businessName" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+            <label htmlFor="businessName" className="block text-sm font-semibold text-slate-700 dark:text-slate-900 mb-2">
               Nama Bisnis (Di Sidebar & Banner)
             </label>
             <input
@@ -164,14 +164,14 @@ export default function MenuPengaturan({
               onChange={(e) => setNewBusinessName(e.target.value)}
               placeholder="Cth: Kopi Pintar AI"
               required
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white text-slate-800 dark:bg-slate-700 dark:text-slate-200"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white text-slate-800 dark:bg-slate-00 dark:text-slate-900"
               disabled={loading}
             />
           </div>
           
           {/* Business Title (Title in Cards) */}
           <div className="p-4 border border-slate-100 dark:border-slate-700 rounded-lg">
-            <label htmlFor="businessTitle" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+            <label htmlFor="businessTitle" className="block text-sm font-semibold text-slate-700 dark:text-slate-900 mb-2">
               Judul Bisnis (Tagline/Deskripsi Singkat)
             </label>
             <input
@@ -181,14 +181,14 @@ export default function MenuPengaturan({
               onChange={(e) => setNewBusinessTitle(e.target.value)}
               placeholder="Cth: Platform AI untuk UMKM"
               required
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white text-slate-800 dark:bg-slate-700 dark:text-slate-200"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white text-slate-800 dark:bg-slate-00 dark:text-slate-900"
               disabled={loading}
             />
           </div>
 
           {/* Business Location */}
           <div className="p-4 border border-slate-100 dark:border-slate-700 rounded-lg">
-            <label htmlFor="businessLocation" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+            <label htmlFor="businessLocation" className="block text-sm font-semibold text-slate-700 dark:text-slate-900 mb-2">
               Lokasi Bisnis (Untuk Analisis Pasar)
             </label>
             <input
@@ -198,7 +198,7 @@ export default function MenuPengaturan({
               onChange={(e) => setNewBusinessLocation(e.target.value)}
               placeholder="Cth: Jakarta Selatan"
               required
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white text-slate-800 dark:bg-slate-700 dark:text-slate-200"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white text-slate-800 dark:bg-slate-00 dark:text-slate-900"
               disabled={loading}
             />
           </div>
@@ -206,7 +206,7 @@ export default function MenuPengaturan({
           {/* Business Image URL */}
           <div className="p-4 border border-slate-100 dark:border-slate-700 rounded-lg flex items-center gap-4">
             <div className="flex-1">
-              <label htmlFor="businessImage" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+              <label htmlFor="businessImage" className="block text-sm font-semibold text-slate-700 dark:text-slate-900 mb-2">
                 Gambar Bisnis (URL Logo/Ikon)
               </label>
               <input
@@ -215,12 +215,12 @@ export default function MenuPengaturan({
                 value={newBusinessImage}
                 onChange={(e) => setNewBusinessImage(e.target.value)}
                 placeholder="/globe.svg"
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white text-slate-800 dark:bg-slate-700 dark:text-slate-200"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white text-slate-800 dark:bg-slate-00 dark:text-slate-900"
                 disabled={loading}
               />
             </div>
             <div className="flex-shrink-0">
-                <p className="text-xs text-slate-500 mb-1">Preview:</p>
+                <p className="block text-sm font-semibold text-slate-700 dark:text-slate-900 mb-2">Preview:</p>
                 <Image
                     src={newBusinessImage || '/globe.svg'}
                     alt="Business Icon"
@@ -234,7 +234,7 @@ export default function MenuPengaturan({
           <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-700">
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white font-semibold py-2 px-6 rounded-lg transition-all flex items-center gap-2"
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 text-white font-semibold py-2 px-6 rounded-lg transition-all flex items-center gap-2"
               disabled={loading || isFormUnchanged}
             >
               {loading ? (
