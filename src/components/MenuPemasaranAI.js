@@ -179,7 +179,7 @@ export default function MenuPemasaranAI({ businessName, onSave, salesData, onBac
           {/* Tautan TikTok dengan Icon di Label */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center">
-              <i className="fab fa-tiktok mr-1 text-black"></i> Tautan TikTok
+              <i className="fab fa-tiktok mr-1"></i> Tautan TikTok
             </label>
             <input
               value={tiktokUrl}
