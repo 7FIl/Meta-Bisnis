@@ -54,8 +54,8 @@ export const registerWithEmail = async (email, password) => {
     // Send Firebase email verification link
     try {
       const continueUrl = (typeof window !== 'undefined' && process?.env?.NEXT_PUBLIC_APP_URL)
-        ? process.env.NEXT_PUBLIC_APP_URL + '/verify'
-        : (typeof window !== 'undefined' ? window.location.origin + '/verify' : undefined);
+        ? process.env.NEXT_PUBLIC_APP_URL + '/'
+        : (typeof window !== 'undefined' ? window.location.origin + '/' : undefined);
 
       const actionCodeSettings = continueUrl ? { url: continueUrl, handleCodeInApp: true } : undefined;
       try {
@@ -160,8 +160,8 @@ export const resendVerificationEmail = async ({ email, password } = {}) => {
     if (user.emailVerified) return { success: true, message: 'Email sudah terverifikasi.' };
 
     const continueUrl = (typeof window !== 'undefined' && process?.env?.NEXT_PUBLIC_APP_URL)
-      ? process.env.NEXT_PUBLIC_APP_URL + '/verify'
-      : (typeof window !== 'undefined' ? window.location.origin + '/verify' : undefined);
+      ? process.env.NEXT_PUBLIC_APP_URL + '/'
+      : (typeof window !== 'undefined' ? window.location.origin + '/' : undefined);
 
     const actionCodeSettings = continueUrl ? { url: continueUrl, handleCodeInApp: true } : undefined;
     try {

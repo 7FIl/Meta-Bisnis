@@ -2,6 +2,8 @@
 
 import { useRef, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
+import { applyActionCode } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import Image from "next/image";
 import {
   registerWithEmail,
@@ -103,6 +105,30 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
         if (e) setEmail(e);
         setShowAuthForm(true);
         setShowResendOption(false);
+      }
+    } catch (err) {
+      // ignore
+    }
+  }, [searchParams]);
+
+  // Handle Firebase oobCode when verification redirect uses continueUrl -> root
+  useEffect(() => {
+    try {
+      const oobCode = searchParams?.get('oobCode');
+      if (oobCode) {
+        (async () => {
+          try {
+            toast.info('Memverifikasi email...');
+            await applyActionCode(auth, oobCode);
+            toast.success('Verifikasi berhasil. Selamat datang kembali!');
+            // remove query params by replacing to root
+            try { router.replace('/'); } catch (e) { /* ignore */ }
+          } catch (err) {
+            console.error('Verifikasi gagal di root:', err);
+            toast.error(err?.message || 'Gagal memverifikasi email.');
+            try { router.replace('/'); } catch (e) { /* ignore */ }
+          }
+        })();
       }
     } catch (err) {
       // ignore
@@ -476,7 +502,7 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
                           <button
                             type="button"
                             onClick={() => setShowConfirmPasswordField((s) => !s)}
-                            className="absolute right-3 top-1/4 text-slate-500"
+                            className="absolute right-3 top-1/4  text-slate-500"
                             aria-label={showConfirmPasswordField ? 'Sembunyikan konfirmasi password' : 'Tampilkan konfirmasi password'}
                           >
                             <i className={`fas ${showConfirmPasswordField ? 'fa-eye' : 'fa-eye-slash'}`}></i>

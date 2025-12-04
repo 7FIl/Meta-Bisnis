@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { applyActionCode } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { resendVerificationEmail } from "@/lib/auth";
 
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
@@ -11,6 +12,11 @@ export default function VerifyEmailPage() {
   const [status, setStatus] = useState("idle");
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
+  const [resendRemaining, setResendRemaining] = useState(0);
+  const resendTimerRef = useRef(null);
+  const [showManualResend, setShowManualResend] = useState(false);
+  const [manualEmail, setManualEmail] = useState('');
+  const [manualPassword, setManualPassword] = useState('');
 
   useEffect(() => {
     const oobCode = searchParams?.get("oobCode");
@@ -36,6 +42,16 @@ export default function VerifyEmailPage() {
       setStatus('idle');
     }
   }, [searchParams]);
+
+  // cleanup resend timer on unmount
+  useEffect(() => {
+    return () => {
+      if (resendTimerRef.current) {
+        clearInterval(resendTimerRef.current);
+        resendTimerRef.current = null;
+      }
+    };
+  }, []);
   // Note: no code-based verification in this flow. We use Firebase email link verification.
 
   return (
@@ -104,14 +120,113 @@ export default function VerifyEmailPage() {
             )}
 
             <div className="flex justify-center gap-2">
-              <button onClick={() => router.push('/')} className="px-3 py-2 bg-blue-600 text-white rounded">Kembali ke Beranda</button>
-              <button onClick={() => {
-                // Force re-register flow by returning to consultation with needReRegister flag
-                const qs = new URLSearchParams();
-                qs.set('needReRegister', '1');
-                if (email) qs.set('email', email);
-                router.push('/?' + qs.toString());
-              }} className="px-3 py-2 bg-slate-100 rounded">Belum terima email?</button>
+                <button onClick={() => router.push('/')} className="px-3 py-2 bg-blue-600 text-white rounded">Kembali ke Beranda</button>
+                <div>
+                  <button
+                    onClick={async () => {
+                      if (resendRemaining > 0) return;
+                      try {
+                        let pending = null;
+                        if (typeof window !== 'undefined' && window.sessionStorage) {
+                          const raw = sessionStorage.getItem('pending_signup');
+                          if (raw) pending = JSON.parse(raw);
+                        }
+
+                        if (pending && pending.email && pending.password) {
+                          // use pending creds to resend
+                          setResendRemaining(30);
+                          resendTimerRef.current = setInterval(() => {
+                            setResendRemaining((s) => {
+                              if (s <= 1) {
+                                clearInterval(resendTimerRef.current);
+                                resendTimerRef.current = null;
+                                return 0;
+                              }
+                              return s - 1;
+                            });
+                          }, 1000);
+
+                          await resendVerificationEmail({ email: pending.email, password: pending.password });
+                          setMessage('Email verifikasi terkirim. Periksa inbox Anda.');
+                          return;
+                        }
+
+                        // No pending creds — show manual resend form
+                        setShowManualResend(true);
+                      } catch (err) {
+                        console.error('Gagal mengirim ulang verifikasi:', err);
+                        setMessage(err?.message || 'Gagal mengirim ulang verifikasi. Coba lagi nanti.');
+                        if (resendTimerRef.current) { clearInterval(resendTimerRef.current); resendTimerRef.current = null; }
+                        setResendRemaining(0);
+                      }
+                    }}
+                    disabled={resendRemaining > 0}
+                    className="px-3 py-2 bg-slate-100 rounded disabled:opacity-50"
+                  >
+                    {resendRemaining > 0 ? `Kirim ulang (${resendRemaining}s)` : 'Belum terima email?'}
+                  </button>
+
+                  {showManualResend && (
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (resendRemaining > 0) return;
+                        try {
+                          if (!manualEmail || !manualPassword) {
+                            setMessage('Masukkan email dan password untuk mengirim ulang verifikasi.');
+                            return;
+                          }
+                          setResendRemaining(30);
+                          resendTimerRef.current = setInterval(() => {
+                            setResendRemaining((s) => {
+                              if (s <= 1) {
+                                clearInterval(resendTimerRef.current);
+                                resendTimerRef.current = null;
+                                return 0;
+                              }
+                              return s - 1;
+                            });
+                          }, 1000);
+
+                          await resendVerificationEmail({ email: manualEmail, password: manualPassword });
+                          setMessage('Email verifikasi terkirim. Periksa inbox Anda.');
+                          setShowManualResend(false);
+                          setManualEmail('');
+                          setManualPassword('');
+                        } catch (err) {
+                          console.error('Manual resend failed:', err);
+                          setMessage(err?.message || 'Gagal mengirim ulang verifikasi.');
+                          if (resendTimerRef.current) { clearInterval(resendTimerRef.current); resendTimerRef.current = null; }
+                          setResendRemaining(0);
+                        }
+                      }}
+                      className="mt-3 space-y-2"
+                    >
+                      <div>
+                        <input
+                          type="email"
+                          value={manualEmail}
+                          onChange={(ev) => setManualEmail(ev.target.value)}
+                          placeholder="email@example.com"
+                          className="w-full px-3 py-2 border rounded"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="password"
+                          value={manualPassword}
+                          onChange={(ev) => setManualPassword(ev.target.value)}
+                          placeholder="password"
+                          className="w-full px-3 py-2 border rounded"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button type="submit" className="px-3 py-2 bg-blue-600 text-white rounded">Kirim Ulang</button>
+                        <button type="button" onClick={() => setShowManualResend(false)} className="px-3 py-2 bg-slate-100 rounded">Batal</button>
+                      </div>
+                    </form>
+                  )}
+                </div>
             </div>
 
             {message && <div className="mt-4 text-sm text-slate-700">{message}</div>}
