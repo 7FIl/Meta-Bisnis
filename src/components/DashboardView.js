@@ -134,6 +134,7 @@ export default function DashboardView({
           <MenuPemasaranAI
             businessName={businessName}
             salesData={marketData?.sales}
+            isDarkMode={isDarkMode}
             onSave={(payload) => {
               console.log('Konten disimpan:', payload);
             }}
