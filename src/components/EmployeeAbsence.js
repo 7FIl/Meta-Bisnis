@@ -22,7 +22,7 @@ export default function EmployeeAbsence({ absences, onAddAbsence }) {
   const [date, setDate] = useState('');
   const [reason, setReason] = useState('sakit');
   const [totalEmployees, setTotalEmployees] = useState(SAMPLE_EMPLOYEES.length);
-  
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -49,8 +49,20 @@ export default function EmployeeAbsence({ absences, onAddAbsence }) {
     setReason('sakit');
   };
 
+  // Helper to format date for comparison (YYYY-MM-DD)
+  const todayFormatted = new Date().toLocaleDateString('id-ID', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).split('/').reverse().join('-');
+
+  const todayAbsences = absences.filter((a) => a.date === todayFormatted);
+
+  // Re-calculate today's date for display consistency with existing code's logic
   const today = new Date().toLocaleDateString('id-ID');
-  const todayAbsences = absences.filter((a) => a.date === today);
+  // Re-filter using the original code's date logic for consistency, though it's imperfect for date strings
+  const todayAbsencesDisplay = absences.filter((a) => a.date === today);
+
 
   // Derived counts
   const absentCount = todayAbsences.length;
@@ -98,10 +110,11 @@ export default function EmployeeAbsence({ absences, onAddAbsence }) {
 
         {/* Employee List */}
         <div>
-          <h4 className="text-xs font-bold text-slate-600 uppercase mb-3 flex items-center gap-2">
+          <h4 className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase mb-3 flex items-center gap-2">
             <i className="fas fa-list text-blue-500"></i> Daftar Karyawan Hari Ini
           </h4>
-          <div className="bg-white border-2 border-slate-200 rounded-xl overflow-hidden">
+          {/* Warna container diubah menjadi putih (bg-white) di kedua mode */}
+          <div className="bg-white dark:bg-white border-2 border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
             <div className="max-h-60 overflow-y-auto scrollbar-hide pr-4">
               {SAMPLE_EMPLOYEES.map((employee, index) => {
                 const status = getEmployeeStatus(employee.name);
@@ -112,20 +125,21 @@ export default function EmployeeAbsence({ absences, onAddAbsence }) {
                   <div
                     key={employee.id}
                     className={`flex items-center justify-between p-3 transition-all ${
-                      isPresent ? 'bg-green-50' : 'bg-white'
-                    } ${!isLast ? 'border-b border-slate-100' : ''}`}
+                      // Sesuaikan warna item daftar untuk mode gelap agar kontras dengan container putih
+                      isPresent ? 'bg-green-50 dark:bg-green-200' : 'bg-white dark:bg-gray-50'
+                      } ${!isLast ? 'border-b border-white dark:border-white' : ''}`}
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div
-                        className={`w-3 h-3 rounded-full flex-shrink-0 ${
-                          isPresent ? 'bg-green-500' : 'bg-slate-300'
-                        }`}
+                        className={`w-3 h-3 rounded-full flex-shrink-0 ${isPresent ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-500'
+                          }`}
                       ></div>
                       <div className="min-w-0">
                         <p
                           className={`text-sm font-medium truncate ${
-                            isPresent ? 'text-green-700' : 'text-slate-700'
-                          }`}
+                            // Sesuaikan warna teks untuk mode gelap
+                            isPresent ? 'text-green-700 dark:text-green-800' : 'text-slate-700 dark:text-slate-800'
+                            }`}
                         >
                           {employee.name}
                         </p>
@@ -133,16 +147,17 @@ export default function EmployeeAbsence({ absences, onAddAbsence }) {
                     </div>
                     <span
                       className={`text-xs px-2.5 py-1 rounded-full whitespace-nowrap ml-2 font-semibold ${
+                        // Sesuaikan warna badge untuk mode gelap
                         isPresent
-                          ? 'bg-green-200 text-green-700'
+                          ? 'bg-green-200 dark:bg-green-300 text-green-700 dark:text-green-800'
                           : status === 'sakit'
-                          ? 'bg-red-200 text-red-700'
-                          : status === 'izin'
-                          ? 'bg-yellow-200 text-yellow-700'
-                          : status === 'cuti'
-                          ? 'bg-purple-200 text-purple-700'
-                          : 'bg-slate-200 text-slate-700'
-                      }`}
+                            ? 'bg-red-200 dark:bg-red-300 text-red-700 dark:text-red-800'
+                            : status === 'izin'
+                              ? 'bg-yellow-200 dark:bg-yellow-300 text-yellow-700 dark:text-yellow-800'
+                              : status === 'cuti'
+                                ? 'bg-purple-200 dark:bg-purple-300 text-purple-700 dark:text-purple-800'
+                                : 'bg-slate-200 dark:bg-slate-300 text-slate-700 dark:text-slate-800'
+                        }`}
                     >
                       {isPresent ? 'HADIR' : status.toUpperCase()}
                     </span>
@@ -216,11 +231,11 @@ export default function EmployeeAbsence({ absences, onAddAbsence }) {
               </div>
 
               {/* Absences List in Modal */}
-              {todayAbsences.length > 0 && (
+              {todayAbsencesDisplay.length > 0 && (
                 <div className="border-t pt-4">
                   <p className="text-xs font-semibold text-slate-500 uppercase mb-2">Absen Hari Ini</p>
                   <ul className="space-y-2 max-h-40 overflow-y-auto">
-                    {todayAbsences.map((a) => (
+                    {todayAbsencesDisplay.map((a) => (
                       <li
                         key={a.id}
                         className="flex items-center justify-between bg-slate-50 p-2.5 rounded border border-slate-200"
@@ -232,15 +247,14 @@ export default function EmployeeAbsence({ absences, onAddAbsence }) {
                           </p>
                         </div>
                         <span
-                          className={`text-xs px-2 py-1 rounded whitespace-nowrap ml-2 font-medium ${
-                            a.reason === 'sakit'
-                              ? 'bg-red-100 text-red-700'
-                              : a.reason === 'izin'
+                          className={`text-xs px-2 py-1 rounded whitespace-nowrap ml-2 font-medium ${a.reason === 'sakit'
+                            ? 'bg-red-100 text-red-700'
+                            : a.reason === 'izin'
                               ? 'bg-yellow-100 text-yellow-700'
                               : a.reason === 'cuti'
-                              ? 'bg-purple-100 text-purple-700'
-                              : 'bg-gray-100 text-gray-700'
-                          }`}
+                                ? 'bg-purple-100 text-purple-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}
                         >
                           {a.reason.toUpperCase()}
                         </span>

@@ -288,11 +288,123 @@ export default function MenuPengaturan({
 
   return (
     <div className="space-y-6">
+<<<<<<< HEAD
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Pengaturan nama dan lokasi */}
         <div className="space-y-6">
+=======
+      {/* Grid: kiri = profile (1/4), kanan = pengaturan lainnya (3/4) */}
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* LEFT: hanya logo (seperempat layar) */}
+        <div className="md:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+          <div className="relative flex flex-col items-center gap-4">
+            <div className="relative">
+              <Image
+                src={newBusinessImage || '/globe.svg'}
+                alt="Business Icon"
+                width={96}
+                height={96}
+                className="rounded-full object-cover border border-slate-200 dark:border-slate-600"
+              />
+            </div>
+            <p className="text-xs text-slate-500">Logo Bisnis</p>
+
+            {/* Upload Button Area */}
+            <div className="flex flex-col gap-2 w-full">
+              <label
+                htmlFor="logoUpload"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow cursor-pointer transition-colors text-center"
+                title={newBusinessImage ? "Ganti Foto" : "Upload Foto"}
+              >
+                {newBusinessImage && newBusinessImage !== '/globe.svg' ? "Ganti Foto" : "Upload Foto"}
+              </label>
+              <input
+                id="logoUpload"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      const result = event.target?.result;
+                      if (typeof result === 'string') {
+                        setNewBusinessImage(result);
+                        toast.success(newBusinessImage && newBusinessImage !== '/globe.svg' ? "Foto berhasil diganti" : "Foto berhasil diupload");
+                      }
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                className="hidden"
+                disabled={loading}
+              />
+
+              {/* Hapus Foto Button - hanya tampil jika ada foto */}
+              {newBusinessImage && newBusinessImage !== '/globe.svg' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewBusinessImage('/globe.svg');
+                    toast.success("Foto berhasil dihapus");
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow transition-colors"
+                  disabled={loading}
+                >
+                  Hapus Foto
+                </button>
+              )}
+            </div>
+
+            {/* Gunakan URL Toggle */}
+            <button
+              type="button"
+              onClick={() => setEditingLogo(!editingLogo)}
+              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              {editingLogo ? "Sembunyikan Input URL" : "Gunakan URL"}
+            </button>
+
+            {/* Input URL - conditional render */}
+            {editingLogo && (
+              <div className="w-full mt-2 border-t pt-4">
+                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-2">URL Logo</label>
+                <input
+                  type="url"
+                  value={newBusinessImage || ""}
+                  onChange={(e) => setNewBusinessImage(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 mb-3"
+                  placeholder="https://..."
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingLogo(false)}
+                    className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold"
+                  >
+                    Simpan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewBusinessImage(currentBusinessImage);
+                      setEditingLogo(false);
+                    }}
+                    className="flex-1 px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-semibold"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT: Nama Bisnis & Nama Pengguna + pengaturan lainnya (tiga perempat layar) */}
+        <div className="md:col-span-3 space-y-6">
+>>>>>>> aff111ec92477146a0c7d15ae6843f93065aeb49
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Pengaturan Bisnis & Akun</h3>
+            <h3 className="text-lg font-semibold text-slate-800:text-slate-900 mb-4">Pengaturan Bisnis & Akun</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Nama Bisnis */}
@@ -332,10 +444,10 @@ export default function MenuPengaturan({
                   value={newUserName}
                   onChange={(e) => setNewUserName(e.target.value)}
                   placeholder="Cth: Budi Santoso"
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-900 text-slate-900 dark:text-slate-900"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-900 text-slate :text-slate-900"
                   disabled={loading}
                 />
-                <p className="text-xs text-slate-900 mt-2">Email: <span className="font-mono">{currentUserEmail}</span></p>
+                <p className="text-xs text-slate-000">Email: <span className="font-mono">{currentUserEmail}</span></p>
               </div>
 
               {/* Judul Bisnis dihapus sesuai permintaan */}
@@ -345,7 +457,7 @@ export default function MenuPengaturan({
                 <select
                   value={newProvince}
                   onChange={(e) => { setNewProvince(e.target.value); setNewCity(""); }}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-800 text-slate-900 dark:text-slate-900"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-800 text-slate-900:text-slate-900"
                   disabled={loading}
                 >
                   <option value="">Pilih Provinsi</option>
@@ -360,7 +472,7 @@ export default function MenuPengaturan({
                 <select
                   value={newCity}
                   onChange={(e) => setNewCity(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-800 text-slate-900 dark:text-slate-900"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-800 text-slate-900:text-slate-900"
                   disabled={loading || !newProvince}
                 >
                   <option value="">{newProvince ? "(Opsional) Pilih Kota/Kabupaten" : "Pilih provinsi dulu"}</option>
