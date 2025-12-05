@@ -32,9 +32,8 @@ export default function DashboardView({
   currentUserEmail,
   onDeleteAccount,
   // NEW PROPS
-  businessTitle,
   businessLocation,
-  businessImage,
+  businessDescription,
 }) {
   const chartRef = useRef(null);
   const [selectedMenu, setSelectedMenu] = useState('beranda');
@@ -141,25 +140,41 @@ export default function DashboardView({
             onBack={() => setSelectedMenu('beranda')} 
           />
         ) : selectedMenu === 'chat' ? (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 mb-2">
+          <div className="flex flex-col h-[calc(100vh-120px)]">
+            <div className="flex items-center gap-3 mb-4">
               <button onClick={() => setSelectedMenu('beranda')} className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-900">
                 ← Kembali ke Dashboard
               </button>
-              <h2 className="text-xl font-bold">Chat AI — {businessName}</h2>
             </div>
 
             <MenuChatAI
               businessName={businessName}
-              onSend={async ({ topic, prompt }) => {
+              onSend={async ({ topic, prompt, history = [] }) => {
                 // Integrasi: panggil API server `/api/chat` (sesuai route yang tersedia)
                 try {
                   const url = new URL('/api/chat', window.location.origin).href;
+                  const businessContext = {
+                    name: businessName || 'Bisnis pengguna',
+                    location: businessLocation || 'Lokasi tidak ditentukan',
+                    description: businessDescription || 'Belum ada deskripsi',
+                  };
+                  const recent = history.slice(-12); // limit history to keep payload light
                   const payload = {
                     // include both `message` and `messages` for compatibility with the server route
                     message: prompt,
-                    messages: [{ role: 'user', content: prompt }],
+                    messages: [
+                      {
+                        role: 'system',
+                        content: `Gunakan konteks bisnis: nama=${businessContext.name}; lokasi=${businessContext.location}; deskripsi=${businessContext.description}. Jangan memaksakan penyebutan nama bisnis jika tidak relevan; gunakan hanya ketika membantu jawaban. Utamakan penalaran dan sampaikan jawaban singkat, terstruktur, dan langsung.`
+                      },
+                      ...recent.map((m) => ({
+                        role: m.role === 'ai' ? 'assistant' : 'user',
+                        content: m.text,
+                      })),
+                      { role: 'user', content: prompt }
+                    ],
                     topic,
+                    context: businessContext,
                   };
 
                   const res = await fetch(url, {
@@ -217,9 +232,8 @@ export default function DashboardView({
                 currentBusinessName={businessName}
                 currentUserName={userName}
                 currentUserEmail={currentUserEmail}
-                currentBusinessTitle={businessTitle}
                 currentBusinessLocation={businessLocation}
-                currentBusinessImage={businessImage}
+              currentBusinessDescription={businessDescription}
                 onUpdateSettings={onUpdateSettings}
                 onDeleteAccount={onDeleteAccount}
             />
@@ -239,7 +253,12 @@ export default function DashboardView({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <EmployeeAbsence absences={absences} onAddAbsence={onAddAbsence} />
               <div className="lg:col-span-2 space-y-6">
-                <MarketIntelligence businessName={businessName} marketData={marketData} />
+                <MarketIntelligence 
+                  businessName={businessName} 
+                  marketData={marketData}
+                  businessLocation={businessLocation}
+                  businessDescription={businessDescription}
+                />
                 <MarketingStudio businessName={businessName} />
               </div>
             </div>

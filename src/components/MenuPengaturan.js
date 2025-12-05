@@ -1,18 +1,14 @@
 // src/components/MenuPengaturan.js
 'use client';
 
-import Image from 'next/image';
-import { useEffect, useState, useRef } from 'react';
-import { auth, storage } from '@/lib/firebase';
-import { uploadBusinessLogo, MAX_LOGO_SIZE } from '@/lib/storage';
-import { ref as storageRef, deleteObject } from 'firebase/storage';
+import { useEffect, useState } from 'react';
 import { saveUserSettings } from '@/lib/userSettings';
 
 // fallback wrapper jika hook useToast/useAlert tidak tersedia
 const _toast = {
-  success: (m) => (hotToast ? hotToast.success(m) : window.alert(m)),
-  error: (m) => (hotToast ? hotToast.error(m) : window.alert(m)),
-  info: (m) => (hotToast ? hotToast(m) : window.alert(m)),
+  success: (m) => window.alert(m),
+  error: (m) => window.alert(m),
+  info: (m) => window.alert(m),
 };
 
 const _alert = {
@@ -175,9 +171,8 @@ export default function MenuPengaturan({
   currentBusinessName, 
   currentUserName, 
   currentUserEmail, 
-  currentBusinessTitle, 
   currentBusinessLocation, 
-  currentBusinessImage, 
+  currentBusinessDescription = '',
   onUpdateSettings, 
   onDeleteAccount 
 }) {
@@ -186,27 +181,19 @@ export default function MenuPengaturan({
   const alert = (typeof useAlert === 'function') ? useAlert() : _alert;
   const [newBusinessName, setNewBusinessName] = useState(currentBusinessName);
   const [newUserName, setNewUserName] = useState(currentUserName);
-  const [newBusinessTitle, setNewBusinessTitle] = useState(currentBusinessTitle);
   const [newBusinessLocation, setNewBusinessLocation] = useState(currentBusinessLocation);
-  const [newBusinessImage, setNewBusinessImage] = useState(currentBusinessImage);
+  const [newBusinessDescription, setNewBusinessDescription] = useState(currentBusinessDescription);
   // state
   const [newProvince, setNewProvince] = useState("");
   const [newCity, setNewCity] = useState("");
   const [loading, setLoading] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false); // State tema lokal hanya untuk icon
 
-  // NEW: local UI state to edit logo inline
-  const [editingLogo, setEditingLogo] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef(null);
-  const [logoStoragePath, setLogoStoragePath] = useState('');
-
   useEffect(() => {
     // Sync local form state
     setNewBusinessName(currentBusinessName);
     setNewUserName(currentUserName);
-    setNewBusinessTitle(currentBusinessTitle);
+    setNewBusinessDescription(currentBusinessDescription || '');
     // parse currentBusinessLocation into province/city if stored as "Province, City"
     if (currentBusinessLocation && currentBusinessLocation.includes(",")) {
       const parts = currentBusinessLocation.split(",").map(p => p.trim());
@@ -216,11 +203,10 @@ export default function MenuPengaturan({
       setNewProvince(currentBusinessLocation || "");
       setNewCity("");
     }
-    setNewBusinessImage(currentBusinessImage);
 
     // Sync theme state from HTML element
     setIsDarkMode(document.documentElement.classList.contains('dark'));
-  }, [currentBusinessName, currentUserName, currentBusinessTitle, currentBusinessLocation, currentBusinessImage]);
+  }, [currentBusinessName, currentUserName, currentBusinessLocation, currentBusinessDescription]);
 
   // Handler untuk toggle tema
   const handleThemeToggle = () => {
@@ -248,8 +234,8 @@ export default function MenuPengaturan({
         return;
     }
     
-    if (newBusinessTitle.trim() === "" || newProvince.trim() === "") {
-        toast.error("Judul Bisnis dan Provinsi tidak boleh kosong. (Kota opsional)");
+    if (newProvince.trim() === "") {
+      toast.error("Provinsi tidak boleh kosong. (Kota opsional)");
         setLoading(false);
         return;
     }
@@ -258,10 +244,9 @@ export default function MenuPengaturan({
         await onUpdateSettings({
             businessName: newBusinessName,
             userName: newUserName,
-            businessTitle: newBusinessTitle,
             // combine province + optional city
-            businessLocation: newProvince + (newCity ? `, ${newCity}` : ""),
-            businessImage: newBusinessImage,
+          businessLocation: newProvince + (newCity ? `, ${newCity}` : ""),
+          businessDescription: newBusinessDescription,
         });
 
         toast.success("Pengaturan berhasil diperbarui!");
@@ -297,157 +282,15 @@ export default function MenuPengaturan({
   const isFormUnchanged = 
     newBusinessName === currentBusinessName && 
     newUserName === currentUserName &&
-    newBusinessTitle === currentBusinessTitle &&
     newProvince === _currProvince &&
     newCity === _currCity &&
-    newBusinessImage === currentBusinessImage;
+    (newBusinessDescription || '') === (currentBusinessDescription || '');
 
   return (
     <div className="space-y-6">
-      {/* Grid: kiri = profile (1/4), kanan = pengaturan lainnya (3/4) */}
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* LEFT: hanya logo (seperempat layar) */}
-        <div className="md:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-          <div className="relative flex flex-col items-center gap-4">
-            <div className="relative">
-              <Image
-                src={newBusinessImage || '/globe.svg'}
-                alt="Business Icon"
-                width={96}
-                height={96}
-                className="rounded-full object-cover border border-slate-200 dark:border-slate-600"
-              />
-            </div>
-            <p className="text-xs text-slate-500">Logo Bisnis</p>
-
-            {/* Upload Button Area */}
-            <div className="flex flex-col gap-2 w-full">
-              <label
-                htmlFor="logoUpload"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow cursor-pointer transition-colors text-center"
-                title={newBusinessImage ? "Upload Logo" : "Ganti Logo"}
-              >
-                {newBusinessImage ? "Upload Foto" : "Ganti Foto"}
-              </label>
-              <input
-                id="logoUpload"
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                      const result = event.target?.result;
-                      if (typeof result === 'string') {
-                        setNewBusinessImage(result);
-                        toast.success(newBusinessImage ? "Foto berhasil diganti" : "Foto berhasil diupload");
-                      }
-                    };
-                    reader.readAsDataURL(file);
-                  }
-                }}
-                className="hidden"
-                disabled={loading}
-              />
-
-              {/* Hapus Foto Button - hanya tampil jika ada foto */}
-              {newBusinessImage && newBusinessImage !== '/globe.svg' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setNewBusinessImage('/globe.svg');
-                    toast.success("Foto berhasil dihapus");
-                  }}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow transition-colors"
-                  disabled={loading}
-                >
-                  Hapus Foto
-                </button>
-              )}
-            </div>
-
-            {editingLogo && (
-              <div className="w-full mt-2">
-                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">URL Logo (Opsional)</label>
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={newBusinessImage || ""}
-                    onChange={(e) => setNewBusinessImage(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
-                    placeholder="https://..."
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setEditingLogo(false)}
-                    className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
-                  >
-                    Simpan
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNewBusinessImage(currentBusinessImage);
-                      setEditingLogo(false);
-                    }}
-                    className="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm"
-                  >
-                    Batal
-                  </button>
-
-                  {newBusinessImage && newBusinessImage !== '/globe.svg' && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!auth || !auth.currentUser) return toast.error('Silakan login terlebih dahulu.');
-                        try {
-                          // Try to delete from storage (best-effort)
-                          if (logoStoragePath) {
-                            try {
-                              const dRef = storageRef(storage, logoStoragePath);
-                              await deleteObject(dRef);
-                            } catch (delErr) {
-                              console.warn('Failed deleting storage object (non-fatal)', delErr);
-                            }
-                          }
-
-                          setNewBusinessImage('/globe.svg');
-                          setLogoStoragePath('');
-                          try { 
-                            await saveUserSettings(auth.currentUser.uid, { businessImage: '/globe.svg', logoStoragePath: '' }); 
-                          } catch (e) { 
-                            console.warn('Failed to clear logo in Firestore', e); 
-                          }
-                          toast.success('Logo dihapus.');
-                          setEditingLogo(false);
-                        } catch (err) {
-                          console.error('Failed removing logo', err);
-                          toast.error('Gagal menghapus logo. Coba lagi.');
-                        }
-                      }}
-                      className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm"
-                      disabled={uploading}
-                    >
-                      Hapus
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setEditingLogo(!editingLogo)}
-              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              {editingLogo ? "Sembunyikan Input URL" : "Gunakan URL"}
-            </button>
-          </div>
-        </div>
-
-        {/* RIGHT: Nama Bisnis & Nama Pengguna + pengaturan lainnya (tiga perempat layar) */}
-        <div className="md:col-span-3 space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Pengaturan nama dan lokasi */}
+        <div className="space-y-6">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
             <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Pengaturan Bisnis & Akun</h3>
 
@@ -464,6 +307,20 @@ export default function MenuPengaturan({
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white :bg-slate-800 text-slate-900 dark:text-slate-900"
                   disabled={loading}
                 />
+              </div>
+
+              {/* Deskripsi Bisnis (Opsional) */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-900 mb-2">Deskripsi Bisnis (Opsional)</label>
+                <textarea
+                  id="businessDescription"
+                  value={newBusinessDescription}
+                  onChange={(e) => setNewBusinessDescription(e.target.value)}
+                  placeholder="Jelaskan produk, target pasar, dan keunggulan utama"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white :bg-slate-800 text-slate-900 dark:text-slate-900 min-h-[96px]"
+                  disabled={loading}
+                />
+                <p className="text-xs text-slate-500 mt-1">Opsional, tetapi membantu AI memahami bisnismu.</p>
               </div>
 
               {/* Nama Pengguna */}

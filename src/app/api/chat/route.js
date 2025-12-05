@@ -1,6 +1,44 @@
 // src/app/api/chat/route.js
 import { NextResponse } from 'next/server';
 
+// --- FUNGSI BARU: Integrasi Tavily API untuk Data Real-Time ---
+async function searchWeb(query) {
+  const apiKey = process.env.TAVILY_API_KEY;
+  if (!apiKey) {
+    console.warn("Tavily API Key belum diset!");
+    return null;
+  }
+
+  try {
+    const response = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        api_key: apiKey,
+        query: query,
+        search_depth: "basic", // 'basic' lebih cepat & hemat kuota
+        include_answer: true,  // Minta jawaban langsung (to-the-point)
+        max_results: 3         // Ambil 3 sumber teratas saja
+      })
+    });
+    
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    
+    // Format hasil agar mudah dibaca oleh AI
+    return `
+[DATA DARI INTERNET / REAL-TIME]:
+- Ringkasan: ${data.answer || 'Tidak ada ringkasan'}
+- Sumber Terkait:
+${data.results?.map(r => `  * ${r.title}: ${r.content}`).join('\n') || 'Tidak ada hasil'}
+    `;
+  } catch (error) {
+    console.error("Error searching web:", error);
+    return null;
+  }
+}
+
 export async function POST(req) {
   try {
     // 1. Terima payload dari Frontend
@@ -8,9 +46,20 @@ export async function POST(req) {
     // Accept either `message` (string) or `messages` (array of {role,content}) from frontend.
     const { message, history } = body;
     const messagesFromBody = Array.isArray(body.messages) ? body.messages : null;
-    console.log('[api/chat] incoming request', { hasMessage: !!message, hasMessagesArray: !!messagesFromBody, model: body.model, max_tokens: body.max_tokens });
+    console.log('[api/chat] incoming request', { hasMessage: !!message, hasMessagesArray: !!messagesFromBody, model: body.model, max_tokens: body.max_tokens, topic: body.topic });
     
     // history opsional: array percakapan sebelumnya jika frontend support context aware
+
+    // Coba cari data real-time dari Tavily untuk query tertentu
+    // (khususnya untuk topik analysis dan sales yang mungkin butuh konteks pasar)
+    let webData = '';
+    if (message && (body.topic === 'analysis' || body.topic === 'sales')) {
+      const webSearchResult = await searchWeb(message);
+      if (webSearchResult) {
+        webData = webSearchResult;
+        console.log('[api/chat] Tavily web search completed');
+      }
+    }
 
     // 2. Setup Payload ke Kolosal AI
     // System prompt berubah berdasarkan topik supaya client bisa meminta
@@ -21,13 +70,39 @@ export async function POST(req) {
     // answers for all three contexts: analysis, finance, sales.
     switch (body.topic) {
       case 'analysis':
-        systemPrompt = `Kamu adalah 'Meta Bisnis', asisten analisis bisnis untuk UMKM Indonesia. Untuk permintaan user, berikan ANALISIS BISNIS yang rapi dan mudah dibaca dalam Bahasa Indonesia. Struktur jawaban menjadi: (1) Ringkasan singkat 2-3 kalimat; (2) Temuan/insight utama (3-5 poin singkat); (3) Rekomendasi tindakan praktis (2-4 poin). Jangan bungkus jawaban dengan JSON, kode, atau penjelasan panjang — berikan teks saja dengan baris baru dan tanda '-' untuk poin.`;
+        systemPrompt = `Kamu adalah 'Meta Bisnis', asisten analisis bisnis untuk UMKM Indonesia. Untuk permintaan user, berikan ANALISIS BISNIS yang rapi dan mudah dibaca dalam Bahasa Indonesia. 
+
+Struktur jawaban menjadi:
+1. Mulai dengan pengantar singkat yang memberikan konteks (1-2 kalimat penjelasan umum tentang topik)
+2. Tuliskan analisis utama dalam paragraf singkat (2-3 kalimat) yang menjelaskan insight atau temuan penting
+3. Lanjutkan dengan "Poin-poin penting:" diikuti 3-5 bullet poin
+4. Tutup dengan "Rekomendasi:" dan berikan 2-4 saran aksi praktis dalam format bullet
+
+Gunakan bahasa yang friendly dan sederhana. Jangan bungkus jawaban dengan JSON atau kode - berikan teks murni saja.`;
         break;
       case 'finance':
-        systemPrompt = `Kamu adalah 'Meta Bisnis', asisten keuangan untuk UMKM Indonesia. Berikan jawaban TEKS dalam Bahasa Indonesia yang terstruktur: mulai dengan ringkasan singkat (1-2 kalimat), lalu langkah-langkah praktis untuk mengelola keuangan (2-5 poin), rekomendasi prioritas (2 poin), dan estimasi dampak singkat jika relevan. Gunakan bahasa yang sederhana dan bullet '-' untuk setiap poin. Jangan keluarkan JSON atau format kode.`;
+        systemPrompt = `Kamu adalah 'Meta Bisnis', asisten keuangan untuk UMKM Indonesia. Berikan jawaban TEKS dalam Bahasa Indonesia yang terstruktur dan mudah dipahami.
+
+Struktur jawaban:
+1. Mulai dengan penjelasan singkat tentang masalah keuangan yang dihadapi (1-2 kalimat)
+2. Berikan pemahaman dasar tentang solusi (1-2 paragraf penjelasan)
+3. Tuliskan "Langkah-langkah praktis:" diikuti 3-5 bullet poin dengan tindakan konkrit
+4. Tambahkan "Prioritas pengelolaan:" dengan 2-3 poin paling penting
+5. Jika relevan, jelaskan "Dampak yang dapat diharapkan:" dalam 1-2 poin
+
+Gunakan contoh nyata jika membantu. Jangan keluarkan JSON atau format kode - hanya teks.`;
         break;
       case 'sales':
-        systemPrompt = `Kamu adalah 'Meta Bisnis', asisten penjualan untuk UMKM Indonesia. Jawab dalam Bahasa Indonesia berupa strategi penjualan yang rapi: (1) ringkasan singkat, (2) 3-5 ide aksi (contoh materi promosi, kanal, taktik diskon), (3) contoh kalimat promosi singkat (1-2). Format jawaban sebagai teks biasa dengan baris baru dan bullet '-' untuk poin.`;
+        systemPrompt = `Kamu adalah 'Meta Bisnis', asisten penjualan untuk UMKM Indonesia. Jawab dalam Bahasa Indonesia berupa strategi penjualan yang terstruktur dan praktis.
+
+Struktur jawaban:
+1. Mulai dengan pengantar yang menjelaskan konsep atau tren penjualan yang relevan (1-2 kalimat)
+2. Jelaskan strategi umum dalam 1-2 paragraf yang memberikan konteks kenapa strategi ini penting
+3. Tuliskan "Ide aksi penjualan:" diikuti 4-6 bullet poin dengan taktik spesifik (promosi, kanal, penawaran spesial, dll)
+4. Tambahkan "Contoh pesan promosi yang bisa digunakan:" dengan 2-3 contoh kalimat singkat
+5. Tutup dengan "Metrik kesuksesan:" atau "Yang perlu diukur:" dalam 1-2 poin
+
+Format jawaban sebagai teks biasa dengan struktur yang jelas. Berikan contoh konkrit. Jangan gunakan JSON.`;
         break;
       default:
         // Fallback: preserve the original JSON-mode behavior for unspecified topics
@@ -35,10 +110,11 @@ export async function POST(req) {
     }
 
     // Gabungkan pesan: System Prompt + History (jika ada) + User Message Baru
+    // Jika ada web data, sertakan dalam pesan user untuk konteks real-time
     const messages = [
       { role: "system", content: systemPrompt },
       ...(history || []),
-      { role: "user", content: message }
+      { role: "user", content: webData ? `${message}\n\n${webData}` : message }
     ];
 
     // 3. Siapkan parameter permintaan ke Kolosal AI
@@ -114,7 +190,7 @@ export async function POST(req) {
       clearTimeout(timeout);
     }
 
-    console.log('[api/chat] kolosal status', kolosalRes.status, 'bodyPreview:', typeof kolosalData === 'object' ? JSON.stringify(kolosalData).slice(0,400) : String(kolosalData).slice(0,400));
+    console.log('[api/chat] kolosal status', kolosalRes.status, 'bodyPreview:', typeof kolosalData === 'object' ? JSON.stringify(kolosalData).slice(0,400) : String(kolosalData).slice(0,400), 'webDataUsed:', !!webData);
 
     if (!kolosalRes.ok) {
       console.error("Kolosal Error:", kolosalData);
@@ -153,7 +229,8 @@ export async function POST(req) {
     return NextResponse.json({ 
       success: true, 
       reply: replyText,
-      structured: structured
+      structured: structured,
+      webDataUsed: !!webData
     });
 
   } catch (error) {

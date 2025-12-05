@@ -26,9 +26,8 @@ export default function Home() {
   // State mock untuk nama pengguna dan bisnis yang bisa diubah di Pengaturan
   const [currentBusinessName, setCurrentBusinessName] = useState('Dashboard');
   const [currentUserName, setCurrentUserName] = useState('Pengguna');
-  const [currentBusinessTitle, setCurrentBusinessTitle] = useState('Platform AI untuk UMKM');
   const [currentBusinessLocation, setCurrentBusinessLocation] = useState('Lokasi Tidak Diketahui');
-  const [currentBusinessImage, setCurrentBusinessImage] = useState('/globe.svg');
+  const [currentBusinessDescription, setCurrentBusinessDescription] = useState('');
   
   // Auth listener
   useEffect(() => {
@@ -48,23 +47,20 @@ export default function Home() {
               // Apply loaded settings to state
               setCurrentBusinessName(settings.businessName || (currentUser.displayName ? `${currentUser.displayName}'s Business` : 'Dashboard Bisnis'));
               setCurrentUserName(settings.userName || (currentUser.displayName || currentUser.email.split('@')[0]));
-              setCurrentBusinessTitle(settings.businessTitle || 'Platform AI untuk UMKM');
               setCurrentBusinessLocation(settings.businessLocation || 'Lokasi Tidak Diketahui');
-              setCurrentBusinessImage(settings.businessImage || '/globe.svg');
+              setCurrentBusinessDescription(settings.businessDescription || '');
               // If you stored a businessData object, prefer that
               if (settings.businessData) setBusinessData(settings.businessData);
             } else {
               // No persisted settings — fall back to existing logic
               if (!businessData?.name) {
                 setCurrentBusinessName(currentUser.displayName ? `${currentUser.displayName}'s Business` : 'Dashboard Bisnis');
-                setCurrentBusinessTitle('Platform AI untuk UMKM');
                 setCurrentBusinessLocation('Lokasi Tidak Diketahui');
-                setCurrentBusinessImage('/globe.svg');
+                setCurrentBusinessDescription('');
               } else {
                 setCurrentBusinessName(businessData.name);
-                setCurrentBusinessTitle(businessData.title || 'Platform AI untuk UMKM');
                 setCurrentBusinessLocation(businessData.location || 'Lokasi Tidak Diketahui');
-                setCurrentBusinessImage(businessData.image || '/globe.svg');
+                setCurrentBusinessDescription(businessData.description || '');
               }
             }
           } catch (e) {
@@ -75,9 +71,8 @@ export default function Home() {
         // Reset to default mock names if no user or unverified
         setCurrentUserName('Pengguna');
         setCurrentBusinessName('Dashboard');
-        setCurrentBusinessTitle('Platform AI untuk UMKM');
         setCurrentBusinessLocation('Lokasi Tidak Diketahui');
-        setCurrentBusinessImage('/globe.svg');
+        setCurrentBusinessDescription('');
       }
     });
     return () => unsub();
@@ -107,9 +102,8 @@ export default function Home() {
           setMarketData(null);
           setCurrentBusinessName('Dashboard'); // Reset custom name
           setCurrentUserName('Pengguna'); // Reset custom name
-          setCurrentBusinessTitle('Platform AI untuk UMKM');
           setCurrentBusinessLocation('Lokasi Tidak Diketahui');
-          setCurrentBusinessImage('/globe.svg');
+          setCurrentBusinessDescription('');
         } catch (err) {
           console.error('Logout failed', err);
           alert.error('Gagal Keluar', 'Gagal logout: ' + err.message, () => {
@@ -211,9 +205,8 @@ export default function Home() {
         newBusinessData = parsed.name ? parsed : { name: 'Saran AI', description: JSON.stringify(parsed) };
         if (parsed.marketData) setMarketData(parsed.marketData);
         // Set new states based on parsed data (if available)
-        setCurrentBusinessTitle(parsed.title || 'Platform AI untuk UMKM');
         setCurrentBusinessLocation(parsed.location || 'Lokasi Tidak Diketahui');
-        setCurrentBusinessImage(parsed.image || '/globe.svg');
+        setCurrentBusinessDescription(parsed.description || parsed.summary || '');
       } else {
         const reply = data.reply || '';
         try {
@@ -249,8 +242,7 @@ export default function Home() {
     businessName, 
     userName, 
     businessLocation, 
-    businessTitle,    
-    businessImage     
+    businessDescription = currentBusinessDescription
   }) => {
     // 1. Update mock user name state
     setCurrentUserName(userName);
@@ -258,8 +250,7 @@ export default function Home() {
     // 2. Update business details state
     setCurrentBusinessName(businessName);
     setCurrentBusinessLocation(businessLocation);
-    setCurrentBusinessTitle(businessTitle);
-    setCurrentBusinessImage(businessImage);
+    setCurrentBusinessDescription(businessDescription);
     
     // 3. Update businessData object (if exists)
     if (businessData) {
@@ -267,20 +258,17 @@ export default function Home() {
             ...prev, 
             name: businessName, 
             location: businessLocation, 
-            title: businessTitle,
-            image: businessImage
+            description: businessDescription || prev.description
         }));
     } else {
         // If businessData is null, create a minimal version
         setBusinessData({ 
             name: businessName, 
-            description: 'Nama bisnis diatur manual', 
+            description: businessDescription || 'Nama bisnis diatur manual', 
             capital_est: 'N/A', 
             target_market: 'N/A', 
             challenge: 'N/A',
-            location: businessLocation,
-            title: businessTitle,
-            image: businessImage
+            location: businessLocation
         });
     }
     
@@ -291,8 +279,7 @@ export default function Home() {
         businessName,
         userName,
         businessLocation,
-        businessTitle,
-        businessImage,
+        businessDescription,
         businessData: businessData || null,
       };
 
@@ -316,9 +303,8 @@ export default function Home() {
         businessName={currentBusinessName}
         userName={currentUserName}
         currentUserEmail={user.email}
-        businessTitle={currentBusinessTitle}
         businessLocation={currentBusinessLocation}
-        businessImage={currentBusinessImage}
+        businessDescription={currentBusinessDescription}
         onLogout={handleLogout}
         absences={absences}
         onAddAbsence={handleAddAbsence}

@@ -35,16 +35,22 @@ export default function MenuChatAI({ businessName, onSend }) {
     return `Analisis singkat untuk "${prompt || businessName}": periksa pola minggu terakhir, identifikasi hari puncak, perkuat diferensiasi produk, dan benahi harga jika kompetitor menekan pasar.`;
   };
 
-  const sendToAI = async ({ topic, prompt }) => {
+  const sendToAI = async ({ topic, prompt, history = [] }) => {
     // If parent provided onSend, use it (allows server-side/openai integration)
     if (onSend) {
-      return await onSend({ topic, prompt });
+      return await onSend({ topic, prompt, history });
     }
     // Build payload (compatible with server route)
     const canned = sampleReplyFor(topic, prompt);
     const payload = {
       message: prompt,
-      messages: [{ role: 'user', content: prompt }],
+      messages: [
+        ...history.map((m) => ({
+          role: m.role === 'ai' ? 'assistant' : 'user',
+          content: m.text,
+        })),
+        { role: 'user', content: prompt }
+      ],
       model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
       max_tokens: 800,
       temperature: 0.7,
@@ -95,12 +101,13 @@ export default function MenuChatAI({ businessName, onSend }) {
     const trimmed = input.trim();
     if (!trimmed) return;
     const userMsg = { id: `u-${Date.now()}`, role: "user", text: trimmed, topic };
-    setMessages((m) => [...m, userMsg]);
+    const nextHistory = [...messages, userMsg];
+    setMessages(nextHistory);
     setInput("");
     setLoading(true);
 
     try {
-      const res = await sendToAI({ topic, prompt: trimmed });
+      const res = await sendToAI({ topic, prompt: trimmed, history: nextHistory });
       const aiText = (res && res.text) ? res.text : String(res || "");
       const aiMsg = { id: `a-${Date.now()}`, role: "ai", text: aiText, topic };
       setMessages((m) => [...m, aiMsg]);
@@ -141,64 +148,146 @@ export default function MenuChatAI({ businessName, onSend }) {
     showToast("Percakapan dibersihkan");
   };
 
+  const formatText = (text) => {
+    if (!text) return '';
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    const bolded = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    return bolded.replace(/\n/g, '<br />');
+  };
+
   return (
-    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h3 className="font-bold text-slate-800">Chat AI</h3>
-          <div className="text-xs text-slate 500">Analisis • Ide Keuangan • Penjualan — {businessName}</div>
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full">
+      <div className="p-4 border-b border-slate-100">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="font-bold text-slate-800">Chat AI — {businessName}</h3>
+            <div className="text-xs text-slate-500 mt-1">Tanya jawab bisnis dengan AI yang memahami konteks usahamu</div>
+          </div>
         </div>
 
-        <div className="flex gap-2">
-          <button onClick={() => setTopic("analysis")} className={`px-3 py-1 text-xs rounded ${topic === "analysis" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-900"}`}>Analisis</button>
-          <button onClick={() => setTopic("finance")} className={`px-3 py-1 text-xs rounded ${topic === "finance" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-900"}`}>Ide Keuangan</button>
-          <button onClick={() => setTopic("sales")} className={`px-3 py-1 text-xs rounded ${topic === "sales" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-900"}`}>Penjualan</button>
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={() => setTopic("analysis")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "analysis" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>
+            <i className="fas fa-chart-line mr-2"></i>Analisis
+          </button>
+          <button onClick={() => setTopic("finance")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "finance" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>
+            <i className="fas fa-coins mr-2"></i>Ide Keuangan
+          </button>
+          <button onClick={() => setTopic("sales")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "sales" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>
+            <i className="fas fa-handshake mr-2"></i>Penjualan
+          </button>
         </div>
       </div>
 
-      <div ref={listRef} className="h-56 overflow-y-auto p-3 border border-slate-100 rounded-lg bg-slate-50 mb-3 space-y-3">
-        {messages.length === 0 && <div className="text-xs text-slate 500">Mulai percakapan atau pilih contoh cepat.</div>}
+      <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 && (
+          <div className="h-full flex flex-col items-center justify-center text-center">
+            <div className="mb-4">
+              <i className="fas fa-comments text-4xl text-slate-300"></i>
+            </div>
+            <h4 className="text-sm font-semibold text-slate-600 mb-2">Mulai Percakapan</h4>
+            <p className="text-xs text-slate-500 max-w-xs mb-4">Tanyakan tentang pasar, strategi penjualan, atau pengelolaan keuangan bisnis Anda.</p>
+            <div className="grid grid-cols-1 gap-2 w-full">
+              <button 
+                onClick={() => handleQuick("Apa yang bisa saya lakukan untuk meningkatkan penjualan bulan ini?")}
+                className="px-3 py-2 text-xs bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition text-left border border-indigo-200"
+              >
+                💡 Tingkatkan penjualan
+              </button>
+              <button 
+                onClick={() => handleQuick("Bagaimana cara menganalisis kompetitor saya?")}
+                className="px-3 py-2 text-xs bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition text-left border border-blue-200"
+              >
+                📊 Analisis kompetitor
+              </button>
+              <button 
+                onClick={() => handleQuick("Bagaimana cara mengoptimalkan biaya operasional?")}
+                className="px-3 py-2 text-xs bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition text-left border border-green-200"
+              >
+                💰 Optimalkan keuangan
+              </button>
+            </div>
+          </div>
+        )}
         {messages.map((m) => (
-          <div key={m.id} className={m.role === "user" ? "text-right" : "text-left"}>
-            <div className={`inline-block max-w-[85%] px-3 py-2 rounded-lg ${m.role === "user" ? "bg-blue-600 text-white" : "bg-white text-slate-800 border border-slate-100"}`}>
-              <div className="text-sm whitespace-pre-wrap">{m.text}</div>
+          <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+            <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${m.role === "user" ? "bg-indigo-600 text-white rounded-br-none" : "bg-slate-100 text-slate-800 rounded-bl-none border border-slate-200"}`}>
+              <div
+                className="text-sm whitespace-pre-wrap leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: formatText(m.text) }}
+              ></div>
               {m.role === "ai" && (
                 <div className="mt-2 flex justify-end gap-2">
-                  <button onClick={() => handleCopy(m.text)} className="text-xs text-slate-500 hover:text-slate-700">Copy</button>
+                  <button onClick={() => handleCopy(m.text)} className="text-xs text-slate-500 hover:text-slate-700 bg-white px-2 py-1 rounded transition hover:bg-slate-50">
+                    <i className="fas fa-copy mr-1"></i>Copy
+                  </button>
                 </div>
               )}
             </div>
           </div>
         ))}
-        {loading && <div className="text-left text-sm text-slate-500">AI sedang mengetik...</div>}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="bg-slate-100 text-slate-600 px-4 py-3 rounded-lg rounded-bl-none">
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
+                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                </div>
+                <span className="text-xs">AI sedang menjawab...</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="border-t border-slate-100 p-4 space-y-3">
         <div className="flex gap-2">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={
               topic === "finance"
-                ? "Tanyakan ide pengelolaan keuangan atau optimasi margin..."
+                ? "Tanyakan tentang keuangan, margin, atau biaya..."
                 : topic === "sales"
-                ? "Tanyakan strategi sales / promosi..."
-                : "Minta analisis pasar, kompetitor, atau tren..."
+                ? "Tanyakan strategi penjualan atau promosi..."
+                : "Tanyakan tentang pasar, tren, atau analisis..."
             }
-            className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none"
-            onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
+            className="flex-1 px-4 py-3 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
           />
-          <button onClick={handleSend} disabled={loading} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
-            {loading ? "Mengirim..." : "Kirim"}
+          <button 
+            onClick={handleSend} 
+            disabled={loading || !input.trim()} 
+            className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white px-6 py-3 rounded-lg text-sm font-medium transition flex items-center gap-2"
+          >
+            <i className={`fas ${loading ? 'fa-spinner fa-spin' : 'fa-paper-plane'}`}></i>
+            {loading ? "Mengirim" : "Kirim"}
           </button>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-slate-500">
+        <div className="flex items-center justify-between text-xs">
           <div className="flex gap-2">
-            <button onClick={() => handleQuick(topic === "analysis" ? "Analisis lokasi usaha saya" : topic === "finance" ? "Bagaimana cara menekan biaya operasional?" : "Cara meningkatkan penjualan harian?")} className="px-2 py-1 rounded bg-slate-100">Cepat</button>
-            <button onClick={handleClear} className="px-2 py-1 rounded bg-slate-100">Bersihkan</button>
+            <button 
+              onClick={() => handleQuick(topic === "analysis" ? "Analisis lokasi usaha saya" : topic === "finance" ? "Bagaimana cara menekan biaya operasional?" : "Cara meningkatkan penjualan harian?")} 
+              className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
+            >
+              <i className="fas fa-lightning-bolt mr-1"></i>Contoh
+            </button>
+            <button 
+              onClick={handleClear} 
+              className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
+            >
+              <i className="fas fa-trash mr-1"></i>Bersihkan
+            </button>
           </div>
-          <div>Topik: <span className="font-medium capitalize">{topic}</span></div>
+          <div className="text-slate-500">
+            <span className="font-medium text-slate-700 capitalize">{topic}</span>
+            <span className="text-slate-400"> • {messages.length} pesan</span>
+          </div>
         </div>
       </div>
 
