@@ -120,9 +120,18 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
           try {
             toast.info('Memverifikasi email...');
             await applyActionCode(auth, oobCode);
-            toast.success('Verifikasi berhasil. Selamat datang kembali!');
-            // remove query params by replacing to root
-            try { router.replace('/'); } catch (e) { /* ignore */ }
+            toast.success('Verifikasi berhasil. Silakan masuk untuk melanjutkan.');
+            // After applying the action code, keep the app on root and open the login modal.
+            // Preserve the email query param if present so the login form is prefilled.
+            try {
+              const prefill = searchParams?.get('email');
+              const qs = new URLSearchParams();
+              qs.set('openLogin', '1');
+              if (prefill) qs.set('email', prefill);
+              router.replace('/?' + qs.toString());
+            } catch (e) {
+              try { router.replace('/'); } catch (ee) { /* ignore */ }
+            }
           } catch (err) {
             console.error('Verifikasi gagal di root:', err);
             toast.error(err?.message || 'Gagal memverifikasi email.');

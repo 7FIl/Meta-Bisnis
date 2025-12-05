@@ -120,20 +120,34 @@ export default function VerifyEmailPage() {
             )}
 
             <div className="flex justify-center gap-2">
-                <button onClick={() => router.push('/')} className="px-3 py-2 bg-blue-600 text-white rounded">Kembali ke Beranda</button>
+                <button onClick={() => {
+                  const qs = new URLSearchParams();
+                  qs.set('openLogin', '1');
+                  if (email) qs.set('email', email);
+                  router.push('/?' + qs.toString());
+                }} className="px-3 py-2 bg-blue-600 text-white rounded">Kembali ke Beranda</button>
                 <div>
                   <button
                     onClick={async () => {
                       if (resendRemaining > 0) return;
+                      // If manual form is already visible, do nothing (prevent layout churn)
+                      if (showManualResend) return;
+
+                      // Safely attempt to read pending signup from sessionStorage; if found, use it to resend.
+                      let pending = null;
                       try {
-                        let pending = null;
                         if (typeof window !== 'undefined' && window.sessionStorage) {
                           const raw = sessionStorage.getItem('pending_signup');
-                          if (raw) pending = JSON.parse(raw);
+                          if (raw) {
+                            try { pending = JSON.parse(raw); } catch (e) { pending = null; }
+                          }
                         }
+                      } catch (e) {
+                        pending = null;
+                      }
 
-                        if (pending && pending.email && pending.password) {
-                          // use pending creds to resend
+                      if (pending && pending.email && pending.password) {
+                        try {
                           setResendRemaining(30);
                           resendTimerRef.current = setInterval(() => {
                             setResendRemaining((s) => {
@@ -149,15 +163,10 @@ export default function VerifyEmailPage() {
                           await resendVerificationEmail({ email: pending.email, password: pending.password });
                           setMessage('Email verifikasi terkirim. Periksa inbox Anda.');
                           return;
+                        } catch (err) {
+                          console.error('Resend with pending creds failed:', err);
+                          // fall through to show manual form
                         }
-
-                        // No pending creds — show manual resend form
-                        setShowManualResend(true);
-                      } catch (err) {
-                        console.error('Gagal mengirim ulang verifikasi:', err);
-                        setMessage(err?.message || 'Gagal mengirim ulang verifikasi. Coba lagi nanti.');
-                        if (resendTimerRef.current) { clearInterval(resendTimerRef.current); resendTimerRef.current = null; }
-                        setResendRemaining(0);
                       }
                     }}
                     disabled={resendRemaining > 0}

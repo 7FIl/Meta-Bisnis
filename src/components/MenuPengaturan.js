@@ -2,7 +2,11 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { auth, storage } from '@/lib/firebase';
+import { uploadBusinessLogo, MAX_LOGO_SIZE } from '@/lib/storage';
+import { ref as storageRef, deleteObject } from 'firebase/storage';
+import { saveUserSettings } from '@/lib/userSettings';
 
 // fallback wrapper jika hook useToast/useAlert tidak tersedia
 const _toast = {
@@ -192,6 +196,10 @@ export default function MenuPengaturan({
 
   // NEW: local UI state to edit logo inline
   const [editingLogo, setEditingLogo] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  const [logoStoragePath, setLogoStoragePath] = useState('');
 
   useEffect(() => {
     // Sync local form state
@@ -321,32 +329,110 @@ export default function MenuPengaturan({
 
             {editingLogo && (
               <div className="w-full mt-2">
-                <label className="block text-xs text-slate-600 mb-1">URL Logo</label>
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={newBusinessImage || ""}
-                    onChange={(e) => setNewBusinessImage(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
-                    placeholder="https://..."
-                  />
+                <label className="block text-xs text-slate-600 mb-1">Upload Logo (maks 3 MB)</label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files && e.target.files[0];
+                    if (!file) return;
+                    if (file.size > MAX_LOGO_SIZE) {
+                      toast.error('File terlalu besar. Maksimum 3 MB.');
+                      e.target.value = '';
+                      return;
+                    }
+
+                    if (!auth || !auth.currentUser) {
+                      toast.error('Silakan login terlebih dahulu untuk mengunggah logo.');
+                      e.target.value = '';
+                      return;
+                    }
+
+                    setUploading(true);
+                    setUploadProgress(0);
+                    try {
+                      const { url, path } = await uploadBusinessLogo(auth.currentUser.uid, file, (pct) => {
+                        setUploadProgress(pct);
+                      });
+
+                      setNewBusinessImage(url);
+                      setLogoStoragePath(path || '');
+                      // Persist to Firestore
+                      try {
+                        await saveUserSettings(auth.currentUser.uid, { businessImage: url, logoStoragePath: path || '' });
+                      } catch (err) {
+                        console.warn('Failed to save businessImage to user settings', err);
+                      }
+
+                      toast.success('Logo berhasil diunggah.');
+                    } catch (err) {
+                      console.error('Upload failed', err);
+                      toast.error(err?.message || 'Gagal mengunggah logo.');
+                    } finally {
+                      setUploading(false);
+                      setUploadProgress(0);
+                      if (fileInputRef.current) fileInputRef.current.value = '';
+                      setEditingLogo(false);
+                    }
+                  }}
+                />
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                    className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+                    disabled={uploading}
+                  >
+                    {uploading ? `Mengunggah (${uploadProgress}%)` : (newBusinessImage ? 'Ganti Logo' : 'Upload Logo')}
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => setEditingLogo(false)}
-                    className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
-                  >
-                    Simpan
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNewBusinessImage(currentBusinessImage);
-                      setEditingLogo(false);
-                    }}
                     className="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm"
+                    disabled={uploading}
                   >
                     Batal
                   </button>
+
+                  {newBusinessImage && newBusinessImage !== '/globe.svg' && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!auth || !auth.currentUser) return toast.error('Silakan login terlebih dahulu.');
+                        try {
+                          // Try to delete from storage (best-effort)
+                          if (logoStoragePath) {
+                            try {
+                              const dRef = storageRef(storage, logoStoragePath);
+                              await deleteObject(dRef);
+                            } catch (delErr) {
+                              console.warn('Failed deleting storage object (non-fatal)', delErr);
+                            }
+                          }
+
+                          setNewBusinessImage('/globe.svg');
+                          setLogoStoragePath('');
+                          try { 
+                            await saveUserSettings(auth.currentUser.uid, { businessImage: '/globe.svg', logoStoragePath: '' }); 
+                          } catch (e) { 
+                            console.warn('Failed to clear logo in Firestore', e); 
+                          }
+                          toast.success('Logo dihapus.');
+                          setEditingLogo(false);
+                        } catch (err) {
+                          console.error('Failed removing logo', err);
+                          toast.error('Gagal menghapus logo. Coba lagi.');
+                        }
+                      }}
+                      className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm"
+                      disabled={uploading}
+                    >
+                      Hapus
+                    </button>
+                  )}
                 </div>
               </div>
             )}

@@ -53,9 +53,19 @@ export const registerWithEmail = async (email, password) => {
 
     // Send Firebase email verification link
     try {
-      const continueUrl = (typeof window !== 'undefined' && process?.env?.NEXT_PUBLIC_APP_URL)
-        ? process.env.NEXT_PUBLIC_APP_URL + '/'
-        : (typeof window !== 'undefined' ? window.location.origin + '/' : undefined);
+      const base = (typeof window !== 'undefined' && process?.env?.NEXT_PUBLIC_APP_URL)
+        ? (process.env.NEXT_PUBLIC_APP_URL || '')
+        : (typeof window !== 'undefined' ? window.location.origin : undefined);
+
+      let continueUrl = base ? (base.endsWith('/') ? base : base + '/') : undefined;
+      if (continueUrl && email) {
+        // Append query so that after verification user returns to root with login modal open
+        const qs = new URLSearchParams();
+        qs.set('openLogin', '1');
+        qs.set('email', email);
+        // attach query to continueUrl
+        continueUrl = continueUrl + '?' + qs.toString();
+      }
 
       const actionCodeSettings = continueUrl ? { url: continueUrl, handleCodeInApp: true } : undefined;
       try {
@@ -159,9 +169,18 @@ export const resendVerificationEmail = async ({ email, password } = {}) => {
     if (!user) throw new Error('Gagal menemukan user untuk dikirim verifikasi.');
     if (user.emailVerified) return { success: true, message: 'Email sudah terverifikasi.' };
 
-    const continueUrl = (typeof window !== 'undefined' && process?.env?.NEXT_PUBLIC_APP_URL)
-      ? process.env.NEXT_PUBLIC_APP_URL + '/'
-      : (typeof window !== 'undefined' ? window.location.origin + '/' : undefined);
+    // Build continueUrl including openLogin and email to bring user to login form after verification
+    const base = (typeof window !== 'undefined' && process?.env?.NEXT_PUBLIC_APP_URL)
+      ? (process.env.NEXT_PUBLIC_APP_URL || '')
+      : (typeof window !== 'undefined' ? window.location.origin : undefined);
+
+    let continueUrl = base ? (base.endsWith('/') ? base : base + '/') : undefined;
+    if (continueUrl && user && user.email) {
+      const qs = new URLSearchParams();
+      qs.set('openLogin', '1');
+      qs.set('email', user.email);
+      continueUrl = continueUrl + '?' + qs.toString();
+    }
 
     const actionCodeSettings = continueUrl ? { url: continueUrl, handleCodeInApp: true } : undefined;
     try {
