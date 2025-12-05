@@ -166,6 +166,7 @@ const PROVINCES = {
   "Papua Barat Daya": ["Kaimana","Teluk Arguni","Raja Ampat","Sorong Selatan"]
 };
 
+
 export default function MenuPengaturan({ 
   currentBusinessName, 
   currentUserName, 
@@ -308,26 +309,65 @@ export default function MenuPengaturan({
                 height={96}
                 className="rounded-full object-cover border border-slate-200 dark:border-slate-600"
               />
-              <button
-                type="button"
-                onClick={() => setEditingLogo(true)}
-                className="absolute -bottom-1 -right-1 bg-white/95 dark:bg-slate-800 p-1 rounded-full shadow hover:opacity-90"
-                title="Edit Logo"
-              >
-                <i className="fas fa-edit text-xs text-slate-700 dark:text-slate-200"></i>
-              </button>
             </div>
-            <p className="text-xs text-slate-500 mt-2">Logo Bisnis</p>
+            <p className="text-xs text-slate-500">Logo Bisnis</p>
+
+            {/* Upload Button Area */}
+            <div className="flex flex-col gap-2 w-full">
+              <label
+                htmlFor="logoUpload"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow cursor-pointer transition-colors text-center"
+                title={newBusinessImage ? "Upload Logo" : "Ganti Logo"}
+              >
+                {newBusinessImage ? "Upload Foto" : "Ganti Foto"}
+              </label>
+              <input
+                id="logoUpload"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      const result = event.target?.result;
+                      if (typeof result === 'string') {
+                        setNewBusinessImage(result);
+                        toast.success(newBusinessImage ? "Foto berhasil diganti" : "Foto berhasil diupload");
+                      }
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                className="hidden"
+                disabled={loading}
+              />
+
+              {/* Hapus Foto Button - hanya tampil jika ada foto */}
+              {newBusinessImage && newBusinessImage !== '/globe.svg' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewBusinessImage('/globe.svg');
+                    toast.success("Foto berhasil dihapus");
+                  }}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow transition-colors"
+                  disabled={loading}
+                >
+                  Hapus Foto
+                </button>
+              )}
+            </div>
 
             {editingLogo && (
               <div className="w-full mt-2">
-                <label className="block text-xs text-slate-600 mb-1">URL Logo</label>
+                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">URL Logo (Opsional)</label>
                 <div className="flex gap-2">
                   <input
                     type="url"
                     value={newBusinessImage || ""}
                     onChange={(e) => setNewBusinessImage(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                    className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                     placeholder="https://..."
                   />
                   <button
@@ -343,13 +383,21 @@ export default function MenuPengaturan({
                       setNewBusinessImage(currentBusinessImage);
                       setEditingLogo(false);
                     }}
-                    className="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm"
+                    className="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm"
                   >
                     Batal
                   </button>
                 </div>
               </div>
             )}
+
+            <button
+              type="button"
+              onClick={() => setEditingLogo(!editingLogo)}
+              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              {editingLogo ? "Sembunyikan Input URL" : "Gunakan URL"}
+            </button>
           </div>
         </div>
 
@@ -368,7 +416,7 @@ export default function MenuPengaturan({
                   value={newBusinessName}
                   onChange={(e) => setNewBusinessName(e.target.value)}
                   placeholder="Cth: Kopi Pintar AI"
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white :bg-slate-800 text-slate-900 dark:text-slate-900"
                   disabled={loading}
                 />
               </div>
@@ -382,10 +430,10 @@ export default function MenuPengaturan({
                   value={newUserName}
                   onChange={(e) => setNewUserName(e.target.value)}
                   placeholder="Cth: Budi Santoso"
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-900 text-slate-900 dark:text-slate-900"
                   disabled={loading}
                 />
-                <p className="text-xs text-slate-500 mt-2">Email: <span className="font-mono">{currentUserEmail}</span></p>
+                <p className="text-xs text-slate-900 mt-2">Email: <span className="font-mono">{currentUserEmail}</span></p>
               </div>
 
               {/* Judul Bisnis dihapus sesuai permintaan */}
@@ -395,7 +443,7 @@ export default function MenuPengaturan({
                 <select
                   value={newProvince}
                   onChange={(e) => { setNewProvince(e.target.value); setNewCity(""); }}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-800 text-slate-900 dark:text-slate-900"
                   disabled={loading}
                 >
                   <option value="">Pilih Provinsi</option>
@@ -410,7 +458,7 @@ export default function MenuPengaturan({
                 <select
                   value={newCity}
                   onChange={(e) => setNewCity(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-800 text-slate-900 dark:text-slate-900"
                   disabled={loading || !newProvince}
                 >
                   <option value="">{newProvince ? "(Opsional) Pilih Kota/Kabupaten" : "Pilih provinsi dulu"}</option>
