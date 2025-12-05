@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, deleteUser } from 'firebase/auth'; 
 import { auth } from '@/lib/firebase';
+import { saveUserSettings, getUserSettings } from '@/lib/userSettings';
 import { loginWithGoogle, logoutUser } from '@/lib/auth';
 import { useToast } from '@/components/Toast';
 import { useAlert } from '@/components/Alert';
@@ -39,19 +40,37 @@ export default function Home() {
         setCurrentView('dashboard');
         
         // Set initial business name (from consultation data or default)
-        if (!businessData?.name) {
-            setCurrentBusinessName(currentUser.displayName ? `${currentUser.displayName}'s Business` : 'Dashboard Bisnis');
-            // Set default initial values for new fields
-            setCurrentBusinessTitle('Platform AI untuk UMKM');
-            setCurrentBusinessLocation('Lokasi Tidak Diketahui');
-            setCurrentBusinessImage('/globe.svg'); 
-        } else {
-            setCurrentBusinessName(businessData.name);
-            // Derive/set new fields from businessData if available, otherwise default
-            setCurrentBusinessTitle(businessData.title || 'Platform AI untuk UMKM');
-            setCurrentBusinessLocation(businessData.location || 'Lokasi Tidak Diketahui');
-            setCurrentBusinessImage(businessData.image || '/globe.svg');
-        }
+        // Try to load persisted user settings from Firestore
+        (async () => {
+          try {
+            const settings = await getUserSettings(currentUser.uid);
+            if (settings) {
+              // Apply loaded settings to state
+              setCurrentBusinessName(settings.businessName || (currentUser.displayName ? `${currentUser.displayName}'s Business` : 'Dashboard Bisnis'));
+              setCurrentUserName(settings.userName || (currentUser.displayName || currentUser.email.split('@')[0]));
+              setCurrentBusinessTitle(settings.businessTitle || 'Platform AI untuk UMKM');
+              setCurrentBusinessLocation(settings.businessLocation || 'Lokasi Tidak Diketahui');
+              setCurrentBusinessImage(settings.businessImage || '/globe.svg');
+              // If you stored a businessData object, prefer that
+              if (settings.businessData) setBusinessData(settings.businessData);
+            } else {
+              // No persisted settings — fall back to existing logic
+              if (!businessData?.name) {
+                setCurrentBusinessName(currentUser.displayName ? `${currentUser.displayName}'s Business` : 'Dashboard Bisnis');
+                setCurrentBusinessTitle('Platform AI untuk UMKM');
+                setCurrentBusinessLocation('Lokasi Tidak Diketahui');
+                setCurrentBusinessImage('/globe.svg');
+              } else {
+                setCurrentBusinessName(businessData.name);
+                setCurrentBusinessTitle(businessData.title || 'Platform AI untuk UMKM');
+                setCurrentBusinessLocation(businessData.location || 'Lokasi Tidak Diketahui');
+                setCurrentBusinessImage(businessData.image || '/globe.svg');
+              }
+            }
+          } catch (e) {
+            console.error('Failed to load user settings:', e);
+          }
+        })();
       } else {
         // Reset to default mock names if no user or unverified
         setCurrentUserName('Pengguna');
@@ -266,6 +285,26 @@ export default function Home() {
     }
     
     // Simulate API delay
+    // persist settings to Firestore for this user (if available)
+    if (auth.currentUser) {
+      const payload = {
+        businessName,
+        userName,
+        businessLocation,
+        businessTitle,
+        businessImage,
+        businessData: businessData || null,
+      };
+
+      try {
+        await saveUserSettings(auth.currentUser.uid, payload);
+        toast.success('Pengaturan tersimpan.');
+      } catch (e) {
+        console.error('Failed saving settings:', e);
+        toast.error('Gagal menyimpan pengaturan. Coba lagi.');
+      }
+    }
+
     return new Promise(resolve => setTimeout(resolve, 500));
   };
 
