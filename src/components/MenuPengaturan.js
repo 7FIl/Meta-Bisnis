@@ -325,9 +325,9 @@ export default function MenuPengaturan({
               <label
                 htmlFor="logoUpload"
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow cursor-pointer transition-colors text-center"
-                title={newBusinessImage ? "Upload Logo" : "Ganti Logo"}
+                title={newBusinessImage ? "Ganti Foto" : "Upload Foto"}
               >
-                {newBusinessImage ? "Upload Foto" : "Ganti Foto"}
+                {newBusinessImage && newBusinessImage !== '/globe.svg' ? "Ganti Foto" : "Upload Foto"}
               </label>
               <input
                 id="logoUpload"
@@ -341,7 +341,7 @@ export default function MenuPengaturan({
                       const result = event.target?.result;
                       if (typeof result === 'string') {
                         setNewBusinessImage(result);
-                        toast.success(newBusinessImage ? "Foto berhasil diganti" : "Foto berhasil diupload");
+                        toast.success(newBusinessImage && newBusinessImage !== '/globe.svg' ? "Foto berhasil diganti" : "Foto berhasil diupload");
                       }
                     };
                     reader.readAsDataURL(file);
@@ -367,21 +367,31 @@ export default function MenuPengaturan({
               )}
             </div>
 
+            {/* Gunakan URL Toggle */}
+            <button
+              type="button"
+              onClick={() => setEditingLogo(!editingLogo)}
+              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              {editingLogo ? "Sembunyikan Input URL" : "Gunakan URL"}
+            </button>
+
+            {/* Input URL - conditional render */}
             {editingLogo && (
-              <div className="w-full mt-2">
-                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">URL Logo (Opsional)</label>
+              <div className="w-full mt-2 border-t pt-4">
+                <label className="block text-xs text-slate-600 dark:text-slate-400 mb-2">URL Logo</label>
+                <input
+                  type="url"
+                  value={newBusinessImage || ""}
+                  onChange={(e) => setNewBusinessImage(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 mb-3"
+                  placeholder="https://..."
+                />
                 <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={newBusinessImage || ""}
-                    onChange={(e) => setNewBusinessImage(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
-                    placeholder="https://..."
-                  />
                   <button
                     type="button"
                     onClick={() => setEditingLogo(false)}
-                    className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+                    className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold"
                   >
                     Simpan
                   </button>
@@ -391,65 +401,20 @@ export default function MenuPengaturan({
                       setNewBusinessImage(currentBusinessImage);
                       setEditingLogo(false);
                     }}
-                    className="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm"
+                    className="flex-1 px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-semibold"
                   >
                     Batal
                   </button>
-
-                  {newBusinessImage && newBusinessImage !== '/globe.svg' && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!auth || !auth.currentUser) return toast.error('Silakan login terlebih dahulu.');
-                        try {
-                          // Try to delete from storage (best-effort)
-                          if (logoStoragePath) {
-                            try {
-                              const dRef = storageRef(storage, logoStoragePath);
-                              await deleteObject(dRef);
-                            } catch (delErr) {
-                              console.warn('Failed deleting storage object (non-fatal)', delErr);
-                            }
-                          }
-
-                          setNewBusinessImage('/globe.svg');
-                          setLogoStoragePath('');
-                          try { 
-                            await saveUserSettings(auth.currentUser.uid, { businessImage: '/globe.svg', logoStoragePath: '' }); 
-                          } catch (e) { 
-                            console.warn('Failed to clear logo in Firestore', e); 
-                          }
-                          toast.success('Logo dihapus.');
-                          setEditingLogo(false);
-                        } catch (err) {
-                          console.error('Failed removing logo', err);
-                          toast.error('Gagal menghapus logo. Coba lagi.');
-                        }
-                      }}
-                      className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm"
-                      disabled={uploading}
-                    >
-                      Hapus
-                    </button>
-                  )}
                 </div>
               </div>
             )}
-
-            <button
-              type="button"
-              onClick={() => setEditingLogo(!editingLogo)}
-              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              {editingLogo ? "Sembunyikan Input URL" : "Gunakan URL"}
-            </button>
           </div>
         </div>
 
         {/* RIGHT: Nama Bisnis & Nama Pengguna + pengaturan lainnya (tiga perempat layar) */}
         <div className="md:col-span-3 space-y-6">
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Pengaturan Bisnis & Akun</h3>
+            <h3 className="text-lg font-semibold text-slate-800:text-slate-900 mb-4">Pengaturan Bisnis & Akun</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Nama Bisnis */}
@@ -475,10 +440,10 @@ export default function MenuPengaturan({
                   value={newUserName}
                   onChange={(e) => setNewUserName(e.target.value)}
                   placeholder="Cth: Budi Santoso"
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-900 text-slate-900 dark:text-slate-900"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-900 text-slate :text-slate-900"
                   disabled={loading}
                 />
-                <p className="text-xs text-slate-900 mt-2">Email: <span className="font-mono">{currentUserEmail}</span></p>
+                <p className="text-xs text-slate-000">Email: <span className="font-mono">{currentUserEmail}</span></p>
               </div>
 
               {/* Judul Bisnis dihapus sesuai permintaan */}
@@ -488,7 +453,7 @@ export default function MenuPengaturan({
                 <select
                   value={newProvince}
                   onChange={(e) => { setNewProvince(e.target.value); setNewCity(""); }}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-800 text-slate-900 dark:text-slate-900"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-800 text-slate-900:text-slate-900"
                   disabled={loading}
                 >
                   <option value="">Pilih Provinsi</option>
@@ -503,7 +468,7 @@ export default function MenuPengaturan({
                 <select
                   value={newCity}
                   onChange={(e) => setNewCity(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-800 text-slate-900 dark:text-slate-900"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-800 text-slate-900:text-slate-900"
                   disabled={loading || !newProvince}
                 >
                   <option value="">{newProvince ? "(Opsional) Pilih Kota/Kabupaten" : "Pilih provinsi dulu"}</option>
