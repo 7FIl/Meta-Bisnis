@@ -18,34 +18,63 @@ const SAMPLE_EMPLOYEES = [
 
 export default function EmployeeAbsence({ absences, onAddAbsence }) {
   const [isEditMode, setIsEditMode] = useState(false);
-  const [name, setName] = useState('');
-  const [date, setDate] = useState('');
+  const [selectedEmployee, setSelectedEmployee] = useState('');
+  const [selectedDay, setSelectedDay] = useState('');
   const [reason, setReason] = useState('sakit');
   const [totalEmployees, setTotalEmployees] = useState(SAMPLE_EMPLOYEES.length);
 
+  // Helper function: Generate list of allowed dates (today + 6 days back = 7 days total)
+  const getAvailableDates = () => {
+    const dates = [];
+    const today = new Date();
+    
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      
+      const dayName = date.toLocaleDateString('id-ID', { weekday: 'short' });
+      const dayNum = date.getDate();
+      
+      dates.push({
+        value: dateStr,
+        label: i === 0 ? `Hari Ini (${dayNum})` : `${dayName} (${dayNum})`,
+        date: date
+      });
+    }
+    
+    return dates;
+  };
+
+  const availableDates = getAvailableDates();
+  const currentMonth = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!name || !date) return;
+    if (!selectedEmployee || !selectedDay) return;
 
     const absence = {
       id: Date.now(),
-      name,
-      date,
+      name: selectedEmployee,
+      date: selectedDay,
       reason,
       timestamp: new Date().toLocaleString('id-ID'),
     };
 
     onAddAbsence(absence);
-    setName('');
-    setDate('');
+    setSelectedEmployee('');
+    setSelectedDay('');
     setReason('sakit');
   };
 
   const handleCloseEdit = () => {
     setIsEditMode(false);
-    setName('');
-    setDate('');
+    setSelectedEmployee('');
+    setSelectedDay('');
     setReason('sakit');
   };
 
@@ -115,7 +144,7 @@ export default function EmployeeAbsence({ absences, onAddAbsence }) {
           </h4>
           {/* Warna container diubah menjadi putih (bg-white) di kedua mode */}
           <div className="bg-white dark:bg-white border-2 border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-            <div className="max-h-60 overflow-y-auto scrollbar-hide pr-4">
+            <div className="max-h-60 overflow-y-auto scrollbar-hide">
               {SAMPLE_EMPLOYEES.map((employee, index) => {
                 const status = getEmployeeStatus(employee.name);
                 const isPresent = status === 'hadir';
@@ -189,29 +218,40 @@ export default function EmployeeAbsence({ absences, onAddAbsence }) {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Nama Karyawan
+                  <i className="fas fa-user mr-1"></i> Pilih Karyawan
                 </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                <select
+                  value={selectedEmployee}
+                  onChange={(e) => setSelectedEmployee(e.target.value)}
                   required
-                  placeholder="Cth: Budi, Siti, Ahmad"
-                  className="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                />
+                  className="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white cursor-pointer"
+                >
+                  <option value="">-- Pilih Karyawan --</option>
+                  {SAMPLE_EMPLOYEES.map((emp) => (
+                    <option key={emp.id} value={emp.name}>
+                      {emp.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Tanggal
+                  <i className="fas fa-calendar mr-1"></i> Tanggal ({currentMonth})
                 </label>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                <select
+                  value={selectedDay}
+                  onChange={(e) => setSelectedDay(e.target.value)}
                   required
-                  className="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                />
+                  className="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white cursor-pointer"
+                >
+                  <option value="">-- Pilih Tanggal (Maks 7 Hari) --</option>
+                  {availableDates.map((dateObj) => (
+                    <option key={dateObj.value} value={dateObj.value}>
+                      {dateObj.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
