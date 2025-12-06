@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import * as XLSX from 'xlsx';
 // Import useToast dari komponen yang sudah ada
 import { useToast } from './Toast';
 
@@ -158,16 +159,16 @@ const BUSINESS_TYPES = [
 ];
 // --- END PROVINCES DATA ---
 
-export default function OnboardingView({ user, onConsultAI, onSetupComplete, businessData, loading }) {
+export default function OnboardingView({ user, onConsultAI, onSetupComplete, businessData, loading, businessType = '' }) {
     const toast = useToast();
     // MODIFIED: Default selectedSide to 'ai' to skip the initial choice screen
     const [selectedSide, setSelectedSide] = useState('ai'); // 'ai' | 'manual' 
     const [aiInput, setAiInput] = useState('');
     const [manualForm, setManualForm] = useState({
-        businessName: '',
-        businessDescription: '',
+        businessName: businessData?.name || '',
+        businessDescription: businessData?.description || '',
         userName: user?.displayName || user?.email?.split('@')[0] || '',
-        businessType: '',
+        businessType: businessType || businessData?.businessType || '',
         province: '',
         city: ''
     });
@@ -248,8 +249,212 @@ export default function OnboardingView({ user, onConsultAI, onSetupComplete, bus
              toast.warning('Anda harus mendapatkan rekomendasi AI terlebih dahulu.');
         }
     }
+<<<<<<< Updated upstream
     
     // RENDER LOGIC MODIFIED: Always show one single-column view
+=======
+
+    // Generate Excel dengan detail breakdown modal dan financial metrics (sama seperti ConsultationView)
+    const generateCapitalExcel = () => {
+        if (!businessData) return;
+
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+
+        // Sheet 1: Capital Breakdown (Items)
+        const capitalItems = businessData.capitalBreakdown || [
+            { item: 'Data estimasi modal tidak tersedia dari AI', quantity: 1, unit: 'set', price: 0, total: 0 },
+        ];
+
+        const totalModal = capitalItems.reduce((sum, item) => sum + (item.total || 0), 0);
+
+        const capitalData = [
+            ['RINCIAN ESTIMASI MODAL USAHA'],
+            ['Nama Bisnis:', businessData.name || '-'],
+            ['Tanggal:', new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })],
+            ['Estimasi Range:', businessData.capital_est || '-'],
+            [],
+            ['No', 'Item / Barang', 'Jumlah', 'Satuan', 'Harga Satuan (Rp)', 'Total (Rp)'],
+            ...capitalItems.map((item, idx) => [
+                idx + 1,
+                item.item,
+                item.quantity,
+                item.unit,
+                item.price?.toLocaleString('id-ID') || 0,
+                item.total?.toLocaleString('id-ID') || 0
+            ]),
+            [],
+            ['', 'TOTAL MODAL YANG DIBUTUHKAN', '', '', '', totalModal.toLocaleString('id-ID')],
+            [],
+            ['CATATAN:'],
+            ['- Harga dapat berubah sesuai kondisi pasar dan lokasi'],
+            ['- Sebaiknya tambahkan buffer 10-20% untuk biaya tak terduga'],
+            ['- Konsultasikan dengan supplier lokal untuk harga terkini'],
+        ];
+
+        const ws1 = XLSX.utils.aoa_to_sheet(capitalData);
+        ws1['!cols'] = [{ wch: 5 }, { wch: 35 }, { wch: 10 }, { wch: 10 }, { wch: 20 }, { wch: 20 }];
+        XLSX.utils.book_append_sheet(wb, ws1, 'Rincian Modal');
+
+        // Sheet 2: Financial Metrics with real calculations
+        const metrics = businessData.financialMetrics || {
+            bep_units: 'N/A',
+            bep_revenue: 0,
+            bep_months: 12,
+            roi_percentage: 0,
+            roi_months: 12,
+            gross_margin_percentage: 0,
+            monthly_revenue_estimate: 0,
+            monthly_cost_estimate: 0,
+            monthly_profit_estimate: 0,
+            avg_selling_price: 0,
+            avg_cost_per_unit: 0
+        };
+
+        const monthlyProfit = (metrics.monthly_revenue_estimate || 0) - (metrics.monthly_cost_estimate || 0);
+        const yearlyProfit = monthlyProfit * 12;
+        const actualROI = totalModal > 0 ? ((yearlyProfit / totalModal) * 100).toFixed(2) : 0;
+        const paybackMonths = monthlyProfit > 0 ? Math.ceil(totalModal / monthlyProfit) : 0;
+
+        const metricsData = [
+            ['ANALISIS KEUANGAN & PROYEKSI BISNIS'],
+            ['Nama Bisnis:', businessData.name || '-'],
+            ['Total Modal:', 'Rp ' + totalModal.toLocaleString('id-ID')],
+            ['Tanggal Analisis:', new Date().toLocaleDateString('id-ID')],
+            [],
+            ['═══════════════════════════════════════════════════'],
+            ['1. BREAK EVEN POINT (BEP) ANALYSIS'],
+            ['═══════════════════════════════════════════════════'],
+            ['Target Unit untuk BEP:', metrics.bep_units + ' unit'],
+            ['Target Pendapatan BEP:', 'Rp ' + (metrics.bep_revenue || 0).toLocaleString('id-ID')],
+            ['Estimasi Waktu Mencapai BEP:', (metrics.bep_months || paybackMonths || 12) + ' bulan'],
+            [],
+            ['Penjelasan BEP:'],
+            ['BEP adalah titik dimana total pendapatan = total biaya (modal + operasional).'],
+            ['Setelah melewati BEP, bisnis mulai menghasilkan profit.'],
+            [],
+            ['═══════════════════════════════════════════════════'],
+            ['2. RETURN ON INVESTMENT (ROI)'],
+            ['═══════════════════════════════════════════════════'],
+            ['ROI Percentage (Tahunan):', (metrics.roi_percentage || actualROI) + '%'],
+            ['Waktu Balik Modal:', (metrics.roi_months || paybackMonths || 12) + ' bulan'],
+            ['Modal Awal:', 'Rp ' + totalModal.toLocaleString('id-ID')],
+            ['Profit Tahunan (Proyeksi):', 'Rp ' + yearlyProfit.toLocaleString('id-ID')],
+            [],
+            ['Interpretasi ROI:'],
+            ['ROI > 20%: Sangat baik untuk bisnis UMKM di Indonesia'],
+            ['ROI 15-20%: Baik dan layak dijalankan'],
+            ['ROI < 15%: Perlu evaluasi ulang strategi bisnis'],
+            [],
+            ['═══════════════════════════════════════════════════'],
+            ['3. GROSS PROFIT MARGIN (Marjin Laba Kotor)'],
+            ['═══════════════════════════════════════════════════'],
+            ['Margin Percentage:', (metrics.gross_margin_percentage || 0) + '%'],
+            ['Harga Jual Rata-rata:', 'Rp ' + (metrics.avg_selling_price || 0).toLocaleString('id-ID')],
+            ['HPP/Biaya per Unit:', 'Rp ' + (metrics.avg_cost_per_unit || 0).toLocaleString('id-ID')],
+            [],
+            ['Estimasi Pendapatan Bulanan:', 'Rp ' + (metrics.monthly_revenue_estimate || 0).toLocaleString('id-ID')],
+            ['Estimasi Biaya Bulanan:', 'Rp ' + (metrics.monthly_cost_estimate || 0).toLocaleString('id-ID')],
+            ['Laba Kotor Bulanan:', 'Rp ' + monthlyProfit.toLocaleString('id-ID')],
+            ['Laba Kotor Tahunan:', 'Rp ' + yearlyProfit.toLocaleString('id-ID')],
+            [],
+            ['Interpretasi Margin:'],
+            ['Margin > 40%: Sangat sehat untuk bisnis retail/F&B'],
+            ['Margin 25-40%: Baik dan kompetitif'],
+            ['Margin < 25%: Perlu efisiensi biaya atau naikkan harga jual'],
+            [],
+            ['═══════════════════════════════════════════════════'],
+            ['4. PROYEKSI CASH FLOW (12 Bulan Pertama)'],
+            ['═══════════════════════════════════════════════════'],
+            ['Bulan', 'Pendapatan', 'Biaya', 'Profit/Loss', 'Kumulatif'],
+        ];
+
+        // Generate 12-month projection
+        let cumulative = -totalModal; // Start with negative (initial capital)
+        for (let month = 1; month <= 12; month++) {
+            // Assume gradual growth: 60% in month 1, increasing to 100% by month 6
+            const growthFactor = Math.min(0.6 + (month * 0.08), 1.0);
+            const revenue = Math.round((metrics.monthly_revenue_estimate || 0) * growthFactor);
+            const cost = Math.round((metrics.monthly_cost_estimate || 0) * growthFactor);
+            const profit = revenue - cost;
+            cumulative += profit;
+            
+            metricsData.push([
+                `Bulan ${month}`,
+                'Rp ' + revenue.toLocaleString('id-ID'),
+                'Rp ' + cost.toLocaleString('id-ID'),
+                'Rp ' + profit.toLocaleString('id-ID'),
+                'Rp ' + cumulative.toLocaleString('id-ID')
+            ]);
+        }
+
+        metricsData.push(
+            [],
+            ['═══════════════════════════════════════════════════'],
+            ['KESIMPULAN & REKOMENDASI'],
+            ['═══════════════════════════════════════════════════'],
+            ['✓ Modal yang dibutuhkan: Rp ' + totalModal.toLocaleString('id-ID')],
+            ['✓ Estimasi balik modal: ' + (paybackMonths || 12) + ' bulan'],
+            ['✓ ROI tahunan: ' + (actualROI || metrics.roi_percentage || 0) + '%'],
+            ['✓ Margin laba: ' + (metrics.gross_margin_percentage || 0) + '%'],
+            [],
+            ['DISCLAIMER:'],
+            ['Data ini adalah estimasi berdasarkan analisis AI dan kondisi pasar umum.'],
+            ['Hasil aktual dapat berbeda tergantung lokasi, manajemen, dan kondisi pasar.'],
+            ['Lakukan riset pasar dan konsultasi dengan mentor bisnis sebelum memulai.'],
+        );
+
+        const ws2 = XLSX.utils.aoa_to_sheet(metricsData);
+        ws2['!cols'] = [{ wch: 25 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 20 }];
+        XLSX.utils.book_append_sheet(wb, ws2, 'Analisis Keuangan');
+
+        // Download file
+        const fileName = `Analisis_Bisnis_${(businessData.name || 'UMKM').replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+        toast.success('File Excel berhasil diunduh! Cek folder Downloads Anda.');
+    };
+
+
+    if (!selectedSide) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+                <div className="max-w-4xl w-full bg-white shadow-2xl rounded-3xl p-8 text-center animate-fade-in">
+                    <h1 className="text-3xl font-bold text-slate-900 mb-2">Selamat Datang, {manualForm.userName}!</h1>
+                    <p className="text-lg text-slate-600 mb-8">Pilih cara Anda memulai pengalaman Meta Bisnis:</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Column 1: Tanya AI (Belum Punya Bisnis) */}
+                        <div 
+                            onClick={() => {
+                                setSelectedSide('ai');
+                                // Reset businessData jika ada, agar tampilan default muncul
+                                if(businessData) onConsultAI(null); 
+                            }}
+                            className="p-6 border-2 border-blue-200 rounded-xl hover:shadow-lg transition cursor-pointer bg-blue-50"
+                        >
+                            <i className="fas fa-robot text-5xl text-blue-600 mb-4"></i>
+                            <h2 className="text-xl font-bold text-slate-800 mb-2">Belum Punya Bisnis? Tanya AI</h2>
+                            <p className="text-sm text-slate-600">Jelaskan modal, lokasi, dan minat Anda. AI akan memberikan rekomendasi bisnis siap jalan.</p>
+                            <button className="mt-4 text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">Mulai Konsultasi</button>
+                        </div>
+                        
+                        {/* Column 2: Bisnis Sudah Ada (Setup Manual) */}
+                        <div 
+                            onClick={() => setSelectedSide('manual')}
+                            className="p-6 border-2 border-green-200 rounded-xl hover:shadow-lg transition cursor-pointer bg-green-50"
+                        >
+                            <i className="fas fa-store text-5xl text-green-600 mb-4"></i>
+                            <h2 className="text-xl font-bold text-slate-800 mb-2">Bisnis Saya Sudah Ada</h2>
+                            <p className="text-sm text-slate-600">Masukkan detail bisnis Anda yang sudah berjalan agar AI dapat memberikan saran yang lebih relevan.</p>
+                            <button className="mt-4 text-sm bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">Isi Detail Bisnis</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+>>>>>>> Stashed changes
     return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
             {/* Modal Onboarding Utama (1 Kolom Tampilan) */}
@@ -266,6 +471,7 @@ export default function OnboardingView({ user, onConsultAI, onSetupComplete, bus
                             )}
                         </h2>
                         
+<<<<<<< Updated upstream
                         {/* NEW: Toggle Button/Link */}
                         <div className="text-sm font-medium">
                             {selectedSide === 'ai' ? (
@@ -276,6 +482,164 @@ export default function OnboardingView({ user, onConsultAI, onSetupComplete, bus
                                         onConsultAI(null); // Clear recommendation when switching
                                     }}
                                     className="text-green-600 hover:text-green-700 underline"
+=======
+                        {!businessData ? (
+                            // Input Area
+                            <>
+                                <p className="text-slate-600">
+                                    Ceritakan modal, lokasi, atau minat Anda. AI akan carikan peluang bisnis paling cuan berdasarkan data tren pasar terkini.
+                                </p>
+                                <div className="flex-1">
+                                    <textarea
+                                        value={aiInput}
+                                        onChange={(e) => setAiInput(e.target.value)}
+                                        rows="6"
+                                        placeholder="Cth: Saya punya modal 1 juta, suka masak, lokasi di dekat kampus..."
+                                        className="w-full text-sm p-4 border border-slate-300 rounded-lg focus:ring-1 focus:ring-blue-500 outline-none resize-none"
+                                        disabled={loading}
+                                    ></textarea>
+                                </div>
+
+                                <div>
+                                    <button
+                                        onClick={handleAIConsult}
+                                        disabled={loading || !aiInput.trim()}
+                                        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white font-semibold py-3 rounded-lg transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <i className={`fas ${loading ? 'fa-spinner fa-spin' : 'fa-magic'}`}></i>
+                                        {loading ? 'Mencari Ide...' : 'Cari Ide Bisnis'}
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            // Hasil Rekomendasi AI
+                            <div className="space-y-4">
+                                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                    <h3 className="font-bold text-lg text-slate-800 mb-1">{businessData.name || 'Rekomendasi Bisnis'}</h3>
+                                    <p className="text-sm text-slate-600">{businessData.description || 'Deskripsi tidak tersedia.'}</p>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                        <p className="text-xs text-slate-500">Modal Estimasi</p>
+                                        <p className="font-semibold text-sm">{businessData.capital_est || 'N/A'}</p>
+                                    </div>
+                                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                        <p className="text-xs text-slate-500">Target Pasar</p>
+                                        <p className="font-semibold text-sm">{businessData.target_market || 'N/A'}</p>
+                                    </div>
+                                </div>
+                                
+                                <p className="text-xs text-red-500 pt-2">
+                                    <i className="fas fa-exclamation-triangle mr-1"></i> Tantangan: {businessData.challenge || 'Tidak disebutkan.'}
+                                </p>
+                                
+                                {/* Tombol Download Excel */}
+                                <div className="pt-4">
+                                    <button
+                                        onClick={generateCapitalExcel}
+                                        className="w-full px-4 py-2 bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2 mb-4"
+                                        title="Download rincian modal lengkap dalam format Excel"
+                                    >
+                                        <i className="fas fa-file-excel"></i> Download Rincian Modal (Excel)
+                                    </button>
+                                </div>
+                                
+                                {/* Tombol Aksi */}
+                                <div className="flex gap-3 pt-4 border-t">
+                                    <button
+                                        onClick={handleTryAgain}
+                                        className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 font-medium text-sm transition-colors"
+                                    >
+                                        <i className="fas fa-redo mr-1"></i> Coba Lagi
+                                    </button>
+                                    <button
+                                        onClick={handleStartWithAI}
+                                        className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm transition-colors"
+                                        disabled={loading}
+                                    >
+                                        <i className="fas fa-rocket mr-1"></i> Mulai
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        
+                    </div>
+                )}
+                
+                {selectedSide === 'manual' && (
+                    /* Tampilan Setup Manual (Bisnis Sudah Ada) */
+                    <div className="p-8 space-y-6">
+                        <div className="flex items-center justify-between border-b pb-4">
+                            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                                <i className="fas fa-briefcase text-green-500"></i> Setup Bisnis Manual
+                            </h2>
+                            <button onClick={() => setSelectedSide(null)} className="text-slate-500 hover:text-slate-700">
+                                <i className="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <p className="text-slate-600">
+                            Isi detail bisnis Anda yang sudah ada untuk pengalaman dashboard yang lebih personal dan relevan.
+                        </p>
+                        
+                        <form onSubmit={handleManualSetup} className="space-y-4">
+                            {/* Nama Bisnis */}
+                            <div>
+                                <label htmlFor="businessName" className="block text-sm font-semibold text-slate-700 mb-1">Nama Bisnis *</label>
+                                <input
+                                    id="businessName"
+                                    type="text"
+                                    value={manualForm.businessName}
+                                    onChange={handleManualChange}
+                                    placeholder="Cth: Kopi Pintar AI"
+                                    required
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-1 focus:ring-green-500 outline-none"
+                                    disabled={loading}
+                                />
+                            </div>
+
+                            {/* Nama Pengguna */}
+                            <div>
+                                <label htmlFor="userName" className="block text-sm font-semibold text-slate-700 mb-1">Nama Pengguna *</label>
+                                <input
+                                    id="userName"
+                                    type="text"
+                                    value={manualForm.userName}
+                                    onChange={handleManualChange}
+                                    placeholder="Cth: Budi Santoso"
+                                    required
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-1 focus:ring-green-500 outline-none"
+                                    disabled={loading}
+                                />
+                            </div>
+
+                            {/* Deskripsi Bisnis (Opsional) */}
+                            <div>
+                                <label htmlFor="businessDescription" className="block text-sm font-semibold text-slate-700 mb-1">Deskripsi Bisnis (Opsional)</label>
+                                <textarea
+                                    id="businessDescription"
+                                    value={manualForm.businessDescription}
+                                    onChange={handleManualChange}
+                                    placeholder="Jelaskan produk, target pasar, dan keunggulan utama (Maks 150 karakter)"
+                                    rows="2"
+                                    maxLength={150}
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-1 focus:ring-green-500 outline-none resize-none"
+                                    disabled={loading}
+                                />
+                            </div>
+
+                            {/* Jenis Usaha */}
+                            <div>
+                                <label htmlFor="businessType" className="block text-sm font-semibold text-slate-700 mb-1">Jenis Usaha *</label>
+                                <select
+                                    id="businessType"
+                                    value={manualForm.businessType}
+                                    onChange={handleManualChange}
+                                    required
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-1 focus:ring-green-500 outline-none bg-white cursor-pointer"
+                                    disabled={loading}
+>>>>>>> Stashed changes
                                 >
                                     Punya Bisnis? Isi Detail
                                 </button>

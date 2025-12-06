@@ -864,11 +864,19 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
                       Cari Lain
                     </button>
                     <button
-                      onClick={() => onSetupBusiness(null, true)}
+                      onClick={() => {
+                        if (user) {
+                          onSetupBusiness(null, true);
+                        } else {
+                          // Tampilkan form create account terlebih dahulu
+                          setShowAuthForm(false);
+                          setShowRegisterForm(true);
+                        }
+                      }}
                       className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg transition-all"
                     >
                       <i className="fas fa-rocket mr-2"></i> 
-                      {user ? 'Jalankan Bisnis Ini' : 'Login untuk Mulai'}
+                      {user ? 'Jalankan Bisnis Ini' : 'Buat Akun untuk Mulai'}
                     </button>
                   </div>
                 </div>

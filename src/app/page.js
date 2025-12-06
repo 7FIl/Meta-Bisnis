@@ -8,6 +8,7 @@ import { saveUserSettings, getUserSettings } from '@/lib/userSettings';
 import { loginWithGoogle, logoutUser } from '@/lib/auth';
 import { useToast } from '@/components/Toast';
 import { useAlert } from '@/components/Alert';
+import { setTempData, getTempData, removeTempData, hasTempData } from '@/lib/cookies';
 
 import ConsultationView from '@/components/ConsultationView';
 import DashboardView from '@/components/DashboardView';
@@ -30,6 +31,7 @@ export default function Home() {
   const [currentUserName, setCurrentUserName] = useState('Pengguna');
   const [currentBusinessLocation, setCurrentBusinessLocation] = useState('Lokasi Tidak Diketahui');
   const [currentBusinessDescription, setCurrentBusinessDescription] = useState('');
+  const [currentBusinessType, setCurrentBusinessType] = useState('');
   
   // Auth listener
   useEffect(() => {
@@ -42,47 +44,100 @@ export default function Home() {
         (async () => {
           let hasBusinessData = false;
           try {
-            const settings = await getUserSettings(currentUser.uid);
-            if (settings) {
-              // Apply loaded settings to state
-              setCurrentBusinessName(settings.businessName || (currentUser.displayName ? `${currentUser.displayName}'s Business` : 'Dashboard Bisnis'));
-              setCurrentUserName(settings.userName || (currentUser.displayName || currentUser.email.split('@')[0]));
-              setCurrentBusinessLocation(settings.businessLocation || 'Lokasi Tidak Diketahui');
-              setCurrentBusinessDescription(settings.businessDescription || '');
-              setEmployees(settings.employees || []);
+            // CEK TEMP DATA: Jika ada data temporary dari consultation view, transfer ke Firebase
+            const tempData = getTempData('meta_bisnis_temp');
+            if (tempData && tempData.businessName) {
+              console.log('[Auth] Found temp data, transferring to Firebase:', tempData);
+              // Merge dengan default settings
+              const mergedSettings = {
+                businessName: tempData.businessName,
+                userName: tempData.userName || currentUser.displayName || currentUser.email.split('@')[0],
+                businessLocation: tempData.businessLocation || 'Lokasi Tidak Diketahui',
+                businessDescription: tempData.businessDescription || '',
+                businessType: tempData.businessType || '',
+                businessData: tempData.businessData || {
+                  name: tempData.businessName,
+                  description: tempData.businessDescription || 'Dari konsultasi AI',
+                  capital_est: tempData.capital_est || 'N/A',
+                  target_market: tempData.target_market || 'N/A',
+                  challenge: tempData.challenge || 'N/A',
+                  location: tempData.businessLocation || 'N/A',
+                  businessType: tempData.businessType || ''
+                },
+                employees: [],
+              };
               
-              // Cek apakah ada data bisnis
-              if (settings.businessData && settings.businessData.name) {
-                  setBusinessData(settings.businessData);
-                  hasBusinessData = true;
-              } else if (settings.businessName && settings.businessName !== 'Dashboard Bisnis') {
-                  // Fallback: Jika ada nama bisnis tersimpan (dari setup manual sebelumnya)
-                  const fallbackData = {
-                      name: settings.businessName,
-                      description: settings.businessDescription || 'Detail bisnis diatur manual',
-                      capital_est: 'N/A',
-                      target_market: 'N/A',
-                      challenge: 'N/A',
-                      location: settings.businessLocation
-                  };
-                  setBusinessData(fallbackData);
-                  hasBusinessData = true;
-              }
-            } 
+              // Save ke Firebase
+              await saveUserSettings(currentUser.uid, mergedSettings);
+              console.log('[Auth] Temp data saved to Firebase');
+              
+              // Apply ke state
+              setCurrentBusinessName(mergedSettings.businessName);
+              setCurrentUserName(mergedSettings.userName);
+              setCurrentBusinessLocation(mergedSettings.businessLocation);
+              setCurrentBusinessDescription(mergedSettings.businessDescription);
+              setCurrentBusinessType(mergedSettings.businessType);
+              setBusinessData(mergedSettings.businessData);
+              
+              // Hapus temp data
+              removeTempData('meta_bisnis_temp');
+              hasBusinessData = true;
+            }
             
+<<<<<<< Updated upstream
             // LOGIKA ONBOARDING:
+=======
+            // Jika belum ada business data dari temp, load dari Firebase seperti biasa
+>>>>>>> Stashed changes
             if (!hasBusinessData) {
-                // Jika tidak ada data bisnis, arahkan ke onboarding
+              const settings = await getUserSettings(currentUser.uid);
+              if (settings) {
+                // Apply loaded settings to state
+                setCurrentBusinessName(settings.businessName || (currentUser.displayName ? `${currentUser.displayName}'s Business` : 'Dashboard Bisnis'));
+                setCurrentUserName(settings.userName || (currentUser.displayName || currentUser.email.split('@')[0]));
+                setCurrentBusinessLocation(settings.businessLocation || 'Lokasi Tidak Diketahui');
+                setCurrentBusinessDescription(settings.businessDescription || '');
+                setCurrentBusinessType(settings.businessType || '');
+                setEmployees(settings.employees || []);
+                
+                // Cek apakah ada data bisnis
+                if (settings.businessData && settings.businessData.name) {
+                    setBusinessData(settings.businessData);
+                    setCurrentBusinessType(settings.businessData.businessType || settings.businessType || '');
+                    hasBusinessData = true;
+                } else if (settings.businessName && settings.businessName !== 'Dashboard Bisnis') {
+                    // Fallback: Jika ada nama bisnis tersimpan (dari setup manual sebelumnya)
+                    const fallbackData = {
+                        name: settings.businessName,
+                        description: settings.businessDescription || 'Detail bisnis diatur manual',
+                        capital_est: 'N/A',
+                        target_market: 'N/A',
+                        challenge: 'N/A',
+                        location: settings.businessLocation,
+                        businessType: settings.businessType || ''
+                    };
+                    setBusinessData(fallbackData);
+                      setCurrentBusinessType(settings.businessType || '');
+                    hasBusinessData = true;
+                }
+              }
+            }
+
+            // LOGIKA ONBOARDING BARU: hanya untuk user baru pertama kali login
+            const isNewUser = currentUser?.metadata?.creationTime === currentUser?.metadata?.lastSignInTime;
+
+            if (!hasBusinessData && isNewUser) {
+                // User benar-benar baru: arahkan ke onboarding
                 setCurrentView('onboarding');
             } else {
-                // Jika data bisnis ada, lanjutkan ke dashboard
+                // User lama atau sudah punya data bisnis: langsung ke dashboard
                 setCurrentView('dashboard');
             }
 
           } catch (e) {
             console.error('Failed to load user settings:', e);
-            // Pada error, default ke onboarding (lebih aman)
-            setCurrentView('onboarding');
+            // Pada error, default ke dashboard agar tidak mengganggu alur login existing
+            setCurrentView('dashboard');
           }
         })();
       } else {
@@ -190,6 +245,7 @@ export default function Home() {
       }
 
       setCurrentBusinessName(finalBusinessData.name);
+      setCurrentBusinessType(finalBusinessData.businessType || '');
       setCurrentView('dashboard');
       
       // Persist the current businessData (sudah ada)
@@ -197,6 +253,7 @@ export default function Home() {
           await saveUserSettings(auth.currentUser.uid, { 
               businessData: finalBusinessData, 
               businessName: finalBusinessData.name,
+              businessType: finalBusinessData.businessType || '',
               businessLocation: finalBusinessData.location,
               businessDescription: finalBusinessData.description
           });
@@ -216,6 +273,65 @@ export default function Home() {
       const payload = {
         max_tokens: 1000,
         messages: [
+<<<<<<< Updated upstream
+=======
+          { 
+            role: 'system', 
+            content: `Kamu adalah konsultan bisnis profesional Indonesia dengan pengetahuan mendalam tentang harga pasar lokal dan analisis keuangan.
+
+INSTRUKSI PENTING:
+1. Gunakan HARGA REALISTIS berdasarkan kondisi pasar Indonesia tahun 2024-2025
+2. Rincian modal harus DETAIL dan AKURAT (minimal 8-12 item berbeda)
+3. Hitung metrik keuangan berdasarkan standar industri Indonesia
+
+FORMAT JSON WAJIB:
+{
+  "name": "Nama Bisnis",
+  "businessType": "Kategori/Tipe bisnis (F&B, Retail, Jasa, dsb)",
+  "description": "Deskripsi lengkap (3-4 kalimat)",
+  "capital_est": "Rp X juta - Y juta",
+  "target_market": "Target pasar spesifik",
+  "challenge": "Tantangan utama bisnis",
+  "capitalBreakdown": [
+    {"item": "nama_lengkap_barang", "quantity": angka, "unit": "pcs/unit/set/bulan", "price": harga_satuan_realistis, "total": quantity*price}
+  ],
+  "financialMetrics": {
+    "bep_units": "unit produk/layanan untuk BEP",
+    "bep_revenue": "pendapatan BEP dalam Rupiah",
+    "bep_months": "estimasi bulan mencapai BEP (realistis 6-24 bulan)",
+    "roi_percentage": "ROI % per tahun (realistis 15-40%)",
+    "roi_months": "waktu balik modal dalam bulan",
+    "gross_margin_percentage": "margin kotor % (realistis 20-50%)",
+    "monthly_revenue_estimate": "estimasi pendapatan bulanan setelah stabil",
+    "monthly_cost_estimate": "estimasi biaya operasional bulanan",
+    "monthly_profit_estimate": "laba bersih bulanan",
+    "avg_selling_price": "harga jual rata-rata per unit",
+    "avg_cost_per_unit": "biaya produksi per unit"
+  }
+}
+
+PANDUAN HARGA INDONESIA (gunakan sebagai acuan):
+- Peralatan dapur/produksi: Rp 500rb - 10jt (sesuai kapasitas)
+- Furniture/meja/kursi: Rp 300rb - 2jt per unit
+- Kulkas/freezer komersial: Rp 3jt - 15jt
+- Etalase/display: Rp 1.5jt - 5jt
+- Kompor gas komersial: Rp 1jt - 5jt
+- Renovasi sederhana: Rp 5jt - 20jt
+- Peralatan elektronik: sesuai brand & spesifikasi
+- Sewa tempat (3 bulan): Rp 6jt - 30jt (tergantung lokasi)
+- Biaya perizinan UMKM: Rp 500rb - 2jt
+- Modal kerja awal: 20-30% dari total modal
+
+RUMUS PERHITUNGAN:
+- BEP (unit) = Total Modal / (Harga Jual - HPP per unit)
+- BEP (Rupiah) = BEP unit × Harga Jual
+- ROI % = (Laba Bersih Tahunan / Total Modal) × 100
+- Gross Margin % = ((Harga Jual - HPP) / Harga Jual) × 100
+- Waktu BEP (bulan) = Total Modal / Laba Bersih Bulanan
+
+Berikan data yang AKURAT, REALISTIS, dan DAPAT DIVERIFIKASI.` 
+          },
+>>>>>>> Stashed changes
           { role: 'user', content: input }
         ],
         model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
@@ -266,8 +382,35 @@ export default function Home() {
 
       setBusinessData(newBusinessData);
       setCurrentBusinessName(newBusinessData.name); // Set current name from the new data
+      setCurrentBusinessType(newBusinessData.businessType || '');
       
+<<<<<<< Updated upstream
       // LOGIKA BARU: Jika dari onboarding, biarkan OnboardingView menampilkan hasil, transisi ke dashboard diurus tombol "Mulai"
+=======
+      // LOGIKA BARU: Simpan recommendation ke temporary storage (jika user belum login)
+      // Data ini akan dipindahkan ke Firebase saat user melakukan login
+      if (!user) {
+        const tempPayload = {
+          businessName: newBusinessData.name,
+          businessDescription: newBusinessData.description || '',
+          businessLocation: newBusinessData.location || 'N/A',
+          businessType: newBusinessData.businessType || '',
+          businessData: newBusinessData,
+          userName: 'Pengguna', // Default, akan diisi saat setup
+        };
+        setTempData('meta_bisnis_temp', tempPayload);
+        console.log('[ConsultationView] Saved AI recommendation to temp storage:', tempPayload);
+      }
+      
+      // LOGIKA LAMA: Jika dari onboarding, langsung simpan dan pindah ke dashboard
+      if (fromOnboarding) {
+          // Jika dari onboarding, jangan langsung pindah view, tapi biarkan OnboardingView 
+          // menampilkan hasilnya. Pindah view hanya ketika tombol "Mulai" ditekan (setupBusiness=true)
+          // TAPI KARENA LOGIKA CONSULTATION VIEW LAMA MENGANDALKAN AUTO-SWITCH, 
+          // MAKA KITA PERLU LOGIKA UNTUK KONSULTASI LAMA/BARU
+          // Di sini kita biarkan state diperbarui, transisi diurus oleh tombol di OnboardingView/ConsultationView
+      }
+>>>>>>> Stashed changes
       
     } catch (error) {
       console.error(error);
@@ -316,7 +459,8 @@ export default function Home() {
     businessName, 
     userName, 
     businessLocation, 
-    businessDescription = currentBusinessDescription
+    businessDescription = currentBusinessDescription,
+    businessType = currentBusinessType
   }) => {
     // 1. Update mock user name state
     setCurrentUserName(userName);
@@ -325,6 +469,7 @@ export default function Home() {
     setCurrentBusinessName(businessName);
     setCurrentBusinessLocation(businessLocation);
     setCurrentBusinessDescription(businessDescription);
+    setCurrentBusinessType(businessType);
     
     // 3. Create new businessData object
     const newBusinessData = { 
@@ -333,21 +478,23 @@ export default function Home() {
         capital_est: 'N/A', 
         target_market: 'N/A', 
         challenge: 'N/A',
-        location: businessLocation
+      location: businessLocation,
+      businessType
     };
     
     setBusinessData(newBusinessData);
     
+    const payload = {
+      businessName,
+      userName,
+      businessLocation,
+      businessDescription,
+      businessType,
+      businessData: newBusinessData,
+    };
+    
     // persist settings to Firestore for this user (if available)
     if (auth.currentUser) {
-      const payload = {
-        businessName,
-        userName,
-        businessLocation,
-        businessDescription,
-        businessData: newBusinessData,
-      };
-
       try {
         await saveUserSettings(auth.currentUser.uid, payload);
         toast.success('Pengaturan tersimpan.');
@@ -355,6 +502,10 @@ export default function Home() {
         console.error('Failed saving settings:', e);
         toast.error('Gagal menyimpan pengaturan. Coba lagi.');
       }
+    } else {
+      // JIKA BELUM LOGIN: Simpan ke temporary storage (akan dipindahkan ke Firebase saat login)
+      setTempData('meta_bisnis_temp', payload);
+      toast.info('Data tersimpan sementara di browser. Login untuk menyimpan permanen.');
     }
 
     return new Promise(resolve => setTimeout(resolve, 500));
@@ -379,6 +530,7 @@ export default function Home() {
         onSetupComplete={handleSetupComplete} // manual setup, auto-switch to dashboard
         businessData={businessData} // Kirim businessData agar OnboardingView bisa menampilkan hasil
         loading={loading} // Kirim loading state
+        businessType={currentBusinessType}
       />
     );
   }
@@ -392,6 +544,7 @@ export default function Home() {
         currentUserEmail={user.email}
         businessLocation={currentBusinessLocation}
         businessDescription={currentBusinessDescription}
+        businessType={currentBusinessType}
         onLogout={handleLogout}
         absences={absences}
         onAddAbsence={handleAddAbsence}
