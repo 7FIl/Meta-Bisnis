@@ -169,13 +169,13 @@ export default function MenuChatAI({ businessName, onSend }) {
         </div>
 
         <div className="flex gap-2 flex-wrap">
-          <button onClick={() => setTopic("analysis")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "analysis" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-900 hover:bg-slate-200"}`}>
+          <button onClick={() => setTopic("analysis")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "analysis" ? "bg-indigo-600 text-white" : "bg-slate-00 text-slate-00 hover:bg-slate-500"}`}>
             <i className="fas fa-chart-line mr-2"></i>Analisis
           </button>
-          <button onClick={() => setTopic("finance")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "finance" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-900 hover:bg-slate-200"}`}>
+          <button onClick={() => setTopic("finance")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "finance" ? "bg-indigo-600 text-white" : "bg-slate-00 text-slate-00 hover:bg-slate-500"}`}>
             <i className="fas fa-coins mr-2"></i>Ide Keuangan
           </button>
-          <button onClick={() => setTopic("sales")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "sales" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-900 hover:bg-slate-200"}`}>
+          <button onClick={() => setTopic("sales")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "sales" ? "bg-indigo-600 text-white" : "bg-slate-00 text-slate-00 hover:bg-slate-500"}`}>
             <i className="fas fa-handshake mr-2"></i>Penjualan
           </button>
         </div>
@@ -190,21 +190,21 @@ export default function MenuChatAI({ businessName, onSend }) {
             <h4 className="text-sm font-semibold text-slate 700 mb-2">Mulai Percakapan</h4>
             <p className="text-xs text-slate-600 max-w-xs mb-4">Tanyakan tentang pasar, strategi penjualan, atau pengelolaan keuangan bisnis Anda.</p>
             <div className="grid grid-cols-1 gap-2 w-full">
-              <button 
+              <button
                 onClick={() => handleQuick("Apa yang bisa saya lakukan untuk meningkatkan penjualan bulan ini?")}
-                className="px-3 py-2 text-xs bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition text-left border border-indigo-200"
+                className="px-3 py-2 text-xs bg-indigo-00 text-indigo-700 rounded-lg hover:bg-indigo-100 transition text-left border border-indigo-200"
               >
                 💡 Tingkatkan penjualan
               </button>
-              <button 
+              <button
                 onClick={() => handleQuick("Bagaimana cara menganalisis kompetitor saya?")}
-                className="px-3 py-2 text-xs bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition text-left border border-blue-200"
+                className="px-3 py-2 text-xs bg-blue-00 text-blue-500 rounded-lg hover:bg-blue-100 transition text-left border border-blue-200"
               >
                 📊 Analisis kompetitor
               </button>
-              <button 
+              <button
                 onClick={() => handleQuick("Bagaimana cara mengoptimalkan biaya operasional?")}
-                className="px-3 py-2 text-xs bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition text-left border border-green-200"
+                className="px-3 py-2 text-xs bg-green-00 text-green-700 rounded-lg hover:bg-green-100 transition text-left border border-green-200"
               >
                 💰 Optimalkan keuangan
               </button>
@@ -233,9 +233,9 @@ export default function MenuChatAI({ businessName, onSend }) {
             <div className="bg-slate-100 text-slate-600 px-4 py-3 rounded-lg rounded-bl-none">
               <div className="flex items-center gap-2">
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
-                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
-                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                 </div>
                 <span className="text-xs">AI sedang menjawab...</span>
               </div>
@@ -253,16 +253,16 @@ export default function MenuChatAI({ businessName, onSend }) {
               topic === "finance"
                 ? "Tanyakan tentang keuangan, margin, atau biaya..."
                 : topic === "sales"
-                ? "Tanyakan strategi penjualan atau promosi..."
-                : "Tanyakan tentang pasar, tren, atau analisis..."
+                  ? "Tanyakan strategi penjualan atau promosi..."
+                  : "Tanyakan tentang pasar, tren, atau analisis..."
             }
             className="flex-1 px-4 py-3 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
           />
-          <button 
-            onClick={handleSend} 
-            disabled={loading || !input.trim()} 
-            className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 text-white px-6 py-3 rounded-lg text-sm font-medium transition flex items-center gap-2"
+          <button
+            onClick={handleSend}
+            disabled={loading || !input.trim()}
+            className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-00 text-white px-6 py-3 rounded-lg text-sm font-medium transition flex items-center gap-2"
           >
             <i className={`fas ${loading ? 'fa-spinner fa-spin' : 'fa-paper-plane'}`}></i>
             {loading ? "Mengirim" : "Kirim"}
@@ -271,15 +271,15 @@ export default function MenuChatAI({ businessName, onSend }) {
 
         <div className="flex items-center justify-between text-xs">
           <div className="flex gap-2">
-            <button 
-              onClick={() => handleQuick(topic === "analysis" ? "Analisis lokasi usaha saya" : topic === "finance" ? "Bagaimana cara menekan biaya operasional?" : "Cara meningkatkan penjualan harian?")} 
-              className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-900 hover:bg-slate-200 transition"
+            <button
+              onClick={() => handleQuick(topic === "analysis" ? "Analisis lokasi usaha saya" : topic === "finance" ? "Bagaimana cara menekan biaya operasional?" : "Cara meningkatkan penjualan harian?")}
+              className="px-3 py-1.5 rounded-lg bg-slate-00 text-slate-00 hover:bg-slate-500 transition"
             >
               <i className="fas fa-lightning-bolt mr-1"></i>Contoh
             </button>
-            <button 
-              onClick={handleClear} 
-              className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-900 hover:bg-slate-200 transition"
+            <button
+              onClick={handleClear}
+              className="px-3 py-1.5 rounded-lg bg-slate-00 text-slate-00 hover:bg-slate-500 transition"
             >
               <i className="fas fa-trash mr-1"></i>Bersihkan
             </button>

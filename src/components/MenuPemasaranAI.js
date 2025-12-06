@@ -121,13 +121,11 @@ export default function MenuPemasaranAI({ businessName, onSave, salesData, onBac
               if (typeof onBack === "function") return onBack();
               if (typeof window !== "undefined" && window.history && window.history.length) window.history.back();
             }}
-            className="text-sm text-slate-00 hover:text-slate-900 flex items-center gap-2"
+            className="text-sm text-slate-500 hover:text-slate-900 flex items-center gap-2"
           >
             <i className="fas fa-arrow-left"></i>
             <span>Kembali ke Dashboard</span>
           </button>
-
-          <h1 className="text-xl font-bold">Pemasaran AI</h1>
         </div>
 
         <span className="text-xs text-slate-500">{businessName}</span>

@@ -104,9 +104,8 @@ function ToastItem({ toast, onRemove }) {
 
   return (
     <div
-      className={`pointer-events-auto border rounded-lg p-4 shadow-lg transition-all duration-300 flex items-start gap-3 max-w-sm ${bgColor} ${
-        isExiting ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'
-      }`}
+      className={`pointer-events-auto border rounded-lg p-4 shadow-lg transition-all duration-300 flex items-start gap-3 max-w-sm ${bgColor} ${isExiting ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'
+        }`}
     >
       <div className={`text-xl font-bold flex-shrink-0 ${iconColor}`}>{icon}</div>
       <div className="flex-1">

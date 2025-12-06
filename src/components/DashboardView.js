@@ -42,6 +42,13 @@ export default function DashboardView({
   const [selectedMenu, setSelectedMenu] = useState("beranda");
   const [isDarkMode, setIsDarkMode] = useState(false); // NEW STATE
 
+  // NEW STATE FOR CALENDAR
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [events, setEvents] = useState({}); // Object: key is date string (YYYY-MM-DD), value is array of event strings
+  const [selectedDate, setSelectedDate] = useState(null); // Selected date for event panel
+  const [newEvent, setNewEvent] = useState(''); // Input for new event
+
+  // Theme initialization
   // Theme initialization
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -49,8 +56,12 @@ export default function DashboardView({
       "(prefers-color-scheme: dark)"
     ).matches;
     // Set Light Mode as initial default, unless "dark" is explicitly saved
+<<<<<<< Updated upstream
     const initialDark =
       savedTheme === "dark" || (savedTheme === null && systemPrefersDark);
+=======
+    const initialDark = savedTheme === 'dark' || (savedTheme === null && systemPrefersDark);
+>>>>>>> Stashed changes
 
     setIsDarkMode(initialDark);
     applyTheme(initialDark); // Ensure it's applied on mount
@@ -58,8 +69,12 @@ export default function DashboardView({
     // Clean up function for system preference changes
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = (e) => {
+<<<<<<< Updated upstream
       if (!localStorage.getItem("theme")) {
         // Only react to system changes if no preference is saved
+=======
+      if (!localStorage.getItem('theme')) { // Only react to system changes if no preference is saved
+>>>>>>> Stashed changes
         setIsDarkMode(e.matches);
         applyTheme(e.matches);
       }
@@ -74,15 +89,84 @@ export default function DashboardView({
     applyTheme(newMode);
   };
 
+  // NEW FUNCTIONS FOR CALENDAR
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay(); // 0 = Sunday
+
+    const days = [];
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push(null);
+    }
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(day);
+    }
+    return days;
+  };
+
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    setSelectedDate(null); // Reset selected date on month change
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    setSelectedDate(null); // Reset selected date on month change
+  };
+
+  const handleDateClick = (day) => {
+    if (!day) return;
+    const dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    setSelectedDate(dateKey);
+    setNewEvent(''); // Reset input
+  };
+
+  const handleAddEvent = () => {
+    if (!selectedDate || !newEvent.trim()) return;
+    setEvents(prev => ({
+      ...prev,
+      [selectedDate]: [...(prev[selectedDate] || []), newEvent.trim()]
+    }));
+    setNewEvent('');
+  };
+
+  const handleDeleteEvent = (dateKey, index) => {
+    setEvents(prev => {
+      const newEvents = { ...prev };
+      newEvents[dateKey] = newEvents[dateKey].filter((_, i) => i !== index);
+      if (newEvents[dateKey].length === 0) delete newEvents[dateKey];
+      return newEvents;
+    });
+  };
+
+  const getEventsForDay = (day) => {
+    if (!day) return [];
+    const dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return events[dateKey] || [];
+  };
+
+  const monthNames = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+  const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+
   return (
     // Base colors set to light mode: bg-slate-50
-    <div className="min-h-screen flex bg-slate-50">
+    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-900">
       {/* Sidebar - base colors set to light mode: bg-white */}
-      <aside className="w-64 bg-white bg-slate-800 border-r border-slate-200 border-slate-700 hidden md:flex flex-col fixed h-full z-10">
-        <div className="p-6 border-b border-slate-100 border-slate-700">
-          <div className="flex items-center gap-2 font-bold text-xl text-indigo-700 text-indigo-400">
+      <aside className="w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 hidden md:flex flex-col fixed h-full z-10">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-700">
+          <div className="flex items-center gap-2 font-bold text-xl text-indigo-700 dark:text-indigo-400">
             <i className="fas fa-store"></i> <span>{businessName}</span>
           </div>
+<<<<<<< Updated upstream
           <p className="text-xs text-slate-500 text-slate-400 mt-1">
             Managed by Meta Bisnis
           </p>
@@ -134,6 +218,35 @@ export default function DashboardView({
               </div>
             </button>
           ))}
+=======
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Managed by Meta Bisnis</p>
+        </div>
+
+        <nav className="p-4 space-y-1 flex-1">
+          {
+            [
+              { name: 'Beranda', icon: 'fa-home', menu: 'beranda' },
+              { name: 'Pemasaran AI', icon: 'fa-bullhorn', menu: 'pemasaran' },
+              { name: 'Keuangan', icon: 'fa-calculator', menu: 'keuangan' },
+              { name: 'Chat AI', icon: 'fa-comments', menu: 'chat' },
+              { name: 'Pengaturan', icon: 'fa-cog', menu: 'pengaturan' },
+            ].map(item => (
+              <button
+                key={item.menu}
+                onClick={() => setSelectedMenu(item.menu)}
+                className={`w-full text-left flex items-center justify-between gap-3 px-4 py-3 
+                  ${selectedMenu === item.menu
+                    ? 'bg-blue-50 dark:bg-indigo-600/50 text-blue-700 dark:text-blue-300 rounded-lg font-medium'
+                    : 'text-slate-600 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-300 rounded-lg font-medium transition-colors'
+                  }`}
+              >
+                <div className="flex items-center gap-3">
+                  <i className={`fas ${item.icon} w-5`}></i> {item.name}
+                </div>
+              </button>
+            ))
+          }
+>>>>>>> Stashed changes
         </nav>
 
         {/* Theme Toggle Button & Logout Button */}
@@ -142,6 +255,7 @@ export default function DashboardView({
           <button
             onClick={handleThemeToggle}
             className="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-300 rounded-lg w-full transition-colors text-sm font-medium"
+<<<<<<< Updated upstream
             title={isDarkMode ? "Ganti ke Mode Terang" : "Ganti ke Mode Gelap"}
           >
             <i
@@ -152,6 +266,12 @@ export default function DashboardView({
               } w-5`}
             ></i>
             {isDarkMode ? "Mode Terang" : "Mode Gelap"}
+=======
+            title={isDarkMode ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
+          >
+            <i className={`fas ${isDarkMode ? 'fa-sun text-indigo-700' : 'fa-moon text-yellow-500'} w-5`}></i>
+            {!isDarkMode ? 'Mode Terang' : 'Mode Gelap'}
+>>>>>>> Stashed changes
           </button>
 
           {/* Logout Button */}
@@ -174,7 +294,11 @@ export default function DashboardView({
             onSave={(payload) => {
               console.log("Konten disimpan:", payload);
             }}
+<<<<<<< Updated upstream
             onBack={() => setSelectedMenu("beranda")}
+=======
+            onBack={() => setSelectedMenu('beranda')}
+>>>>>>> Stashed changes
           />
         ) : selectedMenu === "chat" ? (
           <div className="flex flex-col h-[calc(100vh-120px)]">
@@ -257,20 +381,27 @@ export default function DashboardView({
               >
                 ← Kembali ke Dashboard
               </button>
-              <h2 className="text-xl font-bold">Keuangan — {businessName}</h2>
             </div>
 
             <MenuKeuangan
               businessName={businessName}
+<<<<<<< Updated upstream
               period={
                 marketData?.period || new Date().toISOString().slice(0, 7)
               }
+=======
+              period={marketData?.period || new Date().toISOString().slice(0, 7)}
+>>>>>>> Stashed changes
               salesData={marketData?.sales || []}
               incomes={marketData?.incomes || []}
               marketingExpenses={marketData?.marketing || []}
             />
           </div>
+<<<<<<< Updated upstream
         ) : selectedMenu === "pengaturan" ? (
+=======
+        ) : selectedMenu === 'pengaturan' ? (
+>>>>>>> Stashed changes
           // Pengaturan view
           <div>
             <div className="flex items-center gap-3 mb-4">
@@ -280,7 +411,6 @@ export default function DashboardView({
               >
                 ← Kembali ke Dashboard
               </button>
-              <h2 className="text-xl font-bold">Pengaturan — {businessName}</h2>
             </div>
             <MenuPengaturan
               currentBusinessName={businessName}
@@ -321,6 +451,100 @@ export default function DashboardView({
                   businessDescription={businessDescription}
                   businessType={businessType}
                 />
+                {/* NEW: Custom Calendar below the MarketIntelligence (grafik toko) - Full width like the graph */}
+                <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
+                  <h2 className="text-lg font-semibold mb-4 text-slate-800 dark:text-slate-200">Kalender Acara</h2>
+                  <div className="flex flex-col lg:flex-row gap-4">
+                    {/* Calendar Grid (Tanggal di sebelah kiri) */}
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center mb-4">
+                        <button onClick={handlePrevMonth} className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
+                          <i className="fas fa-chevron-left"></i>
+                        </button>
+                        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
+                          {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                        </h3>
+                        <button onClick={handleNextMonth} className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
+                          <i className="fas fa-chevron-right"></i>
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-7 gap-1 mb-2">
+                        {dayNames.map(day => (
+                          <div key={day} className="text-center text-sm font-medium text-slate-500 dark:text-slate-400">
+                            {day}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-7 gap-1">
+                        {getDaysInMonth(currentDate).map((day, index) => {
+                          const eventCount = getEventsForDay(day).length;
+                          const dots = eventCount > 0 ? '.'.repeat(Math.min(eventCount, 5)) : '';
+                          return (
+                            <div
+                              key={index}
+                              onClick={() => handleDateClick(day)}
+                              className={`text-center py-2 px-1 text-sm cursor-pointer rounded hover:bg-slate-100 dark:hover:bg-slate-700 ${day ? 'text-slate-800 dark:text-slate-200' : ''
+                                } ${selectedDate === `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` ? 'bg-blue-100 dark:bg-blue-900' : ''}`}
+                            >
+                              {day}
+                              {dots && (
+                                <div className="mt-1">
+                                  <div className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs rounded-full px-1">
+                                    {dots}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {/* Event Panel (Di sebelah kanan) */}
+                    <div className="flex-1 border-l border-slate-200 dark:border-slate-700 pl-4">
+                      {selectedDate ? (
+                        <>
+                          <h3 className="text-md font-semibold mb-2 text-slate-800 dark:text-slate-200">
+                            Acara pada {selectedDate}
+                          </h3>
+                          <div className="space-y-2 max-h-48 overflow-y-auto mb-4">
+                            {(events[selectedDate] || []).map((event, index) => (
+                              <div key={index} className="flex justify-between items-center bg-slate-100 dark:bg-slate-700 rounded px-2 py-1">
+                                <span className="text-sm text-slate-800 dark:text-slate-200">{event}</span>
+                                <button
+                                  onClick={() => handleDeleteEvent(selectedDate, index)}
+                                  className="text-red-500 hover:text-red-700 text-sm"
+                                  title="Hapus Acara"
+                                >
+                                  <i className="fas fa-trash-alt"></i>
+                                </button>
+                              </div>
+                            ))}
+                            {(!events[selectedDate] || events[selectedDate].length === 0) && (
+                              <p className="text-sm text-slate-500 dark:text-slate-400">Tidak ada acara untuk tanggal ini.</p>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={newEvent}
+                              onChange={(e) => setNewEvent(e.target.value)}
+                              className="flex-1 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200"
+                              placeholder="Tambah acara baru..."
+                            />
+                            <button
+                              onClick={handleAddEvent}
+                              className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+                            >
+                              Tambah
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Pilih tanggal untuk melihat atau menambah acara.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </>
@@ -328,4 +552,8 @@ export default function DashboardView({
       </main>
     </div>
   );
+<<<<<<< Updated upstream
 }
+=======
+} 
+>>>>>>> Stashed changes

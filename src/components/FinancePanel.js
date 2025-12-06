@@ -141,9 +141,8 @@ export default function FinancePanel({ transactions, onAddTransaction }) {
               >
                 <span className="text-slate-700 dark:text-slate-300 truncate w-1/2">{t.desc}</span>
                 <span
-                  className={`font-bold ${
-                    t.type === 'in' ? 'text-green-600' : 'text-red-600'
-                  }`}
+                  className={`font-bold ${t.type === 'in' ? 'text-green-600' : 'text-red-600'
+                    }`}
                 >
                   {t.type === 'in' ? '+' : '-'} {t.amount.toLocaleString('id-ID')}
                 </span>

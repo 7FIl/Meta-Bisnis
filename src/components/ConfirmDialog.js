@@ -67,25 +67,22 @@ function ConfirmDialogComponent({ title, message, onConfirm, onCancel, confirmTe
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-black z-40 transition-opacity duration-200 ${
-          isExiting ? 'opacity-0' : 'opacity-50'
-        }`}
+        className={`fixed inset-0 bg-black z-40 transition-opacity duration-200 ${isExiting ? 'opacity-0' : 'opacity-50'
+          }`}
         onClick={handleCancel}
       />
 
       {/* Dialog */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className={`bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 transition-all duration-200 ${
-            isExiting ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
-          }`}
+          className={`bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 transition-all duration-200 ${isExiting ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+            }`}
         >
           {/* Icon */}
           <div className="flex justify-center mb-4">
             <div
-              className={`w-16 h-16 rounded-full flex items-center justify-center ${
-                isDangerous ? 'bg-red-100' : 'bg-blue-100'
-              }`}
+              className={`w-16 h-16 rounded-full flex items-center justify-center ${isDangerous ? 'bg-red-100' : 'bg-blue-100'
+                }`}
             >
               <span className={`text-3xl ${isDangerous ? 'text-red-600' : 'text-blue-600'}`}>
                 {isDangerous ? '⚠' : '❓'}
@@ -109,11 +106,10 @@ function ConfirmDialogComponent({ title, message, onConfirm, onCancel, confirmTe
             </button>
             <button
               onClick={handleConfirm}
-              className={`flex-1 py-2.5 px-4 rounded-lg text-white font-medium transition-colors duration-200 ${
-                isDangerous
+              className={`flex-1 py-2.5 px-4 rounded-lg text-white font-medium transition-colors duration-200 ${isDangerous
                   ? 'bg-red-600 hover:bg-red-700'
                   : 'bg-blue-600 hover:bg-blue-700'
-              }`}
+                }`}
             >
               {confirmText}
             </button>

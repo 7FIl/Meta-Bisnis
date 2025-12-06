@@ -148,7 +148,7 @@ export default function MarketIntelligence({ businessName, marketData, businessL
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { 
+            plugins: {
               legend: { display: false },
               tooltip: {
                 backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -163,20 +163,20 @@ export default function MarketIntelligence({ businessName, marketData, businessL
               }
             },
             scales: {
-              y: { 
-                beginAtZero: true, 
+              y: {
+                beginAtZero: true,
                 display: true,
                 ticks: {
                   color: 'rgba(100, 116, 139, 0.7)',
                   font: { size: 11, weight: '500' },
                   padding: 8,
                 },
-                grid: { 
+                grid: {
                   color: 'rgba(100, 116, 139, 0.1)',
                   drawBorder: false,
                 }
               },
-              x: { 
+              x: {
                 grid: { display: false },
                 ticks: {
                   color: 'rgba(100, 116, 139, 0.7)',

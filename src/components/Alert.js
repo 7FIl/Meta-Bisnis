@@ -20,7 +20,7 @@ export function AlertProvider({ children }) {
 
   const show = (title, message, onConfirm, onCancel, options = {}) => {
     const id = Date.now();
-    
+
     // Jika sudah mencapai batas maksimal, hapus alert tertua terlebih dahulu
     setAlerts((prev) => {
       let newAlerts = [...prev];
@@ -28,11 +28,11 @@ export function AlertProvider({ children }) {
         // Hapus alert pertama (tertua)
         newAlerts.shift();
       }
-      
-      newAlerts.push({ 
-        id, 
-        title, 
-        message, 
+
+      newAlerts.push({
+        id,
+        title,
+        message,
         onConfirm,
         onCancel,
         type: options.type || 'info', // 'info', 'success', 'warning', 'error'
@@ -40,10 +40,10 @@ export function AlertProvider({ children }) {
         cancelText: options.cancelText || 'Batal',
         hasCancel: options.hasCancel !== false, // default true
       });
-      
+
       return newAlerts;
     });
-    
+
     return id;
   };
 
@@ -51,16 +51,16 @@ export function AlertProvider({ children }) {
     setAlerts((prev) => prev.filter((a) => a.id !== id));
   };
 
-  const info = (title, message, onConfirm, onCancel, confirmText = 'OK', cancelText = 'Batal') => 
+  const info = (title, message, onConfirm, onCancel, confirmText = 'OK', cancelText = 'Batal') =>
     show(title, message, onConfirm, onCancel, { type: 'info', confirmText, cancelText });
-  
-  const success = (title, message, onConfirm, onCancel, confirmText = 'OK', cancelText = 'Batal') => 
+
+  const success = (title, message, onConfirm, onCancel, confirmText = 'OK', cancelText = 'Batal') =>
     show(title, message, onConfirm, onCancel, { type: 'success', confirmText, cancelText });
-  
-  const warning = (title, message, onConfirm, onCancel, confirmText = 'Keluar', cancelText = 'Batal') => 
+
+  const warning = (title, message, onConfirm, onCancel, confirmText = 'Keluar', cancelText = 'Batal') =>
     show(title, message, onConfirm, onCancel, { type: 'warning', confirmText, cancelText });
-  
-  const error = (title, message, onConfirm, onCancel, confirmText = 'OK', cancelText = 'Batal') => 
+
+  const error = (title, message, onConfirm, onCancel, confirmText = 'OK', cancelText = 'Batal') =>
     show(title, message, onConfirm, onCancel, { type: 'error', confirmText, cancelText });
 
   return (
@@ -148,18 +148,16 @@ function AlertItem({ alert, onRemove }) {
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-black z-40 transition-opacity duration-300 ${
-          isExiting ? 'opacity-0' : 'opacity-50'
-        }`}
+        className={`fixed inset-0 bg-black z-40 transition-opacity duration-300 ${isExiting ? 'opacity-0' : 'opacity-50'
+          }`}
         onClick={handleCancel}
       />
 
       {/* Alert Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className={`bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transition-all duration-300 ${
-            isExiting ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
-          }`}
+          className={`bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transition-all duration-300 ${isExiting ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
+            }`}
         >
           {/* Header dengan Icon */}
           <div className={`${bgColor} border-b-2 p-6 flex items-start gap-4`}>
