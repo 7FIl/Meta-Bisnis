@@ -7,9 +7,10 @@ export default function MarketIntelligence({ businessName, marketData, businessL
   const chartInstanceRef = useRef(null);
   const [timeframe, setTimeframe] = useState('weekly'); // 'daily' | 'weekly' | 'monthly'
   const [trafficInsight, setTrafficInsight] = useState({ summary: '', bullets: [] });
-  const [aiInsight, setAiInsight] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState('');
+  // AI features temporarily disabled
+  // const [aiInsight, setAiInsight] = useState('');
+  // const [aiLoading, setAiLoading] = useState(false);
+  // const [aiError, setAiError] = useState('');
 
   // Bangun insight singkat yang mengikuti timeframe traffic
   const buildTrafficInsight = (tf) => {
@@ -37,51 +38,16 @@ export default function MarketIntelligence({ businessName, marketData, businessL
     setTrafficInsight(buildTrafficInsight(timeframe));
   }, [timeframe]);
 
-  const generateAIInsight = async () => {
-    setAiLoading(true);
-    setAiError('');
-    try {
-      const data = getChartDataFor(timeframe);
-      const label = timeframe === 'daily' ? 'harian' : timeframe === 'weekly' ? 'mingguan' : 'bulanan';
-      const values = data.customers || data.data || [];
-      const formattedValues = values.join(', ');
+  // DISABLED: AI Analysis feature temporarily disabled
+  // const generateAIInsight = async () => {
+  //   setAiLoading(true);
+  //   setAiError('');
+  //   ...
+  // };
 
-      const message = `Analisis singkat dan padat dalam Bahasa Indonesia tentang traffic ${label} untuk bisnis ${businessName || 'UMKM'}. Tipe: ${businessType || 'tidak disebutkan'}. Lokasi: ${businessLocation || 'Indonesia'}. Deskripsi: ${businessDescription || '-'}.
-    Data kunjungan (${label}): [${formattedValues}].
-    Keluaran: 1 paragraf ringkas (maks 3 kalimat) + 3 bullet aksi praktis (8-12 kata, fokus promosi/stok-tim/jam buka/kanal pemasaran). Hindari kata bertele-tele. Jangan gunakan JSON.`;
-
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          topic: 'analysis',
-          message,
-          businessName,
-          businessType,
-          businessLocation,
-          max_tokens: 260
-        })
-      });
-
-      const json = await res.json();
-      if (res.ok && json.success && json.reply) {
-        setAiInsight(json.reply);
-      } else {
-        setAiInsight('');
-        setAiError(json.error || 'Gagal mengambil analisis AI');
-      }
-    } catch (err) {
-      console.error('[MarketIntelligence] AI insight error', err);
-      setAiInsight('');
-      setAiError('Terjadi kesalahan saat mengambil analisis AI');
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    generateAIInsight();
-  }, [timeframe]);
+  // useEffect(() => {
+  //   generateAIInsight();
+  // }, [timeframe]);
 
   const getChartDataFor = (tf) => {
     if (tf === 'daily') {
@@ -250,21 +216,15 @@ export default function MarketIntelligence({ businessName, marketData, businessL
           <div className="bg-slate-50 border border-slate-200 rounded-lg overflow-y-auto h-64">
             <div className="p-3 border-b border-slate-200 bg-indigo-50/60">
               <p className="text-[11px] font-semibold text-indigo-700 uppercase mb-1 flex items-center gap-1">
-                <i className="fas fa-robot"></i> Insight Traffic
+                <i className="fas fa-chart-line"></i> Insight Traffic
               </p>
               <p className="text-sm text-slate-700 leading-relaxed">
-                {aiLoading
-                  ? 'AI sedang menganalisis traffic...'
-                  : aiError
-                    ? aiError
-                    : (aiInsight || trafficInsight.summary || 'Belum ada data traffic.')}
+                {trafficInsight.summary || 'Belum ada data traffic.'}
               </p>
             </div>
 
             <div className="p-3 flex flex-col gap-2">
-              {aiInsight && (
-                <p className="text-xs text-slate-500">Insight AI di atas; berikut baseline rekomendasi dari data mentah:</p>
-              )}
+              <p className="text-xs text-slate-500 mb-1">Rekomendasi Aksi:</p>
               {trafficInsight.bullets.map((item, idx) => (
                 <div key={idx} className="flex items-start gap-2">
                   <span className="text-[10px] text-indigo-500 mt-0.5"><i className="fas fa-circle"></i></span>

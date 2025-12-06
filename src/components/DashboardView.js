@@ -48,39 +48,12 @@ export default function DashboardView({
   const [selectedDate, setSelectedDate] = useState(null); // Selected date for event panel
   const [newEvent, setNewEvent] = useState(''); // Input for new event
 
-  // Theme initialization
-  // Theme initialization
+  // Theme initialization - default light, honor saved preference
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
-    const systemPrefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches;
-    // Set Light Mode as initial default, unless "dark" is explicitly saved
-<<<<<<< Updated upstream
-    const initialDark =
-      savedTheme === "dark" || (savedTheme === null && systemPrefersDark);
-=======
-    const initialDark = savedTheme === 'dark' || (savedTheme === null && systemPrefersDark);
->>>>>>> Stashed changes
-
+    const initialDark = savedTheme === "dark";
     setIsDarkMode(initialDark);
-    applyTheme(initialDark); // Ensure it's applied on mount
-
-    // Clean up function for system preference changes
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = (e) => {
-<<<<<<< Updated upstream
-      if (!localStorage.getItem("theme")) {
-        // Only react to system changes if no preference is saved
-=======
-      if (!localStorage.getItem('theme')) { // Only react to system changes if no preference is saved
->>>>>>> Stashed changes
-        setIsDarkMode(e.matches);
-        applyTheme(e.matches);
-      }
-    };
-    mediaQuery.addEventListener("change", handler);
-    return () => mediaQuery.removeEventListener("change", handler);
+    applyTheme(initialDark);
   }, []);
 
   const handleThemeToggle = () => {
@@ -137,7 +110,7 @@ export default function DashboardView({
   };
 
   const handleDeleteEvent = (dateKey, index) => {
-    setEvents(prev => {
+    setEvents((prev) => {
       const newEvents = { ...prev };
       newEvents[dateKey] = newEvents[dateKey].filter((_, i) => i !== index);
       if (newEvents[dateKey].length === 0) delete newEvents[dateKey];
@@ -158,18 +131,15 @@ export default function DashboardView({
   const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
   return (
-    // Base colors set to light mode: bg-slate-50
-    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-900">
+    // Base colors set to pure light (white) by default, dark remains for toggle
+    <div className="min-h-screen flex bg-white dark:bg-slate-900">
       {/* Sidebar - base colors set to light mode: bg-white */}
       <aside className="w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 hidden md:flex flex-col fixed h-full z-10">
         <div className="p-6 border-b border-slate-100 dark:border-slate-700">
           <div className="flex items-center gap-2 font-bold text-xl text-indigo-700 dark:text-indigo-400">
             <i className="fas fa-store"></i> <span>{businessName}</span>
           </div>
-<<<<<<< Updated upstream
-          <p className="text-xs text-slate-500 text-slate-400 mt-1">
-            Managed by Meta Bisnis
-          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Managed by Meta Bisnis</p>
         </div>
 
         <nav className="p-4 space-y-1 flex-1">
@@ -186,31 +156,26 @@ export default function DashboardView({
               className={`w-full text-left flex items-center justify-between gap-3 px-4 py-3 rounded-lg font-medium transition-colors
             ${
               selectedMenu === item.menu
-                ? // KONDISI KETIKA MENU AKTIF: Latar belakang biru muda, font-weight diatur di <span>
-                  ""
-                : // KONDISI KETIKA MENU TIDAK AKTIF: Teks abu-abu
-                  "text-slate-600 hover:bg-slate-100"
+                ? "bg-blue-50 text-blue-700 dark:bg-slate-700/60 dark:text-blue-200"
+                : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
             }
           `}
             >
               <div className="flex items-center gap-3">
-                {/* 1. KONTROL IKON: Warna biru ketika aktif, abu-abu ketika tidak */}
                 <i
                   className={`fas ${item.icon} w-5 
                 ${
                   selectedMenu === item.menu
-                    ? "text-blue-700" // IKON TETAP BIRU
-                    : "text-slate-500"
+                    ? "text-blue-700 dark:text-blue-300"
+                    : "text-slate-500 dark:text-slate-400"
                 }
               `}
                 ></i>
-
-                {/* 2. KONTROL TEKS: Bold dan warna hitam ketika aktif */}
                 <span
                   className={`${
                     selectedMenu === item.menu
-                      ? "font-bold text-slate-800" // TEKS JADI BOLD DAN WARNA HITAM
-                      : "font-medium" // Teks tidak aktif
+                      ? "font-semibold text-slate-900 dark:text-slate-100"
+                      : "font-medium text-slate-700 dark:text-slate-300"
                   }`}
                 >
                   {item.name}
@@ -218,35 +183,6 @@ export default function DashboardView({
               </div>
             </button>
           ))}
-=======
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Managed by Meta Bisnis</p>
-        </div>
-
-        <nav className="p-4 space-y-1 flex-1">
-          {
-            [
-              { name: 'Beranda', icon: 'fa-home', menu: 'beranda' },
-              { name: 'Pemasaran AI', icon: 'fa-bullhorn', menu: 'pemasaran' },
-              { name: 'Keuangan', icon: 'fa-calculator', menu: 'keuangan' },
-              { name: 'Chat AI', icon: 'fa-comments', menu: 'chat' },
-              { name: 'Pengaturan', icon: 'fa-cog', menu: 'pengaturan' },
-            ].map(item => (
-              <button
-                key={item.menu}
-                onClick={() => setSelectedMenu(item.menu)}
-                className={`w-full text-left flex items-center justify-between gap-3 px-4 py-3 
-                  ${selectedMenu === item.menu
-                    ? 'bg-blue-50 dark:bg-indigo-600/50 text-blue-700 dark:text-blue-300 rounded-lg font-medium'
-                    : 'text-slate-600 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-300 rounded-lg font-medium transition-colors'
-                  }`}
-              >
-                <div className="flex items-center gap-3">
-                  <i className={`fas ${item.icon} w-5`}></i> {item.name}
-                </div>
-              </button>
-            ))
-          }
->>>>>>> Stashed changes
         </nav>
 
         {/* Theme Toggle Button & Logout Button */}
@@ -254,8 +190,7 @@ export default function DashboardView({
           {/* Theme Toggle Button (Master Toggle - 'Disetiap menu' access point) */}
           <button
             onClick={handleThemeToggle}
-            className="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-300 rounded-lg w-full transition-colors text-sm font-medium"
-<<<<<<< Updated upstream
+            className="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg w-full transition-colors text-sm font-medium"
             title={isDarkMode ? "Ganti ke Mode Terang" : "Ganti ke Mode Gelap"}
           >
             <i
@@ -266,12 +201,6 @@ export default function DashboardView({
               } w-5`}
             ></i>
             {isDarkMode ? "Mode Terang" : "Mode Gelap"}
-=======
-            title={isDarkMode ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
-          >
-            <i className={`fas ${isDarkMode ? 'fa-sun text-indigo-700' : 'fa-moon text-yellow-500'} w-5`}></i>
-            {!isDarkMode ? 'Mode Terang' : 'Mode Gelap'}
->>>>>>> Stashed changes
           </button>
 
           {/* Logout Button */}
@@ -285,7 +214,7 @@ export default function DashboardView({
       </aside>
 
       {/* Main Content (All content will adapt via global CSS and dark: utilities) */}
-      <main className="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto">
+      <main className="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto bg-white dark:bg-slate-900">
         {selectedMenu === "pemasaran" ? (
           <MenuPemasaranAI
             businessName={businessName}
@@ -294,11 +223,7 @@ export default function DashboardView({
             onSave={(payload) => {
               console.log("Konten disimpan:", payload);
             }}
-<<<<<<< Updated upstream
             onBack={() => setSelectedMenu("beranda")}
-=======
-            onBack={() => setSelectedMenu('beranda')}
->>>>>>> Stashed changes
           />
         ) : selectedMenu === "chat" ? (
           <div className="flex flex-col h-[calc(100vh-120px)]">
@@ -385,23 +310,15 @@ export default function DashboardView({
 
             <MenuKeuangan
               businessName={businessName}
-<<<<<<< Updated upstream
               period={
                 marketData?.period || new Date().toISOString().slice(0, 7)
               }
-=======
-              period={marketData?.period || new Date().toISOString().slice(0, 7)}
->>>>>>> Stashed changes
               salesData={marketData?.sales || []}
               incomes={marketData?.incomes || []}
               marketingExpenses={marketData?.marketing || []}
             />
           </div>
-<<<<<<< Updated upstream
         ) : selectedMenu === "pengaturan" ? (
-=======
-        ) : selectedMenu === 'pengaturan' ? (
->>>>>>> Stashed changes
           // Pengaturan view
           <div>
             <div className="flex items-center gap-3 mb-4">
@@ -425,10 +342,10 @@ export default function DashboardView({
           </div>
         ) : (
           <>
-            <div className="bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl p-6 mb-8 shadow-lg flex justify-between items-center">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl p-6 mb-8 shadow-lg flex justify-between items-center">
               <div>
                 <h1 className="text-xl font-bold">Halo, {userName}!</h1>
-                <p className="text-slate-800 text-sm">
+                <p className="text-sm text-slate-700 dark:text-white/90">
                   AI telah menyiapkan strategi hari ini untuk{" "}
                   <span className="font-bold underline">{businessName}</span>.
                 </p>
@@ -533,7 +450,7 @@ export default function DashboardView({
                             />
                             <button
                               onClick={handleAddEvent}
-                              className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+                              className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
                             >
                               Tambah
                             </button>
@@ -552,8 +469,4 @@ export default function DashboardView({
       </main>
     </div>
   );
-<<<<<<< Updated upstream
 }
-=======
-} 
->>>>>>> Stashed changes
