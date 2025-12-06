@@ -1,6 +1,11 @@
+// next.config.mjs
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  images: {
+    // Tambahkan hostname ini untuk mengizinkan gambar profil Google
+    domains: ['lh3.googleusercontent.com'],
+  },
 };
 
 export default nextConfig;

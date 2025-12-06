@@ -11,12 +11,13 @@ import { useAlert } from '@/components/Alert';
 
 import ConsultationView from '@/components/ConsultationView';
 import DashboardView from '@/components/DashboardView';
+import OnboardingView from '@/components/OnboardingView'; // <-- IMPORTED
 
 export default function Home() {
   const toast = useToast();
   const alert = useAlert();
   const [user, setUser] = useState(null);
-  const [currentView, setCurrentView] = useState('consultation'); // 'consultation' atau 'dashboard'
+  const [currentView, setCurrentView] = useState('consultation'); // 'consultation', 'onboarding', atau 'dashboard'
   const [businessData, setBusinessData] = useState(null);
   const [absences, setAbsences] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -29,7 +30,6 @@ export default function Home() {
   const [currentUserName, setCurrentUserName] = useState('Pengguna');
   const [currentBusinessLocation, setCurrentBusinessLocation] = useState('Lokasi Tidak Diketahui');
   const [currentBusinessDescription, setCurrentBusinessDescription] = useState('');
-  const [currentBusinessType, setCurrentBusinessType] = useState('');
   
   // Auth listener
   useEffect(() => {
@@ -38,11 +38,9 @@ export default function Home() {
       if (currentUser && currentUser.emailVerified) {
         // Set initial user name from firebase/email
         setCurrentUserName(currentUser.displayName || currentUser.email.split('@')[0]);
-        setCurrentView('dashboard');
         
-        // Set initial business name (from consultation data or default)
-        // Try to load persisted user settings from Firestore
         (async () => {
+          let hasBusinessData = false;
           try {
             const settings = await getUserSettings(currentUser.uid);
             if (settings) {
@@ -51,43 +49,60 @@ export default function Home() {
               setCurrentUserName(settings.userName || (currentUser.displayName || currentUser.email.split('@')[0]));
               setCurrentBusinessLocation(settings.businessLocation || 'Lokasi Tidak Diketahui');
               setCurrentBusinessDescription(settings.businessDescription || '');
-              setCurrentBusinessType(settings.businessType || '');
               setEmployees(settings.employees || []);
-              // If you stored a businessData object, prefer that
-              if (settings.businessData) setBusinessData(settings.businessData);
-            } else {
-              // No persisted settings — fall back to existing logic
-              if (!businessData?.name) {
-                setCurrentBusinessName(currentUser.displayName ? `${currentUser.displayName}'s Business` : 'Dashboard Bisnis');
-                setCurrentBusinessLocation('Lokasi Tidak Diketahui');
-                setCurrentBusinessDescription('');
-                setCurrentBusinessType('');
-              } else {
-                setCurrentBusinessName(businessData.name);
-                setCurrentBusinessLocation(businessData.location || 'Lokasi Tidak Diketahui');
-                setCurrentBusinessDescription(businessData.description || '');
+              
+              // Cek apakah ada data bisnis
+              if (settings.businessData && settings.businessData.name) {
+                  setBusinessData(settings.businessData);
+                  hasBusinessData = true;
+              } else if (settings.businessName && settings.businessName !== 'Dashboard Bisnis') {
+                  // Fallback: Jika ada nama bisnis tersimpan (dari setup manual sebelumnya)
+                  const fallbackData = {
+                      name: settings.businessName,
+                      description: settings.businessDescription || 'Detail bisnis diatur manual',
+                      capital_est: 'N/A',
+                      target_market: 'N/A',
+                      challenge: 'N/A',
+                      location: settings.businessLocation
+                  };
+                  setBusinessData(fallbackData);
+                  hasBusinessData = true;
               }
+            } 
+            
+            // LOGIKA ONBOARDING BARU:
+            if (!hasBusinessData) {
+                // Jika tidak ada data bisnis, arahkan ke onboarding
+                setCurrentView('onboarding');
+            } else {
+                // Jika data bisnis ada, lanjutkan ke dashboard
+                setCurrentView('dashboard');
             }
+
           } catch (e) {
             console.error('Failed to load user settings:', e);
+            // Pada error, default ke onboarding (lebih aman)
+            setCurrentView('onboarding');
           }
         })();
       } else {
-        // Reset to default mock names if no user or unverified
+        // Reset ke default dan kembali ke consultation view
+        setCurrentView('consultation');
         setCurrentUserName('Pengguna');
         setCurrentBusinessName('Dashboard');
         setCurrentBusinessLocation('Lokasi Tidak Diketahui');
         setCurrentBusinessDescription('');
         setEmployees([]);
+        setBusinessData(null); 
       }
     });
     return () => unsub();
-  }, [businessData]);
+  }, []);
 
   const handleLogin = async () => {
     try {
       await loginWithGoogle();
-      // onAuthStateChanged will update `user`
+      // onAuthStateChanged akan mengurus transisi (termasuk onboarding check)
     } catch (err) {
       console.error('Login failed', err);
       toast.error('Gagal login: ' + err.message);
@@ -110,7 +125,6 @@ export default function Home() {
           setCurrentUserName('Pengguna'); // Reset custom name
           setCurrentBusinessLocation('Lokasi Tidak Diketahui');
           setCurrentBusinessDescription('');
-          setCurrentBusinessType('');
           setEmployees([]);
         } catch (err) {
           console.error('Logout failed', err);
@@ -125,7 +139,7 @@ export default function Home() {
     );
   };
   
-  // Handler to delete account
+  // Handler to delete account (existing)
   const handleDeleteAccount = async () => {
       if (auth.currentUser) {
           try {
@@ -159,21 +173,41 @@ export default function Home() {
   };
 
 
-  const handleConsultAI = async (input, setupBusiness = false) => {
+  // MODIFIKASI: Menambahkan parameter fromOnboarding
+  const handleConsultAI = async (input, setupBusiness = false, fromOnboarding = false) => {
     if (setupBusiness) {
       if (!user) {
         toast.warning('Silakan login dengan Google untuk memulai bisnis Anda!');
         await handleLogin();
       }
       
-      const finalBusinessName = businessData?.name || currentBusinessName;
+      const finalBusinessData = businessData;
+      if (!finalBusinessData) {
+          // Jika tidak ada businessData, kembali ke konsultasi
+          setLoading(false);
+          setCurrentView('consultation');
+          return;
+      }
 
-      setCurrentBusinessName(finalBusinessName);
+      setCurrentBusinessName(finalBusinessData.name);
       setCurrentView('dashboard');
+      
+      // Persist the current businessData (sudah ada)
+      if (finalBusinessData && auth.currentUser) {
+          await saveUserSettings(auth.currentUser.uid, { 
+              businessData: finalBusinessData, 
+              businessName: finalBusinessData.name,
+              businessLocation: finalBusinessData.location,
+              businessDescription: finalBusinessData.description
+          });
+      }
       return;
     }
 
-    if (!input) return;
+    if (!input) {
+        setBusinessData(null); // Clear recommendation
+        return;
+    }
 
     setLoading(true);
 
@@ -233,6 +267,15 @@ export default function Home() {
       setBusinessData(newBusinessData);
       setCurrentBusinessName(newBusinessData.name); // Set current name from the new data
       
+      // LOGIKA BARU: Jika dari onboarding, langsung simpan dan pindah ke dashboard
+      if (fromOnboarding) {
+          // Jika dari onboarding, jangan langsung pindah view, tapi biarkan OnboardingView 
+          // menampilkan hasilnya. Pindah view hanya ketika tombol "Mulai" ditekan (setupBusiness=true)
+          // TAPI KARENA LOGIKA CONSULTATION VIEW LAMA MENGANDALKAN AUTO-SWITCH, 
+          // MAKA KITA PERLU LOGIKA UNTUK KONSULTASI LAMA/BARU
+          // Di sini kita biarkan state diperbarui, transisi diurus oleh tombol di OnboardingView/ConsultationView
+      }
+      
     } catch (error) {
       console.error(error);
       toast.error('Maaf, AI sedang sibuk. Coba lagi nanti.');
@@ -280,8 +323,7 @@ export default function Home() {
     businessName, 
     userName, 
     businessLocation, 
-    businessDescription = currentBusinessDescription,
-    businessType = currentBusinessType
+    businessDescription = currentBusinessDescription
   }) => {
     // 1. Update mock user name state
     setCurrentUserName(userName);
@@ -290,29 +332,19 @@ export default function Home() {
     setCurrentBusinessName(businessName);
     setCurrentBusinessLocation(businessLocation);
     setCurrentBusinessDescription(businessDescription);
-    setCurrentBusinessType(businessType);
     
-    // 3. Update businessData object (if exists)
-    if (businessData) {
-        setBusinessData(prev => ({ 
-            ...prev, 
-            name: businessName, 
-            location: businessLocation, 
-            description: businessDescription || prev.description
-        }));
-    } else {
-        // If businessData is null, create a minimal version
-        setBusinessData({ 
-            name: businessName, 
-            description: businessDescription || 'Nama bisnis diatur manual', 
-            capital_est: 'N/A', 
-            target_market: 'N/A', 
-            challenge: 'N/A',
-            location: businessLocation
-        });
-    }
+    // 3. Create new businessData object
+    const newBusinessData = { 
+        name: businessName, 
+        description: businessDescription || 'Nama bisnis diatur manual', 
+        capital_est: 'N/A', 
+        target_market: 'N/A', 
+        challenge: 'N/A',
+        location: businessLocation
+    };
     
-    // Simulate API delay
+    setBusinessData(newBusinessData);
+    
     // persist settings to Firestore for this user (if available)
     if (auth.currentUser) {
       const payload = {
@@ -320,8 +352,7 @@ export default function Home() {
         userName,
         businessLocation,
         businessDescription,
-        businessType,
-        businessData: businessData || null,
+        businessData: newBusinessData,
       };
 
       try {
@@ -335,7 +366,28 @@ export default function Home() {
 
     return new Promise(resolve => setTimeout(resolve, 500));
   };
+  
+  // NEW HANDLER FOR ONBOARDING MANUAL SETUP COMPLETION
+  const handleSetupComplete = async (settingsPayload) => {
+      // Use existing update settings logic to save to state and Firestore
+      await handleUpdateSettings(settingsPayload);
+      // Directly transition to dashboard
+      setCurrentView('dashboard');
+  }
 
+
+  // NEW VIEW: ONBOARDING
+  if (currentView === 'onboarding' && user) {
+    return (
+      <OnboardingView
+        user={user}
+        onConsultAI={(input, setupBusiness) => handleConsultAI(input, setupBusiness, true)} // AI consult from onboarding
+        onSetupComplete={handleSetupComplete} // manual setup, auto-switch to dashboard
+        businessData={businessData} // Kirim businessData agar OnboardingView bisa menampilkan hasil
+        loading={loading} // Kirim loading state
+      />
+    );
+  }
 
   // Show dashboard if user requested it and is logged in.
   if (currentView === 'dashboard' && user) {
@@ -346,7 +398,6 @@ export default function Home() {
         currentUserEmail={user.email}
         businessLocation={currentBusinessLocation}
         businessDescription={currentBusinessDescription}
-        businessType={currentBusinessType}
         onLogout={handleLogout}
         absences={absences}
         onAddAbsence={handleAddAbsence}
@@ -363,6 +414,7 @@ export default function Home() {
     );
   }
 
+  // Fallback to ConsultationView
   return (
     <ConsultationView
       user={user}
