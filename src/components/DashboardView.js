@@ -4,7 +4,6 @@
 import { useEffect, useRef, useState } from 'react';
 import EmployeeAbsence from './EmployeeAbsence';
 import MarketIntelligence from './MarketIntelligence';
-import MarketingStudio from './MarketingStudio';
 import MenuPemasaranAI from './MenuPemasaranAI';
 import MenuChatAI from './MenuChatAI';
 import MenuKeuangan from './MenuKeuangan';
@@ -37,6 +36,7 @@ export default function DashboardView({
   // NEW PROPS
   businessLocation,
   businessDescription,
+  businessType = '',
 }) {
   const chartRef = useRef(null);
   const [selectedMenu, setSelectedMenu] = useState('beranda');
@@ -160,6 +160,7 @@ export default function DashboardView({
                     name: businessName || 'Bisnis pengguna',
                     location: businessLocation || 'Lokasi tidak ditentukan',
                     description: businessDescription || 'Belum ada deskripsi',
+                    type: businessType || 'Tipe tidak ditentukan',
                   };
                   const recent = history.slice(-12); // limit history to keep payload light
                   const payload = {
@@ -168,7 +169,7 @@ export default function DashboardView({
                     messages: [
                       {
                         role: 'system',
-                        content: `Gunakan konteks bisnis: nama=${businessContext.name}; lokasi=${businessContext.location}; deskripsi=${businessContext.description}. Jangan memaksakan penyebutan nama bisnis jika tidak relevan; gunakan hanya ketika membantu jawaban. Utamakan penalaran dan sampaikan jawaban singkat, terstruktur, dan langsung.`
+                        content: `Gunakan konteks bisnis: nama=${businessContext.name}; tipe=${businessContext.type}; lokasi=${businessContext.location}; deskripsi=${businessContext.description}. Jangan memaksakan penyebutan nama bisnis jika tidak relevan; gunakan hanya ketika membantu jawaban. Utamakan penalaran dan sampaikan jawaban singkat, terstruktur, dan langsung.`
                       },
                       ...recent.map((m) => ({
                         role: m.role === 'ai' ? 'assistant' : 'user',
@@ -178,6 +179,8 @@ export default function DashboardView({
                     ],
                     topic,
                     context: businessContext,
+                    businessName,
+                    businessType,
                   };
 
                   const res = await fetch(url, {
@@ -237,6 +240,7 @@ export default function DashboardView({
                 currentUserEmail={currentUserEmail}
                 currentBusinessLocation={businessLocation}
               currentBusinessDescription={businessDescription}
+              currentBusinessType={businessType}
                 onUpdateSettings={onUpdateSettings}
                 onDeleteAccount={onDeleteAccount}
             />
@@ -267,8 +271,8 @@ export default function DashboardView({
                   marketData={marketData}
                   businessLocation={businessLocation}
                   businessDescription={businessDescription}
+                  businessType={businessType}
                 />
-                <MarketingStudio businessName={businessName} />
               </div>
             </div>
           </>

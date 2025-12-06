@@ -29,6 +29,7 @@ export default function Home() {
   const [currentUserName, setCurrentUserName] = useState('Pengguna');
   const [currentBusinessLocation, setCurrentBusinessLocation] = useState('Lokasi Tidak Diketahui');
   const [currentBusinessDescription, setCurrentBusinessDescription] = useState('');
+  const [currentBusinessType, setCurrentBusinessType] = useState('');
   
   // Auth listener
   useEffect(() => {
@@ -50,6 +51,7 @@ export default function Home() {
               setCurrentUserName(settings.userName || (currentUser.displayName || currentUser.email.split('@')[0]));
               setCurrentBusinessLocation(settings.businessLocation || 'Lokasi Tidak Diketahui');
               setCurrentBusinessDescription(settings.businessDescription || '');
+              setCurrentBusinessType(settings.businessType || '');
               setEmployees(settings.employees || []);
               // If you stored a businessData object, prefer that
               if (settings.businessData) setBusinessData(settings.businessData);
@@ -59,6 +61,7 @@ export default function Home() {
                 setCurrentBusinessName(currentUser.displayName ? `${currentUser.displayName}'s Business` : 'Dashboard Bisnis');
                 setCurrentBusinessLocation('Lokasi Tidak Diketahui');
                 setCurrentBusinessDescription('');
+                setCurrentBusinessType('');
               } else {
                 setCurrentBusinessName(businessData.name);
                 setCurrentBusinessLocation(businessData.location || 'Lokasi Tidak Diketahui');
@@ -107,6 +110,7 @@ export default function Home() {
           setCurrentUserName('Pengguna'); // Reset custom name
           setCurrentBusinessLocation('Lokasi Tidak Diketahui');
           setCurrentBusinessDescription('');
+          setCurrentBusinessType('');
           setEmployees([]);
         } catch (err) {
           console.error('Logout failed', err);
@@ -276,7 +280,8 @@ export default function Home() {
     businessName, 
     userName, 
     businessLocation, 
-    businessDescription = currentBusinessDescription
+    businessDescription = currentBusinessDescription,
+    businessType = currentBusinessType
   }) => {
     // 1. Update mock user name state
     setCurrentUserName(userName);
@@ -285,6 +290,7 @@ export default function Home() {
     setCurrentBusinessName(businessName);
     setCurrentBusinessLocation(businessLocation);
     setCurrentBusinessDescription(businessDescription);
+    setCurrentBusinessType(businessType);
     
     // 3. Update businessData object (if exists)
     if (businessData) {
@@ -314,6 +320,7 @@ export default function Home() {
         userName,
         businessLocation,
         businessDescription,
+        businessType,
         businessData: businessData || null,
       };
 
@@ -339,6 +346,7 @@ export default function Home() {
         currentUserEmail={user.email}
         businessLocation={currentBusinessLocation}
         businessDescription={currentBusinessDescription}
+        businessType={currentBusinessType}
         onLogout={handleLogout}
         absences={absences}
         onAddAbsence={handleAddAbsence}

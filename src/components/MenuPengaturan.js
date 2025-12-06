@@ -166,6 +166,19 @@ const PROVINCES = {
   "Papua Barat Daya": ["Kaimana","Teluk Arguni","Raja Ampat","Sorong Selatan"]
 };
 
+// BUSINESS TYPE categories - Global option tanpa subcategory bertingkat
+const BUSINESS_TYPES = [
+  "F&B (Bakso, Mie, Restoran, Catering, Bakery, Kafe, Bubble Tea, dll)",
+  "Retail & Fashion (Toko Pakaian, Tas, Sepatu, Aksesoris, Kosmetik, dll)",
+  "Jasa & Layanan (Perbaiki AC, TV, Salon, Laundry, Cleaning, Pijat, Konsultasi, dll)",
+  "Pendidikan & Pelatihan (Bimbel, Kursus, Sekolah, Pelatihan Karyawan, dll)",
+  "Properti & Real Estate (Agen, Developer, Rental Apartemen, Co-working, dll)",
+  "Otomotif (Bengkel, Onderdil, Dealer, Rental, Modifikasi, dll)",
+  "Pertanian & Peternakan (Benih, Peternakan, Agribisnis, Hidroponik, dll)",
+  "E-Commerce & Digital (Dropshipping, Affiliate, Agency, Creator, Developer, dll)",
+  "Usaha Lainnya (Produksi, Kerajinan, Custom services, dll)"
+];
+
 
 export default function MenuPengaturan({ 
   currentBusinessName, 
@@ -173,6 +186,7 @@ export default function MenuPengaturan({
   currentUserEmail, 
   currentBusinessLocation, 
   currentBusinessDescription = '',
+  currentBusinessType = '',
   onUpdateSettings, 
   onDeleteAccount 
 }) {
@@ -183,6 +197,7 @@ export default function MenuPengaturan({
   const [newUserName, setNewUserName] = useState(currentUserName);
   const [newBusinessLocation, setNewBusinessLocation] = useState(currentBusinessLocation);
   const [newBusinessDescription, setNewBusinessDescription] = useState(currentBusinessDescription);
+  const [newBusinessType, setNewBusinessType] = useState(currentBusinessType);
   // state
   const [newProvince, setNewProvince] = useState("");
   const [newCity, setNewCity] = useState("");
@@ -194,6 +209,7 @@ export default function MenuPengaturan({
     setNewBusinessName(currentBusinessName);
     setNewUserName(currentUserName);
     setNewBusinessDescription(currentBusinessDescription || '');
+    setNewBusinessType(currentBusinessType || '');
     // parse currentBusinessLocation into province/city if stored as "Province, City"
     if (currentBusinessLocation && currentBusinessLocation.includes(",")) {
       const parts = currentBusinessLocation.split(",").map(p => p.trim());
@@ -206,7 +222,7 @@ export default function MenuPengaturan({
 
     // Sync theme state from HTML element
     setIsDarkMode(document.documentElement.classList.contains('dark'));
-  }, [currentBusinessName, currentUserName, currentBusinessLocation, currentBusinessDescription]);
+  }, [currentBusinessName, currentUserName, currentBusinessLocation, currentBusinessDescription, currentBusinessType]);
 
   // Handler untuk toggle tema
   const handleThemeToggle = () => {
@@ -240,6 +256,12 @@ export default function MenuPengaturan({
         return;
     }
 
+    if (newBusinessType.trim() === "") {
+      toast.error("Jenis Usaha tidak boleh kosong. Pilih dari daftar untuk AI lebih akurat.");
+        setLoading(false);
+        return;
+    }
+
     try {
         await onUpdateSettings({
             businessName: newBusinessName,
@@ -247,9 +269,10 @@ export default function MenuPengaturan({
             // combine province + optional city
           businessLocation: newProvince + (newCity ? `, ${newCity}` : ""),
           businessDescription: newBusinessDescription,
+          businessType: newBusinessType,
         });
 
-        toast.success("Pengaturan berhasil diperbarui!");
+        toast.success("Pengaturan berhasil diperbarui! AI & Tren Pasar telah dioptimasi.");
     } catch (error) {
         console.error("Update settings error:", error);
         toast.error(error.message || "Gagal menyimpan pengaturan.");
@@ -284,7 +307,8 @@ export default function MenuPengaturan({
     newUserName === currentUserName &&
     newProvince === _currProvince &&
     newCity === _currCity &&
-    (newBusinessDescription || '') === (currentBusinessDescription || '');
+    (newBusinessDescription || '') === (currentBusinessDescription || '') &&
+    (newBusinessType || '') === (currentBusinessType || '');
 
   return (
     <div className="space-y-6">
@@ -338,7 +362,22 @@ export default function MenuPengaturan({
                 <p className="text-xs text-slate-000">Email: <span className="font-mono">{currentUserEmail}</span></p>
               </div>
 
-              {/* Judul Bisnis dihapus sesuai permintaan */}
+              {/* Jenis Usaha - Single dropdown untuk optimasi AI & Tren Pasar */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-900 mb-2">Jenis Usaha <span className="text-red-500">*</span></label>
+                <select
+                  value={newBusinessType}
+                  onChange={(e) => setNewBusinessType(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-800 text-slate-900:text-slate-900 font-medium"
+                  disabled={loading}
+                >
+                  <option value="">Pilih Jenis Usaha (Penting untuk AI Akurat)</option>
+                  {BUSINESS_TYPES.map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-slate-500 mt-1">✓ Dipilih untuk mengoptimasi hasil AI, tren pasar, dan konsultasi bisnis Anda</p>
+              </div>
 
               <div className="md:col-span-1">
                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-900 mb-2">Provinsi</label>

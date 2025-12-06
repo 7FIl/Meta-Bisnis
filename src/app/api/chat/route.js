@@ -1,6 +1,15 @@
 // src/app/api/chat/route.js
 import { NextResponse } from 'next/server';
 
+/**
+ * Ekstrak primary business type term (sebelum parentheses)
+ * Contoh: "F&B (Bakso, Mie, Restoran...)" → "F&B"
+ */
+function extractPrimaryBusinessType(businessType = '') {
+  if (!businessType) return '';
+  return businessType.split('(')[0].trim();
+}
+
 // --- FUNGSI BARU: Integrasi Tavily API untuk Data Real-Time ---
 async function searchWeb(query) {
   const apiKey = process.env.TAVILY_API_KEY;
@@ -44,9 +53,9 @@ export async function POST(req) {
     // 1. Terima payload dari Frontend
     const body = await req.json();
     // Accept either `message` (string) or `messages` (array of {role,content}) from frontend.
-    const { message, history } = body;
+    const { message, history, businessName = '', businessType = '' } = body;
     const messagesFromBody = Array.isArray(body.messages) ? body.messages : null;
-    console.log('[api/chat] incoming request', { hasMessage: !!message, hasMessagesArray: !!messagesFromBody, model: body.model, max_tokens: body.max_tokens, topic: body.topic });
+    console.log('[api/chat] incoming request', { hasMessage: !!message, hasMessagesArray: !!messagesFromBody, model: body.model, max_tokens: body.max_tokens, topic: body.topic, businessType });
     
     // history opsional: array percakapan sebelumnya jika frontend support context aware
 
@@ -65,12 +74,15 @@ export async function POST(req) {
     // System prompt berubah berdasarkan topik supaya client bisa meminta
     // teks analisis biasa (plain text) untuk `analysis`, atau JSON untuk
     // topik lain seperti `finance`.
+    // Tambahkan konteks businessType untuk personalisasi respons (hanya primary term)
     let systemPrompt;
+    const primaryBusinessType = extractPrimaryBusinessType(businessType);
+    const businessContext = primaryBusinessType ? ` Kamu sedang membantu bisnis tipe "${primaryBusinessType}".` : '';
     // Provide tailored, plain-text prompts per topic so frontend receives readable
     // answers for all three contexts: analysis, finance, sales.
     switch (body.topic) {
       case 'analysis':
-        systemPrompt = `Kamu adalah 'Meta Bisnis', asisten analisis bisnis untuk UMKM Indonesia. Untuk permintaan user, berikan ANALISIS BISNIS yang rapi dan mudah dibaca dalam Bahasa Indonesia. 
+        systemPrompt = `Kamu adalah 'Meta Bisnis', asisten analisis bisnis untuk UMKM Indonesia.${businessContext} Untuk permintaan user, berikan ANALISIS BISNIS yang rapi dan mudah dibaca dalam Bahasa Indonesia. 
 
 Struktur jawaban menjadi:
 1. Mulai dengan pengantar singkat yang memberikan konteks (1-2 kalimat penjelasan umum tentang topik)
@@ -81,7 +93,7 @@ Struktur jawaban menjadi:
 Gunakan bahasa yang friendly dan sederhana. Jangan bungkus jawaban dengan JSON atau kode - berikan teks murni saja.`;
         break;
       case 'finance':
-        systemPrompt = `Kamu adalah 'Meta Bisnis', asisten keuangan untuk UMKM Indonesia. Berikan jawaban TEKS dalam Bahasa Indonesia yang terstruktur dan mudah dipahami.
+        systemPrompt = `Kamu adalah 'Meta Bisnis', asisten keuangan untuk UMKM Indonesia.${businessContext} Berikan jawaban TEKS dalam Bahasa Indonesia yang terstruktur dan mudah dipahami.
 
 Struktur jawaban:
 1. Mulai dengan penjelasan singkat tentang masalah keuangan yang dihadapi (1-2 kalimat)
@@ -93,7 +105,7 @@ Struktur jawaban:
 Gunakan contoh nyata jika membantu. Jangan keluarkan JSON atau format kode - hanya teks.`;
         break;
       case 'sales':
-        systemPrompt = `Kamu adalah 'Meta Bisnis', asisten penjualan untuk UMKM Indonesia. Jawab dalam Bahasa Indonesia berupa strategi penjualan yang terstruktur dan praktis.
+        systemPrompt = `Kamu adalah 'Meta Bisnis', asisten penjualan untuk UMKM Indonesia.${businessContext} Jawab dalam Bahasa Indonesia berupa strategi penjualan yang terstruktur dan praktis.
 
 Struktur jawaban:
 1. Mulai dengan pengantar yang menjelaskan konsep atau tren penjualan yang relevan (1-2 kalimat)

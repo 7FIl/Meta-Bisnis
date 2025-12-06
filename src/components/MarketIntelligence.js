@@ -2,80 +2,86 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-export default function MarketIntelligence({ businessName, marketData, businessLocation, businessDescription }) {
+export default function MarketIntelligence({ businessName, marketData, businessLocation, businessDescription, businessType = '' }) {
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
   const [timeframe, setTimeframe] = useState('weekly'); // 'daily' | 'weekly' | 'monthly'
-  const [newsList, setNewsList] = useState([]);
-  const [aiSummary, setAiSummary] = useState('');
-  const [newsLoading, setNewsLoading] = useState(false);
-  const [newsError, setNewsError] = useState('');
+  const [trafficInsight, setTrafficInsight] = useState({ summary: '', bullets: [] });
+  const [aiInsight, setAiInsight] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
 
-  // Fetch berita relevan dari Tavily API
-  // Algoritma: Cari "Berita tren viral terbaru di indonesia mengenai bisnis [jenis bisnis]"
-  const fetchRelevantNews = async () => {
-    setNewsLoading(true);
-    setNewsError('');
+  // Bangun insight singkat yang mengikuti timeframe traffic
+  const buildTrafficInsight = (tf) => {
+    const data = getChartDataFor(tf);
+    const values = data.customers || data.data || [];
+    const total = data.totalCustomers || 0;
+    const peak = Math.max(...values);
+    const low = Math.min(...values);
+    const avg = values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : 0;
+
+    const label = tf === 'daily' ? 'hari ini' : tf === 'weekly' ? 'minggu ini' : 'bulan ini';
+    const summary = `Traffic ${label}: total ${total} kunjungan, rata-rata ${avg} per periode, puncak ${peak}, terendah ${low}.`;
+
+    const bullets = [
+      `Jam/periode tersibuk: ${peak} kunjungan`,
+      `Periode paling sepi: ${low} kunjungan`,
+      `Rata-rata stabil di ${avg} kunjungan`,
+      'Ide aksi: siapkan promo ringan di jam sepi dan tambah stok/tim di jam ramai.'
+    ];
+
+    return { summary, bullets };
+  };
+
+  useEffect(() => {
+    setTrafficInsight(buildTrafficInsight(timeframe));
+  }, [timeframe]);
+
+  const generateAIInsight = async () => {
+    setAiLoading(true);
+    setAiError('');
     try {
-      // Extract jenis bisnis dari nama
-      const businessType = extractBusinessType(businessName, businessDescription);
-      
-      // Format query: "Berita tren viral terbaru di indonesia mengenai bisnis [jenis bisnis]"
-      const searchQuery = businessType;
-      
-      console.log('[MarketIntelligence] Searching viral news for:', businessType);
-      
-      const response = await fetch('/api/news', {
+      const data = getChartDataFor(timeframe);
+      const label = timeframe === 'daily' ? 'harian' : timeframe === 'weekly' ? 'mingguan' : 'bulanan';
+      const values = data.customers || data.data || [];
+      const formattedValues = values.join(', ');
+
+      const message = `Analisis singkat dan padat dalam Bahasa Indonesia tentang traffic ${label} untuk bisnis ${businessName || 'UMKM'}. Tipe: ${businessType || 'tidak disebutkan'}. Lokasi: ${businessLocation || 'Indonesia'}. Deskripsi: ${businessDescription || '-'}.
+    Data kunjungan (${label}): [${formattedValues}].
+    Keluaran: 1 paragraf ringkas (maks 3 kalimat) + 3 bullet aksi praktis (8-12 kata, fokus promosi/stok-tim/jam buka/kanal pemasaran). Hindari kata bertele-tele. Jangan gunakan JSON.`;
+
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          query: searchQuery, // Kirim jenis bisnis saja, API akan format ulang
+          topic: 'analysis',
+          message,
           businessName,
+          businessType,
           businessLocation,
-          businessDescription
+          max_tokens: 260
         })
       });
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        console.log('[MarketIntelligence] Got', data.news?.length || 0, 'news items');
-        setNewsList(data.news || []);
-        setAiSummary(data.summary || '');
+      const json = await res.json();
+      if (res.ok && json.success && json.reply) {
+        setAiInsight(json.reply);
       } else {
-        console.error('[MarketIntelligence] API error:', response.status, data.error);
-        setNewsList([]);
-        setAiSummary('');
-        setNewsError(data.error || 'Gagal mengambil berita');
+        setAiInsight('');
+        setAiError(json.error || 'Gagal mengambil analisis AI');
       }
-    } catch (error) {
-      console.error('Error fetching news:', error);
-      setNewsList([]);
-      setAiSummary('');
-      setNewsError('Terjadi kesalahan saat mengambil berita');
+    } catch (err) {
+      console.error('[MarketIntelligence] AI insight error', err);
+      setAiInsight('');
+      setAiError('Terjadi kesalahan saat mengambil analisis AI');
     } finally {
-      setNewsLoading(false);
+      setAiLoading(false);
     }
   };
 
-  // Helper: Extract jenis bisnis dari nama (ambil keyword utama)
-  const extractBusinessType = (name, description) => {
-    // Hapus kata-kata umum seperti "Toko", "Warung", "Pak", "Bu", dll
-    const commonWords = ['toko', 'warung', 'kedai', 'pak', 'bu', 'ibu', 'bapak', 'haji', 'ustadz', 'bang'];
-    const words = name.toLowerCase().split(/\s+/).filter(w => !commonWords.includes(w));
-    
-    // Ambil kata pertama yang signifikan (biasanya jenis bisnis)
-    return words[0] || name;
-  };
-
-  // TIDAK auto-fetch untuk mencegah pemborosan API
-  // User harus klik tombol refresh secara manual
-  // Hanya fetch saat komponen pertama kali mount (empty dependency array)
   useEffect(() => {
-    // Optional: fetch pertama kali saat mount jika ingin preview
-    // Hapus jika tidak ingin auto-fetch sama sekali
-    // fetchRelevantNews();
-  }, []);
+    generateAIInsight();
+  }, [timeframe]);
 
   const getChartDataFor = (tf) => {
     if (tf === 'daily') {
@@ -222,7 +228,7 @@ export default function MarketIntelligence({ businessName, marketData, businessL
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Traffic Chart - sama besar dengan berita */}
+        {/* Traffic Chart */}
         <div className="flex flex-col">
           <h4 className="font-semibold text-sm text-slate-700 mb-2 flex items-center gap-2">
             <i className="fas fa-chart-area text-indigo-500"></i> Grafik Traffic
@@ -232,88 +238,43 @@ export default function MarketIntelligence({ businessName, marketData, businessL
           </div>
         </div>
 
-        {/* Berita Tren Pasar - sama besar dengan traffic */}
+        {/* Analisis Toko mengikuti timeframe traffic */}
         <div className="flex flex-col">
           <div className="flex items-center justify-between mb-2">
             <h4 className="font-semibold text-sm text-slate-700 flex items-center gap-2">
-              <i className="fas fa-newspaper text-blue-500"></i> Berita & Tren Pasar
+              <i className="fas fa-magnifying-glass-chart text-blue-500"></i> Analisis Toko
             </h4>
-            <button
-              onClick={fetchRelevantNews}
-              disabled={newsLoading}
-              className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-100 transition disabled:opacity-50"
-              title="Refresh berita"
-            >
-              <i className={`fas fa-sync ${newsLoading ? 'animate-spin' : ''}`}></i>
-            </button>
+            <span className="text-[11px] text-slate-500">Sinkron dengan traffic {timeframe === 'daily' ? 'harian' : timeframe === 'weekly' ? 'mingguan' : 'bulanan'}</span>
           </div>
 
-          {/* News panel - sama tinggi dengan chart */}
           <div className="bg-slate-50 border border-slate-200 rounded-lg overflow-y-auto h-64">
-            {/* Ringkasan AI */}
             <div className="p-3 border-b border-slate-200 bg-indigo-50/60">
               <p className="text-[11px] font-semibold text-indigo-700 uppercase mb-1 flex items-center gap-1">
-                <i className="fas fa-robot"></i> Rekomendasi AI
+                <i className="fas fa-robot"></i> Insight Traffic
               </p>
               <p className="text-sm text-slate-700 leading-relaxed">
-                {newsLoading
-                  ? 'Sedang menganalisis pasar...'
-                  : newsError
-                    ? newsError
-                    : (aiSummary || 'Belum ada data tren. Klik refresh.')}
+                {aiLoading
+                  ? 'AI sedang menganalisis traffic...'
+                  : aiError
+                    ? aiError
+                    : (aiInsight || trafficInsight.summary || 'Belum ada data traffic.')}
               </p>
             </div>
 
-            {newsLoading ? (
-              <div className="p-4 text-center text-slate-500 text-sm">
-                <i className="fas fa-spinner fa-spin mr-2"></i> Mengambil berita terkini...
-              </div>
-            ) : newsError ? (
-              <div className="p-4 text-center text-red-500 text-sm">
-                <i className="fas fa-info-circle mr-2"></i> {newsError}
-              </div>
-            ) : newsList.length > 0 ? (
-              newsList.map((n) => (
-                <div 
-                  key={n.id} 
-                  onClick={() => {
-                    // Buka URL berita di tab baru
-                    if (n.url) {
-                      window.open(n.url, '_blank', 'noopener,noreferrer');
-                    }
-                  }}
-                  className="p-3 hover:bg-white transition cursor-pointer group border-b border-slate-200 last:border-b-0"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-slate-800 line-clamp-2 group-hover:text-blue-600 transition">{n.title}</p>
-                      <p className="text-xs text-slate-600 mt-1 line-clamp-2">{n.snippet}</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {n.source && (
-                          <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded inline-flex items-center gap-1">
-                            <i className="fas fa-building"></i> {n.source}
-                          </span>
-                        )}
-                        {n.published_date && (
-                          <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded inline-flex items-center gap-1">
-                            <i className="fas fa-clock"></i> {n.published_date}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-xs text-slate-400 whitespace-nowrap flex flex-col items-end">
-                      <div className="mt-1 group-hover:opacity-100 opacity-0 transition">
-                        <i className="fas fa-arrow-up-right-from-square text-blue-500 text-xs"></i>
-                      </div>
-                    </div>
-                  </div>
+            <div className="p-3 flex flex-col gap-2">
+              {aiInsight && (
+                <p className="text-xs text-slate-500">Insight AI di atas; berikut baseline rekomendasi dari data mentah:</p>
+              )}
+              {trafficInsight.bullets.map((item, idx) => (
+                <div key={idx} className="flex items-start gap-2">
+                  <span className="text-[10px] text-indigo-500 mt-0.5"><i className="fas fa-circle"></i></span>
+                  <p className="text-sm text-slate-700 leading-snug">{item}</p>
                 </div>
-              ))
-            ) : (
-              <div className="p-4 text-center text-slate-500 text-sm">
-                <i className="fas fa-info-circle mr-2"></i> Tidak ada berita ditemukan
-              </div>
-            )}
+              ))}
+              {(!trafficInsight.bullets || trafficInsight.bullets.length === 0) && (
+                <p className="text-sm text-slate-500">Insight belum tersedia.</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
