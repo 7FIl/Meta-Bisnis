@@ -205,7 +205,7 @@ export default function DashboardView({
           // Keuangan view
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <button onClick={() => setSelectedMenu('beranda')} className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
+              <button onClick={() => setSelectedMenu('beranda')} className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-900">
                 ← Kembali ke Dashboard
               </button>
               <h2 className="text-xl font-bold">Keuangan — {businessName}</h2>
@@ -223,7 +223,7 @@ export default function DashboardView({
            // Pengaturan view
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <button onClick={() => setSelectedMenu('beranda')} className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
+              <button onClick={() => setSelectedMenu('beranda')} className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-900">
                 ← Kembali ke Dashboard
               </button>
               <h2 className="text-xl font-bold">Pengaturan — {businessName}</h2>

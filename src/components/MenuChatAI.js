@@ -164,18 +164,18 @@ export default function MenuChatAI({ businessName, onSend }) {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="font-bold text-slate-800">Chat AI — {businessName}</h3>
-            <div className="text-xs text-slate-500 mt-1">Tanya jawab bisnis dengan AI yang memahami konteks usahamu</div>
+            <div className="text-xs text-slate-700 mt-1">Tanya jawab bisnis dengan AI yang memahami konteks usahamu</div>
           </div>
         </div>
 
         <div className="flex gap-2 flex-wrap">
-          <button onClick={() => setTopic("analysis")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "analysis" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>
+          <button onClick={() => setTopic("analysis")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "analysis" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-900 hover:bg-slate-200"}`}>
             <i className="fas fa-chart-line mr-2"></i>Analisis
           </button>
-          <button onClick={() => setTopic("finance")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "finance" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>
+          <button onClick={() => setTopic("finance")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "finance" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-900 hover:bg-slate-200"}`}>
             <i className="fas fa-coins mr-2"></i>Ide Keuangan
           </button>
-          <button onClick={() => setTopic("sales")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "sales" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>
+          <button onClick={() => setTopic("sales")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "sales" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-900 hover:bg-slate-200"}`}>
             <i className="fas fa-handshake mr-2"></i>Penjualan
           </button>
         </div>
@@ -187,8 +187,8 @@ export default function MenuChatAI({ businessName, onSend }) {
             <div className="mb-4">
               <i className="fas fa-comments text-4xl text-slate-300"></i>
             </div>
-            <h4 className="text-sm font-semibold text-slate-600 mb-2">Mulai Percakapan</h4>
-            <p className="text-xs text-slate-500 max-w-xs mb-4">Tanyakan tentang pasar, strategi penjualan, atau pengelolaan keuangan bisnis Anda.</p>
+            <h4 className="text-sm font-semibold text-slate 700 mb-2">Mulai Percakapan</h4>
+            <p className="text-xs text-slate-600 max-w-xs mb-4">Tanyakan tentang pasar, strategi penjualan, atau pengelolaan keuangan bisnis Anda.</p>
             <div className="grid grid-cols-1 gap-2 w-full">
               <button 
                 onClick={() => handleQuick("Apa yang bisa saya lakukan untuk meningkatkan penjualan bulan ini?")}
@@ -273,13 +273,13 @@ export default function MenuChatAI({ businessName, onSend }) {
           <div className="flex gap-2">
             <button 
               onClick={() => handleQuick(topic === "analysis" ? "Analisis lokasi usaha saya" : topic === "finance" ? "Bagaimana cara menekan biaya operasional?" : "Cara meningkatkan penjualan harian?")} 
-              className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
+              className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-900 hover:bg-slate-200 transition"
             >
               <i className="fas fa-lightning-bolt mr-1"></i>Contoh
             </button>
             <button 
               onClick={handleClear} 
-              className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
+              className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-900 hover:bg-slate-200 transition"
             >
               <i className="fas fa-trash mr-1"></i>Bersihkan
             </button>
