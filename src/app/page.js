@@ -70,7 +70,7 @@ export default function Home() {
               }
             } 
             
-            // LOGIKA ONBOARDING BARU:
+            // LOGIKA ONBOARDING:
             if (!hasBusinessData) {
                 // Jika tidak ada data bisnis, arahkan ke onboarding
                 setCurrentView('onboarding');
@@ -214,63 +214,8 @@ export default function Home() {
     try {
       // Kirim permintaan ke backend API yang mem-proxy ke AI provider
       const payload = {
-        max_tokens: 2000,
+        max_tokens: 1000,
         messages: [
-          { 
-            role: 'system', 
-            content: `Kamu adalah konsultan bisnis profesional Indonesia dengan pengetahuan mendalam tentang harga pasar lokal dan analisis keuangan.
-
-INSTRUKSI PENTING:
-1. Gunakan HARGA REALISTIS berdasarkan kondisi pasar Indonesia tahun 2024-2025
-2. Rincian modal harus DETAIL dan AKURAT (minimal 8-12 item berbeda)
-3. Hitung metrik keuangan berdasarkan standar industri Indonesia
-
-FORMAT JSON WAJIB:
-{
-  "name": "Nama Bisnis",
-  "description": "Deskripsi lengkap (3-4 kalimat)",
-  "capital_est": "Rp X juta - Y juta",
-  "target_market": "Target pasar spesifik",
-  "challenge": "Tantangan utama bisnis",
-  "capitalBreakdown": [
-    {"item": "nama_lengkap_barang", "quantity": angka, "unit": "pcs/unit/set/bulan", "price": harga_satuan_realistis, "total": quantity*price}
-  ],
-  "financialMetrics": {
-    "bep_units": "unit produk/layanan untuk BEP",
-    "bep_revenue": "pendapatan BEP dalam Rupiah",
-    "bep_months": "estimasi bulan mencapai BEP (realistis 6-24 bulan)",
-    "roi_percentage": "ROI % per tahun (realistis 15-40%)",
-    "roi_months": "waktu balik modal dalam bulan",
-    "gross_margin_percentage": "margin kotor % (realistis 20-50%)",
-    "monthly_revenue_estimate": "estimasi pendapatan bulanan setelah stabil",
-    "monthly_cost_estimate": "estimasi biaya operasional bulanan",
-    "monthly_profit_estimate": "laba bersih bulanan",
-    "avg_selling_price": "harga jual rata-rata per unit",
-    "avg_cost_per_unit": "biaya produksi per unit"
-  }
-}
-
-PANDUAN HARGA INDONESIA (gunakan sebagai acuan):
-- Peralatan dapur/produksi: Rp 500rb - 10jt (sesuai kapasitas)
-- Furniture/meja/kursi: Rp 300rb - 2jt per unit
-- Kulkas/freezer komersial: Rp 3jt - 15jt
-- Etalase/display: Rp 1.5jt - 5jt
-- Kompor gas komersial: Rp 1jt - 5jt
-- Renovasi sederhana: Rp 5jt - 20jt
-- Peralatan elektronik: sesuai brand & spesifikasi
-- Sewa tempat (3 bulan): Rp 6jt - 30jt (tergantung lokasi)
-- Biaya perizinan UMKM: Rp 500rb - 2jt
-- Modal kerja awal: 20-30% dari total modal
-
-RUMUS PERHITUNGAN:
-- BEP (unit) = Total Modal / (Harga Jual - HPP per unit)
-- BEP (Rupiah) = BEP unit × Harga Jual
-- ROI % = (Laba Bersih Tahunan / Total Modal) × 100
-- Gross Margin % = ((Harga Jual - HPP) / Harga Jual) × 100
-- Waktu BEP (bulan) = Total Modal / Laba Bersih Bulanan
-
-Berikan data yang AKURAT, REALISTIS, dan DAPAT DIVERIFIKASI.` 
-          },
           { role: 'user', content: input }
         ],
         model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
@@ -322,14 +267,7 @@ Berikan data yang AKURAT, REALISTIS, dan DAPAT DIVERIFIKASI.`
       setBusinessData(newBusinessData);
       setCurrentBusinessName(newBusinessData.name); // Set current name from the new data
       
-      // LOGIKA BARU: Jika dari onboarding, langsung simpan dan pindah ke dashboard
-      if (fromOnboarding) {
-          // Jika dari onboarding, jangan langsung pindah view, tapi biarkan OnboardingView 
-          // menampilkan hasilnya. Pindah view hanya ketika tombol "Mulai" ditekan (setupBusiness=true)
-          // TAPI KARENA LOGIKA CONSULTATION VIEW LAMA MENGANDALKAN AUTO-SWITCH, 
-          // MAKA KITA PERLU LOGIKA UNTUK KONSULTASI LAMA/BARU
-          // Di sini kita biarkan state diperbarui, transisi diurus oleh tombol di OnboardingView/ConsultationView
-      }
+      // LOGIKA BARU: Jika dari onboarding, biarkan OnboardingView menampilkan hasil, transisi ke dashboard diurus tombol "Mulai"
       
     } catch (error) {
       console.error(error);
@@ -436,7 +374,8 @@ Berikan data yang AKURAT, REALISTIS, dan DAPAT DIVERIFIKASI.`
     return (
       <OnboardingView
         user={user}
-        onConsultAI={(input, setupBusiness) => handleConsultAI(input, setupBusiness, true)} // AI consult from onboarding
+        // MODIFIED: onConsultAI dipanggil tanpa 'fromOnboarding' karena transisi diurus tombol "Mulai"
+        onConsultAI={(input, setupBusiness) => handleConsultAI(input, setupBusiness, false)} 
         onSetupComplete={handleSetupComplete} // manual setup, auto-switch to dashboard
         businessData={businessData} // Kirim businessData agar OnboardingView bisa menampilkan hasil
         loading={loading} // Kirim loading state
