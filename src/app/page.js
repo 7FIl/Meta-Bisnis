@@ -84,11 +84,7 @@ export default function Home() {
               hasBusinessData = true;
             }
             
-<<<<<<< Updated upstream
-            // LOGIKA ONBOARDING:
-=======
             // Jika belum ada business data dari temp, load dari Firebase seperti biasa
->>>>>>> Stashed changes
             if (!hasBusinessData) {
               const settings = await getUserSettings(currentUser.uid);
               if (settings) {
@@ -273,8 +269,6 @@ export default function Home() {
       const payload = {
         max_tokens: 1000,
         messages: [
-<<<<<<< Updated upstream
-=======
           { 
             role: 'system', 
             content: `Kamu adalah konsultan bisnis profesional Indonesia dengan pengetahuan mendalam tentang harga pasar lokal dan analisis keuangan.
@@ -331,7 +325,6 @@ RUMUS PERHITUNGAN:
 
 Berikan data yang AKURAT, REALISTIS, dan DAPAT DIVERIFIKASI.` 
           },
->>>>>>> Stashed changes
           { role: 'user', content: input }
         ],
         model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
@@ -384,9 +377,6 @@ Berikan data yang AKURAT, REALISTIS, dan DAPAT DIVERIFIKASI.`
       setCurrentBusinessName(newBusinessData.name); // Set current name from the new data
       setCurrentBusinessType(newBusinessData.businessType || '');
       
-<<<<<<< Updated upstream
-      // LOGIKA BARU: Jika dari onboarding, biarkan OnboardingView menampilkan hasil, transisi ke dashboard diurus tombol "Mulai"
-=======
       // LOGIKA BARU: Simpan recommendation ke temporary storage (jika user belum login)
       // Data ini akan dipindahkan ke Firebase saat user melakukan login
       if (!user) {
@@ -410,7 +400,6 @@ Berikan data yang AKURAT, REALISTIS, dan DAPAT DIVERIFIKASI.`
           // MAKA KITA PERLU LOGIKA UNTUK KONSULTASI LAMA/BARU
           // Di sini kita biarkan state diperbarui, transisi diurus oleh tombol di OnboardingView/ConsultationView
       }
->>>>>>> Stashed changes
       
     } catch (error) {
       console.error(error);
