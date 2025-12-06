@@ -1,27 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-// Sample employee data
-const SAMPLE_EMPLOYEES = [
-  { id: 1, name: 'Budi Santoso' },
-  { id: 2, name: 'Siti Rahma' },
-  { id: 3, name: 'Ahmad Hidayat' },
-  { id: 4, name: 'Dewi Lestari' },
-  { id: 5, name: 'Roni Wijaya' },
-  { id: 6, name: 'Citra Kusuma' },
-  { id: 7, name: 'Eka Pratama' },
-  { id: 8, name: 'Farah Dzahra' },
-  { id: 9, name: 'Gunawan Putra' },
-  { id: 10, name: 'Hana Maulida' },
-];
-
-export default function EmployeeAbsence({ absences, onAddAbsence }) {
+export default function EmployeeAbsence({ absences, onAddAbsence, employees = [], onAddEmployee, onDeleteEmployee }) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [selectedDay, setSelectedDay] = useState('');
   const [reason, setReason] = useState('sakit');
-  const [totalEmployees, setTotalEmployees] = useState(SAMPLE_EMPLOYEES.length);
+  const [totalEmployees, setTotalEmployees] = useState(employees.length);
+  const [newEmployeeName, setNewEmployeeName] = useState('');
 
   // Helper function: Generate list of allowed dates (today + 6 days back = 7 days total)
   const getAvailableDates = () => {
@@ -76,6 +63,33 @@ export default function EmployeeAbsence({ absences, onAddAbsence }) {
     setSelectedEmployee('');
     setSelectedDay('');
     setReason('sakit');
+    setNewEmployeeName('');
+  };
+
+  const employeesList = employees || [];
+
+  // Sync total employees when list changes
+  useEffect(() => {
+    setTotalEmployees(employeesList.length);
+    // Reset selection if deleted
+    if (selectedEmployee && !employeesList.find((e) => e.name === selectedEmployee)) {
+      setSelectedEmployee('');
+    }
+  }, [employeesList, selectedEmployee]);
+
+  const handleAddEmployeeLocal = async () => {
+    const trimmed = newEmployeeName.trim();
+    if (!trimmed) return;
+    if (employeesList.some((e) => e.name.toLowerCase() === trimmed.toLowerCase())) return;
+    await onAddEmployee?.(trimmed);
+    setNewEmployeeName('');
+  };
+
+  const handleDeleteEmployeeLocal = async (id) => {
+    await onDeleteEmployee?.(id);
+    if (selectedEmployee && employeesList.find((e) => e.id === id)?.name === selectedEmployee) {
+      setSelectedEmployee('');
+    }
   };
 
   // Helper to format date for comparison (YYYY-MM-DD)
@@ -95,7 +109,7 @@ export default function EmployeeAbsence({ absences, onAddAbsence }) {
 
   // Derived counts
   const absentCount = todayAbsences.length;
-  const presentToday = totalEmployees - absentCount;
+  const presentToday = Math.max(totalEmployees - absentCount, 0);
   const absentToday = absentCount;
 
   // Get employee attendance status
@@ -145,10 +159,14 @@ export default function EmployeeAbsence({ absences, onAddAbsence }) {
           {/* Warna container diubah menjadi putih (bg-white) di kedua mode */}
           <div className="bg-white dark:bg-white border-2 border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
             <div className="max-h-60 overflow-y-auto scrollbar-hide">
-              {SAMPLE_EMPLOYEES.map((employee, index) => {
+              {employeesList.length === 0 ? (
+                <div className="p-4 text-sm text-slate-500 text-center">
+                  Belum ada karyawan. Tambahkan karyawan di menu edit.
+                </div>
+              ) : employeesList.map((employee, index) => {
                 const status = getEmployeeStatus(employee.name);
                 const isPresent = status === 'hadir';
-                const isLast = index === SAMPLE_EMPLOYEES.length - 1;
+                const isLast = index === employeesList.length - 1;
 
                 return (
                   <div
@@ -227,12 +245,56 @@ export default function EmployeeAbsence({ absences, onAddAbsence }) {
                   className="w-full text-sm p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white cursor-pointer"
                 >
                   <option value="">-- Pilih Karyawan --</option>
-                  {SAMPLE_EMPLOYEES.map((emp) => (
+                  {employeesList.map((emp) => (
                     <option key={emp.id} value={emp.name}>
                       {emp.name}
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Kelola Karyawan */}
+              <div className="border border-slate-200 rounded-lg p-3 bg-slate-50">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold text-slate-600 flex items-center gap-1">
+                    <i className="fas fa-users"></i> Kelola Karyawan
+                  </p>
+                  <span className="text-[11px] text-slate-500">Total: {employeesList.length}</span>
+                </div>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={newEmployeeName}
+                    onChange={(e) => setNewEmployeeName(e.target.value)}
+                    placeholder="Tambah karyawan baru"
+                    className="flex-1 text-sm p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddEmployeeLocal}
+                    className="px-3 py-2 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition"
+                  >
+                    Tambah
+                  </button>
+                </div>
+                <div className="max-h-32 overflow-y-auto space-y-1 pr-1">
+                  {employeesList.length === 0 ? (
+                    <p className="text-xs text-slate-500">Belum ada karyawan.</p>
+                  ) : (
+                    employeesList.map((emp) => (
+                      <div key={emp.id} className="flex items-center justify-between text-sm bg-white px-2 py-1 rounded border border-slate-200">
+                        <span className="text-slate-700 truncate">{emp.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteEmployeeLocal(emp.id)}
+                          className="text-xs text-red-500 hover:text-red-700"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
 
               <div>

@@ -7,12 +7,15 @@ export default function MarketIntelligence({ businessName, marketData, businessL
   const chartInstanceRef = useRef(null);
   const [timeframe, setTimeframe] = useState('weekly'); // 'daily' | 'weekly' | 'monthly'
   const [newsList, setNewsList] = useState([]);
+  const [aiSummary, setAiSummary] = useState('');
   const [newsLoading, setNewsLoading] = useState(false);
+  const [newsError, setNewsError] = useState('');
 
   // Fetch berita relevan dari Tavily API
   // Algoritma: Cari "Berita tren viral terbaru di indonesia mengenai bisnis [jenis bisnis]"
   const fetchRelevantNews = async () => {
     setNewsLoading(true);
+    setNewsError('');
     try {
       // Extract jenis bisnis dari nama
       const businessType = extractBusinessType(businessName, businessDescription);
@@ -33,22 +36,23 @@ export default function MarketIntelligence({ businessName, marketData, businessL
         })
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         console.log('[MarketIntelligence] Got', data.news?.length || 0, 'news items');
-        
-        if (data.news && data.news.length > 0) {
-          setNewsList(data.news.slice(0, 3));
-        } else {
-          setNewsList(SAMPLE_NEWS);
-        }
+        setNewsList(data.news || []);
+        setAiSummary(data.summary || '');
       } else {
-        console.error('[MarketIntelligence] API error:', response.status);
-        setNewsList(SAMPLE_NEWS);
+        console.error('[MarketIntelligence] API error:', response.status, data.error);
+        setNewsList([]);
+        setAiSummary('');
+        setNewsError(data.error || 'Gagal mengambil berita');
       }
     } catch (error) {
       console.error('Error fetching news:', error);
-      setNewsList(SAMPLE_NEWS);
+      setNewsList([]);
+      setAiSummary('');
+      setNewsError('Terjadi kesalahan saat mengambil berita');
     } finally {
       setNewsLoading(false);
     }
@@ -63,34 +67,6 @@ export default function MarketIntelligence({ businessName, marketData, businessL
     // Ambil kata pertama yang signifikan (biasanya jenis bisnis)
     return words[0] || name;
   };
-
-  // Sample news fallback when marketData.news isn't provided
-  const SAMPLE_NEWS = [
-    {
-      id: 1,
-      title: 'Permintaan produk lokal meningkat di pasar',
-      source: 'Berita Pasar',
-      time: 'Hari ini',
-      location: businessLocation || 'Sekitar Anda',
-      snippet: 'Tren menunjukkan peningkatan preferensi konsumen terhadap produk lokal.',
-    },
-    {
-      id: 2,
-      title: 'Strategi digital marketing untuk UMKM terbukti efektif',
-      source: 'Business News',
-      time: 'Kemarin',
-      location: 'Indonesia',
-      snippet: 'Banyak UMKM yang sukses dengan memanfaatkan platform digital.',
-    },
-    {
-      id: 3,
-      title: 'Perubahan preferensi konsumen pasca pandemi',
-      source: 'Market Insights',
-      time: '2 hari lalu',
-      location: businessLocation || 'Nasional',
-      snippet: 'Konsumen semakin mencari produk yang berkualitas dan terjangkau.',
-    },
-  ];
 
   // TIDAK auto-fetch untuk mencegah pemborosan API
   // User harus klik tombol refresh secara manual
@@ -155,16 +131,53 @@ export default function MarketIntelligence({ businessName, marketData, businessL
                 backgroundColor: 'rgba(79, 70, 229, 0.1)',
                 tension: 0.4,
                 fill: true,
+                pointRadius: 5,
+                pointBackgroundColor: 'rgb(79, 70, 229)',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverRadius: 7,
               },
             ],
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: { 
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                titleColor: '#fff',
+                bodyColor: '#fff',
+                borderColor: 'rgb(79, 70, 229)',
+                borderWidth: 2,
+                padding: 12,
+                titleFont: { size: 14, weight: 'bold' },
+                bodyFont: { size: 13 },
+                displayColors: false,
+              }
+            },
             scales: {
-              y: { beginAtZero: true, display: false },
-              x: { grid: { display: false } },
+              y: { 
+                beginAtZero: true, 
+                display: true,
+                ticks: {
+                  color: 'rgba(100, 116, 139, 0.7)',
+                  font: { size: 11, weight: '500' },
+                  padding: 8,
+                },
+                grid: { 
+                  color: 'rgba(100, 116, 139, 0.1)',
+                  drawBorder: false,
+                }
+              },
+              x: { 
+                grid: { display: false },
+                ticks: {
+                  color: 'rgba(100, 116, 139, 0.7)',
+                  font: { size: 11, weight: '500' },
+                  padding: 8,
+                }
+              },
             },
           },
         });
@@ -236,10 +249,28 @@ export default function MarketIntelligence({ businessName, marketData, businessL
           </div>
 
           {/* News panel - sama tinggi dengan chart */}
-          <div className="bg-slate-50 border border-slate-200 rounded-lg divide-y overflow-y-auto h-64">
+          <div className="bg-slate-50 border border-slate-200 rounded-lg overflow-y-auto h-64">
+            {/* Ringkasan AI */}
+            <div className="p-3 border-b border-slate-200 bg-indigo-50/60">
+              <p className="text-[11px] font-semibold text-indigo-700 uppercase mb-1 flex items-center gap-1">
+                <i className="fas fa-robot"></i> Rekomendasi AI
+              </p>
+              <p className="text-sm text-slate-700 leading-relaxed">
+                {newsLoading
+                  ? 'Sedang menganalisis pasar...'
+                  : newsError
+                    ? newsError
+                    : (aiSummary || 'Belum ada data tren. Klik refresh.')}
+              </p>
+            </div>
+
             {newsLoading ? (
               <div className="p-4 text-center text-slate-500 text-sm">
                 <i className="fas fa-spinner fa-spin mr-2"></i> Mengambil berita terkini...
+              </div>
+            ) : newsError ? (
+              <div className="p-4 text-center text-red-500 text-sm">
+                <i className="fas fa-info-circle mr-2"></i> {newsError}
               </div>
             ) : newsList.length > 0 ? (
               newsList.map((n) => (
@@ -251,24 +282,26 @@ export default function MarketIntelligence({ businessName, marketData, businessL
                       window.open(n.url, '_blank', 'noopener,noreferrer');
                     }
                   }}
-                  className="p-3 hover:bg-white transition cursor-pointer group"
+                  className="p-3 hover:bg-white transition cursor-pointer group border-b border-slate-200 last:border-b-0"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-slate-800 line-clamp-2 group-hover:text-blue-600 transition">{n.title}</p>
-                      <p className="text-xs text-slate-500 mt-1">
-                        <i className="fas fa-building mr-1"></i>{n.source}
-                        {n.location && <span> • <i className="fas fa-map-marker-alt mr-0.5"></i>{n.location}</span>}
-                      </p>
                       <p className="text-xs text-slate-600 mt-1 line-clamp-2">{n.snippet}</p>
-                      {n.url && (
-                        <p className="text-xs text-blue-500 mt-1 truncate group-hover:underline">
-                          <i className="fas fa-external-link-alt mr-1"></i>{n.url}
-                        </p>
-                      )}
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {n.source && (
+                          <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                            <i className="fas fa-building"></i> {n.source}
+                          </span>
+                        )}
+                        {n.published_date && (
+                          <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                            <i className="fas fa-clock"></i> {n.published_date}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-xs text-slate-400 whitespace-nowrap">
-                      {n.time}
+                    <div className="text-xs text-slate-400 whitespace-nowrap flex flex-col items-end">
                       <div className="mt-1 group-hover:opacity-100 opacity-0 transition">
                         <i className="fas fa-arrow-up-right-from-square text-blue-500 text-xs"></i>
                       </div>

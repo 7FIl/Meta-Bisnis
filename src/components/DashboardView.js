@@ -27,6 +27,9 @@ export default function DashboardView({
   onLogout,
   absences,
   onAddAbsence,
+  employees,
+  onAddEmployee,
+  onDeleteEmployee,
   marketData,
   onUpdateSettings,
   currentUserEmail,
@@ -251,7 +254,13 @@ export default function DashboardView({
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <EmployeeAbsence absences={absences} onAddAbsence={onAddAbsence} />
+              <EmployeeAbsence
+                absences={absences}
+                onAddAbsence={onAddAbsence}
+                employees={employees}
+                onAddEmployee={onAddEmployee}
+                onDeleteEmployee={onDeleteEmployee}
+              />
               <div className="lg:col-span-2 space-y-6">
                 <MarketIntelligence 
                   businessName={businessName} 

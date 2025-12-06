@@ -19,6 +19,7 @@ export default function Home() {
   const [currentView, setCurrentView] = useState('consultation'); // 'consultation' atau 'dashboard'
   const [businessData, setBusinessData] = useState(null);
   const [absences, setAbsences] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [showAdModal, setShowAdModal] = useState(false);
   const [marketData, setMarketData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -49,6 +50,7 @@ export default function Home() {
               setCurrentUserName(settings.userName || (currentUser.displayName || currentUser.email.split('@')[0]));
               setCurrentBusinessLocation(settings.businessLocation || 'Lokasi Tidak Diketahui');
               setCurrentBusinessDescription(settings.businessDescription || '');
+              setEmployees(settings.employees || []);
               // If you stored a businessData object, prefer that
               if (settings.businessData) setBusinessData(settings.businessData);
             } else {
@@ -73,6 +75,7 @@ export default function Home() {
         setCurrentBusinessName('Dashboard');
         setCurrentBusinessLocation('Lokasi Tidak Diketahui');
         setCurrentBusinessDescription('');
+        setEmployees([]);
       }
     });
     return () => unsub();
@@ -104,6 +107,7 @@ export default function Home() {
           setCurrentUserName('Pengguna'); // Reset custom name
           setCurrentBusinessLocation('Lokasi Tidak Diketahui');
           setCurrentBusinessDescription('');
+          setEmployees([]);
         } catch (err) {
           console.error('Logout failed', err);
           alert.error('Gagal Keluar', 'Gagal logout: ' + err.message, () => {
@@ -236,6 +240,36 @@ export default function Home() {
   const handleAddAbsence = (absence) => {
     setAbsences([absence, ...absences]);
   };
+
+  // Persist employee list to Firestore using user UID
+  const persistEmployees = async (list) => {
+    if (!user?.uid) return;
+    try {
+      setEmployees(list);
+      await saveUserSettings(user.uid, { employees: list });
+      toast.success('Data karyawan tersimpan');
+    } catch (err) {
+      console.error('Gagal menyimpan karyawan:', err);
+      toast.error('Gagal menyimpan karyawan');
+    }
+  };
+
+  const handleAddEmployee = async (name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const exists = employees.some((e) => e.name.toLowerCase() === trimmed.toLowerCase());
+    if (exists) {
+      toast.error('Nama karyawan sudah ada');
+      return;
+    }
+    const newList = [...employees, { id: Date.now(), name: trimmed }];
+    await persistEmployees(newList);
+  };
+
+  const handleDeleteEmployee = async (id) => {
+    const newList = employees.filter((e) => e.id !== id);
+    await persistEmployees(newList);
+  };
   
   // Handler for updating settings (mocking update logic)
   const handleUpdateSettings = async ({ 
@@ -308,6 +342,9 @@ export default function Home() {
         onLogout={handleLogout}
         absences={absences}
         onAddAbsence={handleAddAbsence}
+        employees={employees}
+        onAddEmployee={handleAddEmployee}
+        onDeleteEmployee={handleDeleteEmployee}
         marketData={marketData}
         showAdModal={showAdModal}
         onShowAdModal={() => setShowAdModal(true)}

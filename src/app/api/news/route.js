@@ -2,65 +2,147 @@
 import { NextResponse } from 'next/server';
 
 /**
- * Fungsi untuk fetch berita dari Tavily API
- * Menggunakan algoritma pencarian yang fokus pada bisnis serupa dengan user
+ * Ambil kata kunci dari nama + deskripsi bisnis untuk memperkuat konteks pencarian
  */
-async function fetchNewsFromTavily(query, businessLocation = '') {
+function extractBusinessKeywords(businessName = '', businessDescription = '') {
+  const text = `${businessName} ${businessDescription}`.toLowerCase();
+  const stopwords = new Set([
+    'toko','kedai','warung','usaha','bisnis','umkm','ud','cv','pt','the','and','&','di','dan','yang','untuk','dengan','jasa','service','layanan','indo','indonesia','nusantara','sejahtera','makmur','jaya','abadi','utama','sentosa','group','perkasa','maju','mulia','putra','putri'
+  ]);
+  const tokens = text
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !stopwords.has(w));
+
+  // Prioritaskan kata unik
+  return Array.from(new Set(tokens)).slice(0, 8);
+}
+
+/**
+ * Bangun query yang money-oriented dan kontekstual
+ */
+function buildSearchQuery({ businessName, businessDescription, businessLocation, categoryHint }) {
+  const currentDate = new Date().toISOString().split('T')[0];
+  const namePart = businessName ? ` untuk bisnis "${businessName}"` : '';
+  const descPart = businessDescription ? ` (deskripsi: ${businessDescription})` : '';
+  const locationPart = businessLocation ? ` di ${businessLocation}` : ' di Indonesia';
+  const categoryPart = categoryHint ? ` (kategori: ${categoryHint})` : '';
+  const keywords = extractBusinessKeywords(businessName, businessDescription);
+  const keywordPart = keywords.length ? ` Gunakan kata kunci berikut untuk relevansi: ${keywords.join(', ')}.` : '';
+
+  return `Apa tren viral terbaru, produk laris, atau strategi marketing yang sedang ramai di media sosial (TikTok/Instagram) minggu ini (${currentDate})${namePart}${locationPart}${descPart}${categoryPart}? Jawab dalam bahasa Indonesia saja, fokus pada peluang keuntungan praktis yang bisa langsung diterapkan, dan prioritaskan sumber Indonesia (hindari berita luar negeri atau kriminal yang tidak relevan).${keywordPart}`;
+}
+
+/**
+ * Fetch berita dari Tavily dengan pencarian agresif + ringkasan bawaan
+ */
+async function fetchNewsFromTavily(searchQuery) {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) {
     console.warn("Tavily API Key belum diset!");
-    return [];
+    return { answer: null, results: [] };
   }
 
   try {
-    // Query dengan filter tanggal: Hanya berita 3 bulan terakhir
-    // Tavily akan handle penyisihan berdasarkan prompt
-    let enhancedQuery = `Berita tren viral terbaru di indonesia mengenai bisnis ${query} dibuat dalam 3 bulan terakhir (sejak September 2025)`;
-    if (businessLocation && businessLocation.trim()) {
-      enhancedQuery += ` di ${businessLocation}`;
-    }
-    
-    console.log('[Tavily Query]:', enhancedQuery);
-    
+    console.log('[Tavily Query]:', searchQuery);
+
     const response = await fetch("https://api.tavily.com/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         api_key: apiKey,
-        query: enhancedQuery,
-        search_depth: "basic",
-        include_answer: false,
-        max_results: 10,
-        include_domains: [], // Biarkan Tavily pilih sumber terbaik
+        query: searchQuery,
+        search_depth: "advanced",
+        include_answer: "basic", // minta ringkasan singkat bawaan
+        max_results: 8,
+        include_domains: [
+          "tiktok.com",
+          "instagram.com",
+          "twitter.com",
+          "youtube.com",
+          "kompas.com",
+          "detik.com",
+          "dailysocial.id",
+          "cnbcindonesia.com",
+          "katadata.co.id",
+          "tekno.kompas.com",
+          "inet.detik.com"
+        ],
       })
     });
-    
+
     if (!response.ok) {
       console.error('[Tavily] Response not OK:', response.status);
-      return [];
+      return { answer: null, results: [] };
     }
-    
+
     const data = await response.json();
     console.log('[Tavily] Results count:', data.results?.length || 0);
-    
-    // Format hasil
-    if (data.results && Array.isArray(data.results)) {
-      return data.results.map((result, idx) => ({
-        id: idx,
-        title: result.title || 'Berita Tanpa Judul',
-        source: new URL(result.url).hostname.replace('www.', '') || 'Sumber',
-        time: 'Baru',
-        location: businessLocation || 'Indonesia',
-        snippet: result.content || result.description || 'Tidak ada deskripsi',
-        url: result.url,
-        score: result.score || 0,
-      }));
-    }
-    return [];
+
+    const formattedResults = Array.isArray(data.results)
+      ? data.results.map((item, idx) => {
+          let source = 'sumber';
+          try {
+            source = new URL(item.url).hostname.replace('www.', '') || 'sumber';
+          } catch (e) {
+            source = 'sumber';
+          }
+
+          return {
+            id: idx,
+            title: item.title || 'Berita Tanpa Judul',
+            url: item.url,
+            source,
+            snippet: item.content || item.description || 'Tidak ada deskripsi',
+            published_date: item.published_date || 'Baru saja',
+            score: item.score || 0,
+          };
+        })
+      : [];
+
+    return {
+      answer: data.answer || 'Belum ada ringkasan tren spesifik saat ini.',
+      results: formattedResults
+    };
   } catch (error) {
     console.error("Error fetching from Tavily:", error);
-    return [];
+    return { answer: null, results: [] };
   }
+}
+
+function personalizeSummary(answer, businessName, businessLocation) {
+  if (!answer) return '';
+  const name = businessName || 'bisnis Anda';
+  const loc = businessLocation ? ` di ${businessLocation}` : '';
+  return `Untuk ${name}${loc}: ${answer}`;
+}
+
+const allowedDomains = new Set([
+  'tiktok.com',
+  'instagram.com',
+  'twitter.com',
+  'youtube.com',
+  'kompas.com',
+  'detik.com',
+  'dailysocial.id',
+  'cnbcindonesia.com',
+  'katadata.co.id',
+  'tekno.kompas.com',
+  'inet.detik.com'
+]);
+
+const irrelevantKeywords = [
+  'atlanta', 'dallas', 'appalachian', 'georgia', 'us', 'usa', 'president', 'election', 'crime',
+  'meaning', 'stands for', 'definition', 'prefecture', 'japanese', 'minimally invasive', 'microsoft educator'
+];
+
+function splitLocation(businessLocation = '') {
+  // Ambil kota dan provinsi jika dipisah koma
+  const parts = businessLocation.split(',').map(p => p.trim()).filter(Boolean);
+  return {
+    city: parts[0] || businessLocation || '',
+    province: parts[1] || parts[0] || ''
+  };
 }
 
 /**
@@ -129,69 +211,134 @@ function scoreNewsRelevance(news, businessName, businessDescription, businessLoc
   return score;
 }
 
+function filterAndNormalizeResults(results, businessLocation) {
+  return results
+    .filter(item => {
+      // Hanya izinkan domain yang ada di whitelist
+      try {
+        const host = new URL(item.url).hostname.replace('www.', '');
+        if (!allowedDomains.has(host)) return false;
+        // Tolak kata kunci yang tidak relevan (berita luar negeri/kriminal)
+        const text = `${item.title || ''} ${item.snippet || ''}`.toLowerCase();
+        if (irrelevantKeywords.some(k => text.includes(k))) return false;
+      } catch (e) {
+        return false;
+      }
+      return true;
+    })
+    .map((item, idx) => ({
+      ...item,
+      id: idx,
+      location: businessLocation || 'Indonesia'
+    }));
+}
+
+function buildNewsSummary(news) {
+  if (!news || news.length === 0) return '';
+  const top = news.slice(0, 3).map(n => n.title).filter(Boolean);
+  if (top.length === 0) return '';
+  return `Rangkuman cepat: ${top.join(' · ')}`;
+}
+
+function sanitizeAnswer(answer, news) {
+  if (!answer) return buildNewsSummary(news);
+  const lower = answer.toLowerCase();
+  if (irrelevantKeywords.some(k => lower.includes(k))) {
+    return buildNewsSummary(news);
+  }
+  return answer;
+}
+
 export async function POST(req) {
   try {
     const body = await req.json();
     const { query, businessName, businessLocation, businessDescription } = body;
-    
-    if (!query) {
-      return NextResponse.json({ success: false, error: 'Query required' }, { status: 400 });
-    }
-    
+
     console.log('[api/news] Fetching news for business:', businessName);
-    console.log('[api/news] Query:', query);
-    
-    // STRATEGI PENCARIAN: Berita tren viral terbaru tentang bisnis serupa
-    // Format query: "Berita tren viral terbaru di indonesia mengenai bisnis [jenis bisnis]"
-    
-    // Query 1: Fokus ke jenis bisnis utama dengan format tren viral
-    const primaryQuery = query; // Sudah dalam format yang tepat dari frontend
-    let allNews = await fetchNewsFromTavily(primaryQuery, businessLocation);
-    
-    console.log('[api/news] Primary search results:', allNews.length);
-    
-    // Query 2: Jika hasil kurang, cari dengan AI-identified industry category
-    if (allNews.length < 5) {
-      const businessContext = await identifyBusinessContext(businessName, businessDescription);
-      if (businessContext && businessContext.searchTerm) {
-        const secondaryQuery = `tren viral ${businessContext.searchTerm} di indonesia`;
-        const moreNews = await fetchNewsFromTavily(secondaryQuery, businessLocation);
-        
-        console.log('[api/news] Secondary search results:', moreNews.length, `(category: ${businessContext.category})`);
-        
-        // Gabung dan deduplikasi (berdasarkan URL)
-        const existingUrls = new Set(allNews.map(n => n.url));
-        const newUniqueNews = moreNews.filter(n => !existingUrls.has(n.url));
-        allNews = [...allNews, ...newUniqueNews];
-      }
+
+    const { city, province } = splitLocation(businessLocation || '');
+    // Gunakan konteks bisnis (AI + keyword) untuk memperkaya query
+    const businessContext = await identifyBusinessContext(businessName || '', businessDescription || '');
+    const queries = [];
+
+    // 1) Query utama dengan nama bisnis penuh
+    const primaryQuery = query && query.trim()
+      ? query
+      : buildSearchQuery({
+          businessName,
+          businessDescription,
+          businessLocation: city,
+          categoryHint: businessContext?.category
+        });
+    queries.push(primaryQuery);
+
+    // 2) Query kategori industri (misal kuliner) bila tersedia
+    if (businessContext?.searchTerm) {
+      queries.push(buildSearchQuery({
+        businessName: businessContext.searchTerm,
+        businessDescription,
+        businessLocation: city,
+        categoryHint: businessContext.category
+      }));
     }
-    
-    console.log('[api/news] Total results before scoring:', allNews.length);
-    
-    // Scoring dan ranking (Tavily sudah filter tanggal melalui prompt)
-    const scoredNews = allNews.map(news => ({
+
+    // 3) Query level provinsi jika kota kosong hasilnya
+    if (province && province !== city) {
+      queries.push(buildSearchQuery({
+        businessName: businessContext?.searchTerm || businessName,
+        businessDescription,
+        businessLocation: province,
+        categoryHint: businessContext?.category
+      }));
+    }
+
+    let combinedResults = [];
+    let answer = '';
+    const seenUrls = new Set();
+
+    for (const q of queries) {
+      const { answer: a, results } = await fetchNewsFromTavily(q);
+      if (!answer && a) answer = a; // ambil ringkasan pertama yang tersedia
+      const filtered = filterAndNormalizeResults(results, businessLocation)
+        .filter(n => {
+          if (seenUrls.has(n.url)) return false;
+          seenUrls.add(n.url);
+          return true;
+        });
+      combinedResults = [...combinedResults, ...filtered];
+      if (combinedResults.length >= 6) break; // cukup data
+    }
+
+    console.log('[api/news] Total results before scoring:', combinedResults.length);
+
+    const scoredNews = combinedResults.map(news => ({
       ...news,
-      relevanceScore: scoreNewsRelevance(news, businessName, businessDescription, businessLocation)
+      relevanceScore: scoreNewsRelevance(news, businessName || '', businessDescription || '', businessLocation || '')
     }));
-    
-    // Sort by relevance dan ambil top 3
+
+    // Ambil top 5 paling relevan
     const topNews = scoredNews
       .sort((a, b) => b.relevanceScore - a.relevanceScore)
-      .slice(0, 3)
+      .slice(0, 5)
       .map(({ relevanceScore, score, ...news }) => news);
-    
+
     console.log('[api/news] Returning top', topNews.length, 'news items');
-    
+
+    const safeSummary = sanitizeAnswer(answer, topNews);
+
     return NextResponse.json({
       success: true,
+      summary: personalizeSummary(safeSummary, businessName, businessLocation),
       news: topNews,
       debug: {
-        totalFound: allNews.length,
+        totalFound: combinedResults.length,
         businessName,
-        businessLocation
+        businessLocation,
+        queryUsed: queries[0],
+        category: businessContext?.category
       }
     });
-    
+
   } catch (error) {
     console.error('[api/news] Error:', error);
     return NextResponse.json({
