@@ -63,36 +63,6 @@ export default function DashboardView({
       maximumFractionDigits: 0,
     }).format(v);
 
-  // Firebase fallback: Jika data props kosong tapi user sudah login, coba ambil dari Firebase
-  useEffect(() => {
-    if (!user?.uid || authLoading) return;
-
-    // Jika sudah ada data di props, tidak perlu load ulang
-    const hasData = (stockItems && stockItems.length > 0) || (salesHistory && salesHistory.length > 0);
-    if (hasData) {
-      console.log('[DashboardView] Data sudah ada di props, skip Firebase load');
-      return;
-    }
-
-    console.log('[DashboardView] Data kosong, mencoba diagnostik Firebase...');
-    
-    (async () => {
-      try {
-        const settings = await getUserSettings(user.uid);
-        if (settings && (settings.stockItems?.length > 0 || settings.salesHistory?.length > 0)) {
-          console.log('[DashboardView] Firebase data ditemukan:', {
-            stockItems: settings.stockItems?.length || 0,
-            salesHistory: settings.salesHistory?.length || 0,
-          });
-        } else {
-          console.log('[DashboardView] Firebase data kosong atau tidak ada');
-        }
-      } catch (err) {
-        console.error('[DashboardView] Gagal ambil dari Firebase:', err?.message || err);
-      }
-    })();
-  }, [user?.uid, authLoading, stockItems, salesHistory]);
-
 
   // Hitung total penjualan hari ini
   const calculateTodaySales = () => {
@@ -160,8 +130,6 @@ export default function DashboardView({
     
     // Persist ke cookie
     setTheme(newTheme);
-    
-    console.log(`[Theme] Changed to ${newTheme} (saved in cookie)`);
   };
 
   // NEW FUNCTIONS FOR CALENDAR
@@ -449,9 +417,7 @@ export default function DashboardView({
             onAddCalendarItem={addMarketingEvent}
             onDeleteCalendarItem={handleDeleteEvent}
             salesData={marketData?.sales}
-            onSave={(payload) => {
-              console.log("Konten disimpan:", payload);
-            }}
+            onSave={() => {}}
             onBack={() => setSelectedMenu("beranda")}
           />
         ) : selectedMenu === "chat" ? (

@@ -1,4 +1,4 @@
-// src/app/api/chat/route.js
+  // src/app/api/chat/route.js
 import { NextResponse } from 'next/server';
 
 /**
@@ -199,7 +199,7 @@ ${brandContextParts.map((p) => `- ${p}`).join('\n')}`
       return NextResponse.json({ success: true, reply: replyText });
     }
 
-    // 2. Setup Payload ke Groq (pengganti Kolosal)
+    // 2. Setup Payload ke Groq API
     // System prompt berubah berdasarkan topik supaya client bisa meminta
     // teks analisis biasa (plain text) untuk `analysis`, atau JSON untuk
     // topik lain seperti `finance`.
@@ -258,7 +258,7 @@ Format jawaban sebagai teks biasa dengan struktur yang jelas. Berikan contoh kon
       { role: "user", content: webData ? `${message}\n\n${webData}` : message }
     ];
 
-    // 3. Siapkan parameter permintaan ke Kolosal AI
+    // 3. Siapkan parameter permintaan ke Groq API
     const model = body.model || 'llama-3.3-70b-versatile';
     const max_tokens = body.max_tokens || 1000;
     const temperature = typeof body.temperature !== 'undefined' ? body.temperature : 0.7;

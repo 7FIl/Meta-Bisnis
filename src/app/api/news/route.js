@@ -125,14 +125,14 @@ function personalizeSummary(answer, businessName, businessLocation) {
 }
 
 /**
- * Terjemahkan jawaban Tavily ke bahasa Indonesia menggunakan Kolosal AI
+ * Terjemahkan jawaban Tavily ke bahasa Indonesia menggunakan Groq API
  */
 async function translateToIndonesian(text) {
   if (!text || text.length === 0) return text;
 
-  const kolosaKey = process.env.KOLOSAL_AI_KEY;
-  if (!kolosaKey) {
-    console.warn('[Translation] No Kolosal AI key available');
+  const groqKey = process.env.GROQ_API_KEY;
+  if (!groqKey) {
+    console.warn('[Translation] No Groq API key available');
     return text;
   }
 
@@ -143,14 +143,14 @@ async function translateToIndonesian(text) {
 
 Berikan HANYA terjemahan, tanpa penjelasan tambahan.`;
 
-    const response = await fetch('https://api.kolosal.id/v2/chat/completions', {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${kolosaKey}`,
+        'Authorization': `Bearer ${groqKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'meta-llama/Llama-2-7b-chat-hf',
+        model: 'llama-3.3-70b-versatile',
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 300,
         temperature: 0.3,
