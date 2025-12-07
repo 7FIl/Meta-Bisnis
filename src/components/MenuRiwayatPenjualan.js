@@ -252,7 +252,7 @@ export default function MenuRiwayatPenjualan({
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-1 font-bold">Riwayat Penjualan</h3>
-          <div className="text-l font-bold flex items-center gap-4 mt-2">
+          <div className="text-sm text-slate-800 dark:text-slate-700 flex items-center gap-4">
             <span>{businessName}</span>
             
             <PeriodFilter
@@ -324,11 +324,11 @@ export default function MenuRiwayatPenjualan({
       </div>
 
       {showManualInput && (
-        <div className="mb-6 p-4 border border-slate-200 dark:border-slate-500 rounded-lg bg-slate-50 dark:bg-slate-100">
+        <div className="mb-6 p-4 border border-slate-200 dark:border-slate-500 rounded-lg bg-slate-00 dark:bg-slate-00">
           <h4 className="text-lg font-bold mb-4">Input Penjualan</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipe Pencatatan</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-900 mb-1">Tipe Pencatatan</label>
               <select
                 value={newSale.entryType}
                 onChange={(e) =>
@@ -353,7 +353,7 @@ export default function MenuRiwayatPenjualan({
             {newSale.entryType === 'penjualan' && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kode Barang</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-900 mb-1">Kode Barang</label>
                   <select
                     value={newSale.kodeBarang}
                     onChange={(e) => setNewSale({ ...newSale, kodeBarang: e.target.value })}
@@ -368,7 +368,7 @@ export default function MenuRiwayatPenjualan({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nama Barang</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-900 mb-1">Nama Barang</label>
                   <input
                     type="text"
                     value={newSale.namaBarang}
@@ -378,7 +378,7 @@ export default function MenuRiwayatPenjualan({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Jumlah</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-900 mb-1">Jumlah</label>
                   <input
                     type="number"
                     value={newSale.jumlah}
@@ -395,7 +395,7 @@ export default function MenuRiwayatPenjualan({
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Harga Jual</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-900 mb-1">Harga Jual</label>
                   <input
                     type="number"
                     value={newSale.hargaJual}
@@ -434,7 +434,7 @@ export default function MenuRiwayatPenjualan({
               </>
             )}
           </div>
-          <div className="text-xs text-slate-600 dark:text-slate-400 mb-4">
+          <div className="text-xs text-slate-600 dark:text-slate-700 mb-4">
             <i className="fas fa-info-circle mr-1"></i>
             Tanggal dan waktu akan otomatis diisi saat penjualan ditambahkan
           </div>
@@ -456,13 +456,13 @@ export default function MenuRiwayatPenjualan({
                   newSale.customAmount <= 0
                 ))
               }
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white rounded-lg"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-800 disabled:bg-slate-00 text-white rounded-lg"
             >
               Tambah {newSale.entryType === 'penjualan' ? 'Penjualan' : newSale.entryType === 'pemasaran' ? 'Pengeluaran' : 'Pendapatan'}
             </button>
             <button
               onClick={() => setShowManualInput(false)}
-              className="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white rounded-lg"
+              className="px-4 py-2 bg-slate-600 hover:bg-slate-900 text-white rounded-lg"
             >
               Batal
             </button>

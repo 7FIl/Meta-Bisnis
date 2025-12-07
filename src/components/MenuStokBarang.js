@@ -81,7 +81,7 @@ export default function MenuStokBarang({
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-xl font-bold">Stok Barang</h3>
+          <h3 className="text-1 font-bold">Stok Barang</h3>
           <div className="text-sm text-slate-500">{businessName}</div>
         </div>
         <div className="flex gap-2">
@@ -99,21 +99,21 @@ export default function MenuStokBarang({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="p-4 border border-slate-100 dark:border-slate-700 rounded-lg">
           <div className="block text-sm font-semibold text-slate-700 dark:text-slate-900">Total Jenis Barang</div>
-          <div className="block text-xl font-bold text-slate-800 dark:text-slate-900 mt-1">{stockItems.length}</div>
+          <div className="block text-l font-bold text-slate-800 dark:text-slate-900 mt-1">{stockItems.length}</div>
         </div>
         <div className="p-4 border border-slate-100 dark:border-slate-700 rounded-lg">
           <div className="block text-sm font-semibold text-slate-700 dark:text-slate-900">Total Nilai Stok</div>
-          <div className="block text-xl font-bold text-slate-800 dark:text-slate-900 mt-1">{currency(totals.totalValue)}</div>
+          <div className="block text-l font-bold text-slate-800 dark:text-slate-900 mt-1">{currency(totals.totalValue)}</div>
         </div>
       </div>
 
       {/* Add Form */}
       {showAddForm && (
-        <form onSubmit={handleAddSubmit} className="mb-6 p-4 border border-blue-300 rounded-lg bg-blue-50 dark:bg-slate-700 space-y-3">
-          <h4 className="text-lg font-bold text-blue-800 dark:text-blue-200 mb-3">{editingId ? 'Edit Barang' : 'Input Barang Baru'}</h4>
+        <form onSubmit={handleAddSubmit} className="p-4 border border-slate-100 dark:border-slate-700 rounded-lg mb-6 bg-slate-0 dark:bg-slate-00">
+          <h4 className="text-lg font-bold text-white-00 dark:text-white-800 mb-3">{editingId ? 'Edit Barang' : 'Input Barang Baru'}</h4>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kode Barang</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-900 mb-1">Kode Barang</label>
               <input
                 type="text"
                 value={newItem.kodeBarang}
@@ -123,7 +123,7 @@ export default function MenuStokBarang({
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nama Barang</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-900 mb-1">Nama Barang</label>
               <input
                 type="text"
                 value={newItem.name}
@@ -133,7 +133,7 @@ export default function MenuStokBarang({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Jumlah</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-900 mb-1">Jumlah</label>
               <input
                 type="number"
                 value={newItem.qty}
@@ -143,7 +143,7 @@ export default function MenuStokBarang({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Satuan</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-900 mb-1">Satuan</label>
               <input
                 type="text"
                 value={newItem.unit}
@@ -153,7 +153,7 @@ export default function MenuStokBarang({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Harga Beli Satuan (Rp)</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-900 mb-1">Harga Beli Satuan (Rp)</label>
               <input
                 type="number"
                 value={newItem.buyPrice}
@@ -163,7 +163,7 @@ export default function MenuStokBarang({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Harga Jual Satuan (Rp)</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-900 mb-1">Harga Jual Satuan (Rp)</label>
               <input
                 type="number"
                 value={newItem.sellPrice}
@@ -176,7 +176,7 @@ export default function MenuStokBarang({
                 <button
                     type="submit"
                     disabled={!newItem.kodeBarang.trim() || !newItem.name.trim() || newItem.qty <= 0 || newItem.buyPrice <= 0 || newItem.sellPrice <= 0}
-                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white py-2 rounded-lg font-medium transition"
+                    className="w-full bg-blue-600 hover:bg-blue-800 disabled:bg-slate-00 text-white py-2 rounded-lg font-medium transition"
                 >
                     {editingId ? 'Perbarui Stok' : 'Simpan Stok'}
                 </button>
@@ -187,7 +187,7 @@ export default function MenuStokBarang({
 
       {/* Stock List */}
       <div className="mb-6">
-        <h3 className="text-lg font-bold mb-3">Daftar Inventaris ({totals.totalItems} unit)</h3>
+        <h3 className="text-1 font-bold mb-3">Daftar Inventaris ({totals.totalItems} unit)</h3>
         <div className="overflow-x-auto border border-slate-200 dark:border-slate-500 rounded-lg">
           <table className="w-full text-sm ">
             <thead className="p-4 border border-slate-100 dark:border-slate-100 rounded-lg text-left">

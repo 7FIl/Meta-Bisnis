@@ -264,11 +264,11 @@ export default function DashboardView({
     <div className="min-h-screen flex bg-white dark:bg-slate-900">
       {/* Sidebar - base colors set to light mode: bg-white */}
       <aside className="w-64 bg-white bg-slate-00 border-r border-slate-200 dark:border-slate-700 hidden md:flex flex-col fixed h-full z-10">
-        <div className="p-6 border-b border-slate-100 dark:border-slate-700">
-          <div className="flex items-center gap-2 font-bold text-xl text-indigo-700 dark:text-indigo-400">
+        <div className="p-6 border-b border-slate-300 dark:border-slate-700">
+          <div className="flex items-center gap-2 font-bold text-l text-indigo-700 dark:text-indigo-700">
             <i className="fas fa-store"></i> <span>{businessName}</span>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-slate-600 dark:text-slate-500 mt-1">
             Managed by Meta Bisnis
           </p>
         </div>
