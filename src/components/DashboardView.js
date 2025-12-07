@@ -11,6 +11,7 @@ import MenuChatAI from "./MenuChatAI";
 import MenuKeuangan from "./MenuKeuangan";
 import MenuPengaturan from "./MenuPengaturan";
 import MenuRiwayatPenjualan from "./MenuRiwayatPenjualan";
+import MenuStokBarang from "./MenuStokBarang"
 
 export default function DashboardView({
   businessName,
@@ -32,6 +33,10 @@ export default function DashboardView({
   instagramUsername = "",
   tiktokUsername = "",
   whatsappNumber = "",
+  stockItems,
+  onAddStockItem,
+  onUpdateStockItem,
+  onDeleteStockItem,
 }) {
   const chartRef = useRef(null);
   const [selectedMenu, setSelectedMenu] = useState("beranda");
@@ -269,6 +274,7 @@ export default function DashboardView({
             { name: "Beranda", icon: "fa-home", menu: "beranda" },
             { name: "Pemasaran AI", icon: "fa-bullhorn", menu: "pemasaran" },
             { name: "Keuangan", icon: "fa-calculator", menu: "keuangan" },
+            { name: "Stok Barang", icon: "fa-boxes", menu: "stok" },
             { name: "Riwayat Penjualan", icon: "fa-shopping-cart", menu: "riwayat" },
             { name: "Chat AI", icon: "fa-comments", menu: "chat" },
             { name: "Pengaturan", icon: "fa-cog", menu: "pengaturan" },
@@ -347,7 +353,25 @@ export default function DashboardView({
 
       {/* Main Content (All content will adapt via global CSS and dark: utilities) */}
       <main className="main-content-bg flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto">
-        {selectedMenu === "pemasaran" ? (
+        {selectedMenu === "stok" ? ( // NEW RENDER CONDITION
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <button
+                onClick={() => setSelectedMenu("beranda")}
+                className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-900"
+              >
+                ← Kembali ke Dashboard
+              </button>
+            </div>
+            <MenuStokBarang 
+              businessName={businessName}
+              stockItems={stockItems}
+              onAddStockItem={onAddStockItem}
+              onUpdateStockItem={onUpdateStockItem}
+              onDeleteStockItem={onDeleteStockItem}
+            />
+          </div>
+        ) :selectedMenu === "pemasaran" ? (
           <MenuPemasaranAI
             businessName={businessName}
             businessLocation={businessLocation}

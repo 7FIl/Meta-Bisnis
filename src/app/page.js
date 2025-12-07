@@ -35,8 +35,7 @@ export default function Home() {
   const [businessData, setBusinessData] = useState(null);
   const [absences, setAbsences] = useState([]);
   const [employees, setEmployees] = useState([]);
-  const [showAdModal, setShowAdModal] = useState(false);
-  const [marketData, setMarketData] = useState({
+  const [showAdModal, setShowAdModal] = useState(false);const [marketData, setMarketData] = useState({
     sales: ALL_MOCK_SALES, // Inisialisasi dengan mock data penjualan
     period: new Date().toISOString().slice(0, 7),
     incomes: [], 
