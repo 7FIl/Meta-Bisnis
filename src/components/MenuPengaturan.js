@@ -241,7 +241,7 @@ export default function MenuPengaturan({
                 <select
                   value={newBusinessType}
                   onChange={(e) => setNewBusinessType(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-800 text-slate-900:text-slate-900 font-medium"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-800 text-slate-900:text-slate-900 font-medium text-slate-600"
                   disabled={loading}
                 >
                   <option value="">Pilih Jenis Usaha (Penting untuk AI Akurat)</option>
@@ -257,7 +257,7 @@ export default function MenuPengaturan({
                 <select
                   value={newProvince}
                   onChange={(e) => { setNewProvince(e.target.value); setNewCity(""); }}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-800 text-slate-900:text-slate-900"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-800 text-slate-900:text-slate-900 text-slate-600"
                   disabled={loading}
                 >
                   <option value="">Pilih Provinsi</option>
@@ -272,7 +272,7 @@ export default function MenuPengaturan({
                 <select
                   value={newCity}
                   onChange={(e) => setNewCity(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-800 text-slate-900:text-slate-900"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white:bg-slate-800 text-slate-900:text-slate-900 text-slate-600"
                   disabled={loading || !newProvince}
                 >
                   <option value="">{newProvince ? "(Opsional) Pilih Kota/Kabupaten" : "Pilih provinsi dulu"}</option>

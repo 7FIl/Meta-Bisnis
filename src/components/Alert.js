@@ -103,31 +103,33 @@ function AlertItem({ alert, onRemove }) {
   };
 
   const bgColor = {
-    success: 'bg-green-50 border-green-200',
-    error: 'bg-red-50 border-red-200',
-    warning: 'bg-amber-50 border-amber-200',
-    info: 'bg-blue-50 border-blue-200',
+    success: 'bg-teal-50 border-teal-200',    // BARU: TEAL
+    error: 'bg-rose-50 border-rose-200',      // BARU: ROSE
+    warning: 'bg-orange-50 border-orange-200',  // BARU: ORANGE
+    info: 'bg-indigo-50 border-indigo-200',   // BARU: INDIGO
   }[alert.type];
 
   const titleColor = {
-    success: 'text-green-900',
-    error: 'text-red-900',
-    warning: 'text-amber-900',
-    info: 'text-blue-900',
+    success: 'text-teal-900',
+    error: 'text-rose-900',
+    warning: 'text-orange-900',
+    info: 'text-indigo-900',
   }[alert.type];
 
   const messageColor = {
-    success: 'text-green-700',
-    error: 'text-red-700',
-    warning: 'text-amber-100',
-    info: 'text-blue-700',
+    // Diperbaiki untuk kontras yang lebih baik pada pesan
+    success: 'text-teal-700',
+    error: 'text-rose-700',
+    warning: 'text-orange-700', 
+    info: 'text-indigo-700',
   }[alert.type];
 
   const buttonBg = {
-    success: 'bg-green-600 hover:bg-green-700',
-    error: 'bg-red-600 hover:bg-red-700',
-    warning: 'bg-amber-600 hover:bg-amber-700',
-    info: 'bg-blue-600 hover:bg-blue-700',
+    // Latar belakang tombol utama
+    success: 'bg-teal-600 hover:bg-teal-700',
+    error: 'bg-rose-600 hover:bg-rose-700',
+    warning: 'bg-orange-600 hover:bg-orange-700',
+    info: 'bg-indigo-600 hover:bg-indigo-700',
   }[alert.type];
 
   const icon = {
@@ -138,10 +140,11 @@ function AlertItem({ alert, onRemove }) {
   }[alert.type];
 
   const iconBg = {
-    success: 'bg-green-100 text-green-600',
-    error: 'bg-red-100 text-red-600',
-    warning: 'bg-amber-100 text-amber-600',
-    info: 'bg-blue-100 text-blue-600',
+    // Latar belakang ikon
+    success: 'bg-teal-100 text-teal-600',
+    error: 'bg-rose-100 text-rose-600',
+    warning: 'bg-orange-100 text-orange-600',
+    info: 'bg-indigo-100 text-indigo-600',
   }[alert.type];
 
   return (
@@ -170,7 +173,7 @@ function AlertItem({ alert, onRemove }) {
           </div>
 
           {/* Message Body */}
-          <div className="p-6">
+          <div className="p-6 bg-orange">
             <p className={`${messageColor} text-sm leading-relaxed`}>{alert.message}</p>
           </div>
 
