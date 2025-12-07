@@ -101,14 +101,14 @@ export default function PeriodFilter({
         <select 
           value={currentMonth} 
           onChange={(e) => onMonthChange(parseInt(e.target.value))}
-          className="px-2 py-1 border-r border-slate-300"
+          className="px-2 py-1 border-r border-slate-300 text-slate-600"
         >
           {monthNames.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
         </select>
         <select 
           value={currentYear} 
           onChange={(e) => onYearChange(parseInt(e.target.value))}
-          className="px-2 py-1"
+          className="px-2 py-1 text-slate-600"
         >
           {Array.from({length: 10}, (_, i) => currentYear - 5 + i).map(y => <option key={y} value={y}>{y}</option>)}
         </select>
@@ -125,7 +125,7 @@ export default function PeriodFilter({
             onStartDateChange('');
             onEndDateChange('');
           }}
-          className="px-2 py-1 border border-slate-300 rounded text-sm"
+          className="px-2 py-1 border border-slate-300 rounded text-sm text-slate-600"
         >
           <option value="all">Semua Hari</option>
           <option value="single">1 Hari</option>
