@@ -20,23 +20,9 @@ export default function MenuKeuangan({
   const [endDate, setEndDate] = useState('');
   const [showCalendarPopup, setShowCalendarPopup] = useState(false);
   
-  // fallback contoh data bila tidak diberikan
-  const SAMPLE_SALES = [
-    { date: "2025-12-05", itemCode: "BRG001", product: "Nasi Goreng", qty: 10, price: 25000 },
-    { date: "2025-12-06", itemCode: "BRG002", product: "Es Teh", qty: 20, price: 5000 },
-  ];
-  const SAMPLE_INCOMES = [
-    { date: "2025-12-05", source: "Penjualan offline", amount: 200000 },
-    { date: "2025-12-06", source: "Penjualan online", amount: 150000 },
-  ];
-  const SAMPLE_MARKETING = [
-    { date: "2025-12-03", channel: "Instagram Ads", amount: 50000, note: "Promo weekend" },
-    { date: "2025-12-04", channel: "Flyer", amount: 20000, note: "Distribusi lokal" },
-  ];
-
-  const sales = salesData && salesData.length ? salesData : SAMPLE_SALES;
-  const incs = incomes && incomes.length ? incomes : SAMPLE_INCOMES;
-  const mkt = marketingExpenses && marketingExpenses.length ? marketingExpenses : SAMPLE_MARKETING;
+  const sales = salesData && salesData.length ? salesData : [];
+  const incs = incomes && incomes.length ? incomes : [];
+  const mkt = marketingExpenses && marketingExpenses.length ? marketingExpenses : [];
 
   const currency = (v) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(v);
@@ -234,19 +220,27 @@ export default function MenuKeuangan({
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-slate-50">
-              {filteredSales.map((r, i) => {
-                const total = r.qty ? r.qty * (r.price || 0) : r.amount || 0;
-                return (
-                  <tr key={i} className="border-t border-slate-100 dark:border-slate-700">
-                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.date || "-"}</td>
-                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.itemCode || "-"}</td>
-                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.product || "-"}</td>
-                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.qty ?? "-"}</td>
-                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.price ? currency(r.price) : "-"}</td>
-                    <td className="px-3 py-2 font-semibold text-slate-800 dark:text-slate-900">{currency(total)}</td>
-                  </tr>
-                );
-              })}
+              {filteredSales.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="text-center py-4 text-slate-500 dark:text-slate-400">
+                    Belum ada data penjualan.
+                  </td>
+                </tr>
+              ) : (
+                filteredSales.map((r, i) => {
+                  const total = r.qty ? r.qty * (r.price || 0) : r.amount || 0;
+                  return (
+                    <tr key={i} className="border-t border-slate-100 dark:border-slate-700">
+                      <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.date || "-"}</td>
+                      <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.itemCode || "-"}</td>
+                      <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.product || "-"}</td>
+                      <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.qty ?? "-"}</td>
+                      <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.price ? currency(r.price) : "-"}</td>
+                      <td className="px-3 py-2 font-semibold text-slate-800 dark:text-slate-900">{currency(total)}</td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
@@ -264,13 +258,21 @@ export default function MenuKeuangan({
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-slate-50">
-              {filteredIncomes.map((r, i) => (
-                <tr key={i} className="border-t border-slate-100 dark:border-slate-700">
-                  <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.date || "-"}</td>
-                  <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.source}</td>
-                  <td className="px-3 py-2 font-semibold text-slate-800 dark:text-slate-900">{currency(r.amount)}</td>
+              {filteredIncomes.length === 0 ? (
+                <tr>
+                  <td colSpan="3" className="text-center py-4 text-slate-500 dark:text-slate-400">
+                    Belum ada pendapatan lain.
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                filteredIncomes.map((r, i) => (
+                  <tr key={i} className="border-t border-slate-100 dark:border-slate-700">
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.date || "-"}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.source}</td>
+                    <td className="px-3 py-2 font-semibold text-slate-800 dark:text-slate-900">{currency(r.amount)}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -289,14 +291,22 @@ export default function MenuKeuangan({
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-slate-50">
-              {filteredMarketing.map((r, i) => (
-                <tr key={i} className="border-t border-slate-100 dark:border-slate-700">
-                  <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.date || "-"}</td>
-                  <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.channel}</td>
-                  <td className="px-3 py-2 font-semibold text-slate-800 dark:text-slate-900">{currency(r.amount)}</td>
-                  <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.note || "-"}</td>
+              {filteredMarketing.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="text-center py-4 text-slate-500 dark:text-slate-400">
+                    Belum ada pengeluaran pemasaran.
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                filteredMarketing.map((r, i) => (
+                  <tr key={i} className="border-t border-slate-100 dark:border-slate-700">
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.date || "-"}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.channel}</td>
+                    <td className="px-3 py-2 font-semibold text-slate-800 dark:text-slate-900">{currency(r.amount)}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.note || "-"}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

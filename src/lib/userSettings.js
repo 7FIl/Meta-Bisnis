@@ -74,40 +74,38 @@ export const getUserSettings = async (uid) => {
 };
 
 /**
- * Mengambil tema saat ini dari Firestore.
- * @param {string} uid - User ID (UID) dari pengguna yang login.
- * @returns {Promise<string>} 'light' atau 'dark'. Default: 'dark'.
+ * Mengambil preferensi tema dari cookie (bukan Firebase)
+ * @returns {string} 'light' atau 'dark'. Default: 'light'.
  */
-export const getTheme = async (uid) => {
-  if (!uid) return "light"; // Jika belum login, default ke light
-  try {
-    const settings = await getUserSettings(uid);
-    // Prioritaskan tema dari Firestore, fallback ke 'light'
-    return settings?.theme || "light";
-  } catch (error) {
-    console.warn("Error getting theme from Firestore (fallback to local):", error?.message || error);
-    // Fallback ke tema lokal browser jika Firebase error
-    if (
-      typeof window !== "undefined" &&
-      localStorage.getItem("theme") === "dark"
-    ) {
-      return "dark";
-    }
-    return "light";
+export const getTheme = () => {
+  if (typeof document === "undefined") return "light";
+  
+  // Cek cookie
+  const cookies = document.cookie.split(';');
+  const themeCookie = cookies.find(c => c.trim().startsWith('theme='));
+  
+  if (themeCookie) {
+    const theme = themeCookie.split('=')[1];
+    return theme === 'dark' ? 'dark' : 'light';
   }
+  
+  // Fallback ke localStorage
+  if (typeof localStorage !== "undefined" && localStorage.getItem("theme") === "dark") {
+    return "dark";
+  }
+  
+  return "light";
 };
 
 /**
- * Mengubah tema dan menyimpannya ke Firestore, serta MENGAPLIKASIKAN DI HTML.
+ * Mengubah tema dan menyimpannya ke COOKIE (bukan Firebase)
  */
-export const setTheme = async (uid, theme) => {
-  // 1. Simpan tema ke Firestore (jika user login)
-  if (uid) {
-    try {
-      await saveUserSettings(uid, { theme: theme });
-    } catch (e) {
-      console.error("Failed to save theme to Firebase:", e);
-    }
+export const setTheme = (theme) => {
+  // 1. Simpan ke cookie (expire 1 tahun)
+  if (typeof document !== "undefined") {
+    const expires = new Date();
+    expires.setFullYear(expires.getFullYear() + 1);
+    document.cookie = `theme=${theme}; expires=${expires.toUTCString()}; path=/`;
   }
 
   // 2. Terapkan kelas 'dark' ke elemen <html> segera (Client-side effect)
@@ -118,7 +116,7 @@ export const setTheme = async (uid, theme) => {
     } else {
       root.classList.remove("dark");
     }
-    // Simpan juga ke localStorage sebagai fallback / for instant load (tanpa menunggu Firebase)
+    // Simpan juga ke localStorage sebagai fallback
     localStorage.setItem("theme", theme);
   }
 };

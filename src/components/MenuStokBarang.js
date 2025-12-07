@@ -209,8 +209,11 @@ export default function MenuStokBarang({
                   </td>
                 </tr>
               ) : (
-                stockItems.map((item) => (
-                  <tr key={item.id} className="border-t border-slate-100 dark:border-slate-700">
+                stockItems.map((item, idx) => (
+                  <tr
+                    key={item.id || item.kodeBarang || item.name || `stok-${idx}`}
+                    className="border-t border-slate-100 dark:border-slate-700"
+                  >
                     <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{item.kodeBarang || '-'}</td>
                     <td className="px-3 py-2 font-medium text-slate-800 dark:text-slate-900">{item.name}</td>
                     <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{item.qty} {item.unit}</td>

@@ -22,13 +22,6 @@ export default function MenuRiwayatPenjualan({
   const [endDate, setEndDate] = useState('');
   const [showCalendarPopup, setShowCalendarPopup] = useState(false);
   
-  // fallback contoh data bila tidak diberikan
-  const SAMPLE_HISTORY = [
-    { dateTime: "2023/10/01 - 14:30", kodeBarang: "BRG001", namaBarang: "Buku Tulis", jumlah: 5 },
-    { dateTime: "2023/10/02 - 09:15", kodeBarang: "BRG002", namaBarang: "Pensil", jumlah: 2 },
-    { dateTime: "2023/10/03 - 16:45", kodeBarang: "BRG003", namaBarang: "Pulpen", jumlah: 10 },
-  ];
-
   // Function to migrate old format data to new format
   const migrateOldData = (data) => {
     return data.map(item => {
@@ -61,7 +54,7 @@ export default function MenuRiwayatPenjualan({
     if (salesHistoryData && salesHistoryData.length) {
       return migrateOldData(salesHistoryData);
     }
-    return SAMPLE_HISTORY;
+    return [];
   });
 
   useEffect(() => {
@@ -309,15 +302,23 @@ export default function MenuRiwayatPenjualan({
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-slate-50">
-              {filteredHistory.map((r, i) => (
-                <tr key={i} className="border-t border-slate-100 dark:border-slate-700">
-                  <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.dateTime}</td>
-                  <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.kodeBarang || "-"}</td>
-                  <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.namaBarang || "-"}</td>
-                  <td className="px-3 py-2 font-semibold text-slate-800 dark:text-slate-900">{r.jumlah ?? "-"}</td>
-                  <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.hargaJual ?? "-"}</td>
+              {filteredHistory.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="text-center py-4 text-slate-500 dark:text-slate-400">
+                    Belum ada riwayat penjualan.
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                filteredHistory.map((r, i) => (
+                  <tr key={i} className="border-t border-slate-100 dark:border-slate-700">
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.dateTime}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.kodeBarang || "-"}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.namaBarang || "-"}</td>
+                    <td className="px-3 py-2 font-semibold text-slate-800 dark:text-slate-900">{r.jumlah ?? "-"}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.hargaJual ?? "-"}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

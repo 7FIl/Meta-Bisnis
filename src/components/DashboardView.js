@@ -110,22 +110,20 @@ export default function DashboardView({
 
   const totalSalesToday = calculateTodaySales();
 
-  // Theme initialization - default light, honor saved preference
+  // Theme initialization - dari cookie
   useEffect(() => {
-    // Tunggu sampai auth loading selesai DAN user tersedia
+    // Load theme dari cookie (tidak perlu tunggu user login)
+    const theme = getTheme();
+    setCurrentTheme(theme);
+    
+    // Load calendar events dari Firebase jika user login
     if (user && user.uid && !authLoading) {
-      getTheme(user.uid).then((theme) => {
-        // Kirim user.uid yang sebenarnya
-        // ... (Logika sinkronisasi tema)
-        setCurrentTheme(theme);
-      });
-      // Load calendar events from Firebase
       getCalendarEvents(user.uid).then((loadedEvents) => {
         setEvents(loadedEvents || {});
       }).catch((err) => {
         console.error("Failed to load calendar events:", err);
       });
-    } // Tambahkan user.uid dan authLoading ke dependency array
+    }
   }, [user, authLoading]);
 
   // Apply theme class immediately when currentTheme changes (includes initial load)
@@ -139,34 +137,17 @@ export default function DashboardView({
     }
   }, [currentTheme]);
 
-  // On first mount, initialize theme from localStorage if present (so toggle works before login)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const saved = localStorage.getItem("theme");
-    if (saved && (saved === "dark" || saved === "light")) {
-      setCurrentTheme(saved);
-    }
-  }, []);
-
-  const handleThemeToggle = async () => {
-    // Toggle theme locally for instant feedback (works even when logged out)
+  const handleThemeToggle = () => {
+    // Toggle theme dan simpan ke cookie (tidak perlu async)
     const newTheme = currentTheme === "light" ? "dark" : "light";
-
-    // Apply immediately in React state (effect will apply HTML class)
+    
+    // Apply immediately
     setCurrentTheme(newTheme);
-
-    // Persist: save to Firestore if user is logged in, otherwise save to localStorage only
-    try {
-      if (user && user.uid) {
-        await setTheme(user.uid, newTheme);
-      } else if (typeof window !== "undefined") {
-        // setTheme will also apply class and localStorage when called, but
-        // we still call localStorage here to persist for anonymous users.
-        localStorage.setItem("theme", newTheme);
-      }
-    } catch (e) {
-      console.error("Failed to persist theme:", e);
-    }
+    
+    // Persist ke cookie
+    setTheme(newTheme);
+    
+    console.log(`[Theme] Changed to ${newTheme} (saved in cookie)`);
   };
 
   // NEW FUNCTIONS FOR CALENDAR
@@ -627,6 +608,7 @@ export default function DashboardView({
                   businessLocation={businessLocation}
                   businessDescription={businessDescription}
                   businessType={businessType}
+                  salesHistory={salesHistory}
                 />
                 {/* NEW: Custom Calendar below the MarketIntelligence (grafik toko) - Full width like the graph */}
                 <div className="bg-white rounded-lg shadow p-4">
