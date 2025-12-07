@@ -8,6 +8,10 @@ export default function MenuRiwayatPenjualan({
   businessName = "Bisnis Anda",
   period = "2023-10",
   salesHistoryData = null, // [{dateTime, kodeBarang, namaBarang, jumlah}]
+  onAddSale,
+  stockItems = [],
+  onAddMarketingExpense,
+  onAddOtherIncome,
 }) {
   // Parse initial period (YYYY-MM)
   const [currentYear, setCurrentYear] = useState(parseInt(period.split('-')[0]) || 2023);
@@ -54,22 +58,17 @@ export default function MenuRiwayatPenjualan({
   };
 
   const [history, setHistory] = useState(() => {
-    // Try to load from localStorage first
-    const savedData = localStorage.getItem(`sales_history_${businessName}_${period}`);
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        return migrateOldData(parsed);
-      } catch (e) {
-        console.error('Error parsing saved sales data:', e);
-      }
-    }
-    // Fall back to props or sample data
     if (salesHistoryData && salesHistoryData.length) {
       return migrateOldData(salesHistoryData);
     }
     return SAMPLE_HISTORY;
   });
+
+  useEffect(() => {
+    if (salesHistoryData && salesHistoryData.length) {
+      setHistory(migrateOldData(salesHistoryData));
+    }
+  }, [salesHistoryData]);
 
   // Calculate auto date range for current month
   const firstDayOfMonth = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
@@ -109,28 +108,46 @@ export default function MenuRiwayatPenjualan({
     return { totalItems };
   }, [filteredHistory]);
 
-  // Save to localStorage whenever history changes
-  useEffect(() => {
-    const storageKey = `sales_history_${businessName}_${period}`;
-    localStorage.setItem(storageKey, JSON.stringify(history));
-  }, [history, businessName, period]);
-
   const [exporting, setExporting] = useState(false);
   const [showManualInput, setShowManualInput] = useState(false);
   const [newSale, setNewSale] = useState({
     kodeBarang: '',
     namaBarang: '',
-    jumlah: ''
+    jumlah: '',
+    hargaJual: '',
+    entryType: 'penjualan', // penjualan | pemasaran | lain-lain
+    customAmount: '', // used for non-penjualan
   });
+
+  const selectedStockItem = useMemo(
+    () => stockItems.find((it) => it.kodeBarang === newSale.kodeBarang) || null,
+    [stockItems, newSale.kodeBarang]
+  );
+
+  useEffect(() => {
+    if (newSale.entryType !== 'penjualan') {
+      return;
+    }
+    if (selectedStockItem) {
+      setNewSale((prev) => ({
+        ...prev,
+        namaBarang: selectedStockItem.name || selectedStockItem.namaBarang || prev.namaBarang,
+        hargaJual:
+          selectedStockItem.sellPrice || selectedStockItem.hargaJual || prev.hargaJual || '',
+      }));
+    } else {
+      setNewSale((prev) => ({ ...prev, namaBarang: '', hargaJual: '' }));
+    }
+  }, [selectedStockItem, newSale.entryType]);
 
   const toCSV = ({ historyRows }) => {
     const rows = [];
     rows.push([`Riwayat Penjualan - ${businessName}`, `Periode: ${period}`]);
     rows.push([]);
     rows.push(["RIWAYAT PENJUALAN"]);
-    rows.push(["Tanggal & Waktu", "Kode Barang", "Nama Barang", "Jumlah"]);
+    rows.push(["Tanggal & Waktu", "Kode Barang", "Nama Barang", "Jumlah", "Harga Jual"]);
     historyRows.forEach((r) =>
-      rows.push([r.dateTime || "", r.kodeBarang || "", r.namaBarang || "", r.jumlah ?? ""])
+      rows.push([r.dateTime || "", r.kodeBarang || "", r.namaBarang || "", r.jumlah ?? "", r.hargaJual ?? ""])
     );
     rows.push([]);
     rows.push(["RINGKASAN"]);
@@ -172,9 +189,6 @@ export default function MenuRiwayatPenjualan({
   };
 
   const handleAddSale = () => {
-    if (!newSale.namaBarang.trim() || !newSale.jumlah || !newSale.kodeBarang.trim()) return;
-
-    // Create dateTime in format "YYYY/MM/DD - HH:MM"
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -183,27 +197,54 @@ export default function MenuRiwayatPenjualan({
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const dateTime = `${year}/${month}/${day} - ${hours}:${minutes}`;
 
-    // Add the new sale to the history
-    const saleToAdd = {
-      dateTime: dateTime,
-      kodeBarang: newSale.kodeBarang.trim(),
-      namaBarang: newSale.namaBarang.trim(),
-      jumlah: parseInt(newSale.jumlah)
-    };
+    if (newSale.entryType === 'penjualan') {
+      if (!selectedStockItem) return;
+      const qty = parseInt(newSale.jumlah, 10);
+      const available = selectedStockItem.qty || 0;
+      if (!newSale.kodeBarang.trim() || !qty || qty <= 0 || qty > available) return;
 
-    setHistory(prevHistory => [saleToAdd, ...prevHistory]);
+      const priceFromStock = selectedStockItem.sellPrice || selectedStockItem.hargaJual || selectedStockItem.price || 0;
+      const nameFromStock = selectedStockItem.name || selectedStockItem.namaBarang || '';
 
-    // Reset form
+      const saleToAdd = {
+        dateTime,
+        kodeBarang: newSale.kodeBarang.trim(),
+        namaBarang: nameFromStock,
+        jumlah: qty,
+        hargaJual: priceFromStock,
+      };
+
+      if (typeof onAddSale === 'function') {
+        onAddSale(saleToAdd);
+      } else {
+        setHistory(prevHistory => [saleToAdd, ...prevHistory]);
+      }
+    } else if (newSale.entryType === 'pemasaran') {
+      const amount = parseInt(newSale.customAmount, 10) || 0;
+      const desc = newSale.namaBarang || 'Pengeluaran pemasaran';
+      if (!amount || amount <= 0) return;
+      if (typeof onAddMarketingExpense === 'function') {
+        onAddMarketingExpense({ date: dateTime.split(' ')[0].replace(/\//g, '-'), channel: desc, amount, note: 'Dicatat dari Riwayat Penjualan' });
+      }
+    } else {
+      const amount = parseInt(newSale.customAmount, 10) || 0;
+      const source = newSale.namaBarang || 'Pendapatan lain-lain';
+      if (!amount || amount <= 0) return;
+      if (typeof onAddOtherIncome === 'function') {
+        onAddOtherIncome({ date: dateTime.split(' ')[0].replace(/\//g, '-'), source, amount });
+      }
+    }
+
     setNewSale({
       kodeBarang: '',
       namaBarang: '',
-      jumlah: ''
+      jumlah: '',
+      hargaJual: '',
+      entryType: 'penjualan',
+      customAmount: '',
     });
 
-    // Hide the form
     setShowManualInput(false);
-
-    console.log('New sale added:', saleToAdd);
   };
 
   return (
@@ -211,7 +252,7 @@ export default function MenuRiwayatPenjualan({
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-1 font-bold">Riwayat Penjualan</h3>
-          <div className="text-l font-bold flex items-center gap-4 mt-2">
+          <div className="text-sm text-slate-800 dark:text-slate-700 flex items-center gap-4">
             <span>{businessName}</span>
             
             <PeriodFilter
@@ -264,6 +305,7 @@ export default function MenuRiwayatPenjualan({
                 <th className="px-3 py-2 text-slate-700 dark:text-slate-900">Kode Barang</th>
                 <th className="px-3 py-2 text-slate-700 dark:text-slate-900">Nama Barang</th>
                 <th className="px-3 py-2 text-slate-700 dark:text-slate-900">Jumlah</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-900">Harga Jual</th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-slate-50">
@@ -273,6 +315,7 @@ export default function MenuRiwayatPenjualan({
                   <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.kodeBarang || "-"}</td>
                   <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.namaBarang || "-"}</td>
                   <td className="px-3 py-2 font-semibold text-slate-800 dark:text-slate-900">{r.jumlah ?? "-"}</td>
+                  <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.hargaJual ?? "-"}</td>
                 </tr>
               ))}
             </tbody>
@@ -281,62 +324,145 @@ export default function MenuRiwayatPenjualan({
       </div>
 
       {showManualInput && (
-        <div className="mb-6 p-4 border border-slate-200 dark:border-slate-500 rounded-lg bg-slate-50 dark:bg-slate-100">
+        <div className="mb-6 p-4 border border-slate-200 dark:border-slate-500 rounded-lg bg-slate-00 dark:bg-slate-00">
           <h4 className="text-lg font-bold mb-4">Input Penjualan</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Kode Barang
-              </label>
-              <input
-                type="text"
-                value={newSale.kodeBarang}
-                onChange={(e) => setNewSale({...newSale, kodeBarang: e.target.value})}
-                placeholder="Masukkan kode barang"
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-900 mb-1">Tipe Pencatatan</label>
+              <select
+                value={newSale.entryType}
+                onChange={(e) =>
+                  setNewSale({
+                    ...newSale,
+                    entryType: e.target.value,
+                    kodeBarang: '',
+                    namaBarang: '',
+                    jumlah: '',
+                    hargaJual: '',
+                    customAmount: '',
+                  })
+                }
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-100 text-slate-800 dark:text-slate-700"
-              />
+              >
+                <option value="penjualan">Penjualan</option>
+                <option value="pemasaran">Pemasaran</option>
+                <option value="lain-lain">Lain-lain</option>
+              </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Nama Barang
-              </label>
-              <input
-                type="text"
-                value={newSale.namaBarang}
-                onChange={(e) => setNewSale({...newSale, namaBarang: e.target.value})}
-                placeholder="Masukkan nama barang"
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-100 text-slate-800 dark:text-slate-700"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Jumlah
-              </label>
-              <input
-                type="number"
-                value={newSale.jumlah}
-                onChange={(e) => setNewSale({...newSale, jumlah: parseInt(e.target.value) || ''})}
-                placeholder="Masukkan jumlah"
-                min="1"
-                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-100 text-slate-800 dark:text-slate-700"
-              />
-            </div>
+
+            {newSale.entryType === 'penjualan' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-900 mb-1">Kode Barang</label>
+                  <select
+                    value={newSale.kodeBarang}
+                    onChange={(e) => setNewSale({ ...newSale, kodeBarang: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-100 text-slate-800 dark:text-slate-700"
+                  >
+                    <option value="">Pilih kode dari stok</option>
+                    {stockItems.map((item) => (
+                      <option key={item.id || item.kodeBarang} value={item.kodeBarang}>
+                        {item.kodeBarang} - {item.name || item.namaBarang}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-900 mb-1">Nama Barang</label>
+                  <input
+                    type="text"
+                    value={newSale.namaBarang}
+                    readOnly
+                    placeholder="Nama otomatis dari stok"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 text-slate-800 dark:text-slate-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-900 mb-1">Jumlah</label>
+                  <input
+                    type="number"
+                    value={newSale.jumlah}
+                    onChange={(e) => setNewSale({ ...newSale, jumlah: parseInt(e.target.value) || '' })}
+                    placeholder="Masukkan jumlah"
+                    min="1"
+                    max={selectedStockItem?.qty || undefined}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-100 text-slate-800 dark:text-slate-700"
+                  />
+                  {selectedStockItem && (
+                    <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                      Stok tersedia: {selectedStockItem.qty ?? 0} {selectedStockItem.unit || ''}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-900 mb-1">Harga Jual</label>
+                  <input
+                    type="number"
+                    value={newSale.hargaJual}
+                    readOnly
+                    placeholder="Harga mengikuti stok"
+                    min="0"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 text-slate-800 dark:text-slate-700"
+                  />
+                </div>
+              </>
+            )}
+
+            {newSale.entryType !== 'penjualan' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Deskripsi</label>
+                  <input
+                    type="text"
+                    value={newSale.namaBarang}
+                    onChange={(e) => setNewSale({ ...newSale, namaBarang: e.target.value })}
+                    placeholder={newSale.entryType === 'pemasaran' ? 'Channel / aktivitas' : 'Sumber pendapatan'}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-100 text-slate-800 dark:text-slate-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nominal</label>
+                  <input
+                    type="number"
+                    value={newSale.customAmount}
+                    onChange={(e) => setNewSale({ ...newSale, customAmount: parseInt(e.target.value) || '' })}
+                    placeholder="Masukkan nominal"
+                    min="1"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-100 text-slate-800 dark:text-slate-700"
+                  />
+                </div>
+              </>
+            )}
           </div>
-          <div className="text-xs text-slate-600 dark:text-slate-400 mb-4">
+          <div className="text-xs text-slate-600 dark:text-slate-700 mb-4">
             <i className="fas fa-info-circle mr-1"></i>
             Tanggal dan waktu akan otomatis diisi saat penjualan ditambahkan
           </div>
           <div className="flex gap-2">
             <button
               onClick={handleAddSale}
-              disabled={!newSale.namaBarang.trim() || !newSale.jumlah || !newSale.kodeBarang.trim()}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white rounded-lg"
+              disabled={
+                (newSale.entryType === 'penjualan' && (
+                  !selectedStockItem ||
+                  !newSale.kodeBarang.trim() ||
+                  !newSale.jumlah ||
+                  newSale.jumlah <= 0 ||
+                  newSale.jumlah > (selectedStockItem?.qty || 0) ||
+                  newSale.hargaJual === ''
+                )) ||
+                (newSale.entryType !== 'penjualan' && (
+                  !newSale.namaBarang.trim() ||
+                  !newSale.customAmount ||
+                  newSale.customAmount <= 0
+                ))
+              }
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-800 disabled:bg-slate-00 text-white rounded-lg"
             >
-              Tambah Penjualan
+              Tambah {newSale.entryType === 'penjualan' ? 'Penjualan' : newSale.entryType === 'pemasaran' ? 'Pengeluaran' : 'Pendapatan'}
             </button>
             <button
               onClick={() => setShowManualInput(false)}
-              className="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white rounded-lg"
+              className="px-4 py-2 bg-slate-600 hover:bg-slate-900 text-white rounded-lg"
             >
               Batal
             </button>
@@ -346,3 +472,4 @@ export default function MenuRiwayatPenjualan({
     </div>
   );
 }
+

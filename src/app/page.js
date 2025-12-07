@@ -9,23 +9,23 @@ import { loginWithGoogle, logoutUser } from '@/lib/auth';
 import { useToast } from '@/components/Toast';
 import { useAlert } from '@/components/Alert';
 import { setTempData, getTempData, removeTempData, hasTempData } from '@/lib/cookies';
+import { fetchBusinessData, saveBusinessData, DEFAULT_BUSINESS_DATA } from '@/lib/businessData';
 
 import ConsultationView from '@/components/ConsultationView';
 import DashboardView from '@/components/DashboardView';
 import OnboardingView from '@/components/OnboardingView'; // <-- IMPORTED
 
-const MOCK_SALES_DATA_TODAY = [
-  { date: "2025-12-07", orderId: "ORD005", product: "Americano", qty: 8, price: 15000 }, // 120.000
-  { date: "2025-12-07", orderId: "ORD006", product: "Latte", qty: 12, price: 20000 },  // 240.000
-];
-const MOCK_SALES_DATA_YESTERDAY = [
-  { date: "2025-12-06", orderId: "ORD004", product: "Croissant", qty: 5, price: 10000 }, // 50.000
-];
-const ALL_MOCK_SALES = [
-  ...MOCK_SALES_DATA_TODAY, 
-  ...MOCK_SALES_DATA_YESTERDAY,
-  { date: "2025-11-24", orderId: "ORD001", product: "Nasi Goreng", qty: 10, price: 25000 },
-];
+const mapSalesHistoryToFinance = (history = []) =>
+  history.map((s) => {
+    const date = s.dateTime?.split(" - ")[0]?.replace(/\//g, "-") || "";
+    return {
+      date,
+      itemCode: s.kodeBarang,
+      product: s.namaBarang,
+      qty: s.jumlah,
+      price: s.hargaJual,
+    };
+  });
 
 export default function Home() {
   const toast = useToast();
@@ -35,13 +35,20 @@ export default function Home() {
   const [businessData, setBusinessData] = useState(null);
   const [absences, setAbsences] = useState([]);
   const [employees, setEmployees] = useState([]);
-  const [showAdModal, setShowAdModal] = useState(false);const [marketData, setMarketData] = useState({
-    sales: ALL_MOCK_SALES, // Inisialisasi dengan mock data penjualan
+  const [showAdModal, setShowAdModal] = useState(false);
+
+  // Persediaan & penjualan terpusat
+  const [stockItems, setStockItems] = useState([]);
+  const [salesHistory, setSalesHistory] = useState([]);
+  const [marketData, setMarketData] = useState({
     period: new Date().toISOString().slice(0, 7),
-    incomes: [], 
-    marketing: [], 
+    sales: [],
+    incomes: [],
+    marketing: [],
+    salesHistory: [],
   });
   const [loading, setLoading] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // State mock untuk nama pengguna dan bisnis yang bisa diubah di Pengaturan
   const [currentBusinessName, setCurrentBusinessName] = useState('Dashboard');
@@ -173,6 +180,93 @@ export default function Home() {
     return () => unsub();
   }, []);
 
+  // Load business data from Firestore when user is ready
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setDataLoaded(false);
+      if (!user?.uid) {
+        setStockItems([]);
+        setSalesHistory([]);
+        setMarketData(DEFAULT_BUSINESS_DATA.marketData);
+        setDataLoaded(true);
+        return;
+      }
+      setLoading(true);
+      try {
+        // Prefer reading from the user's settings doc (same place MenuPengaturan writes)
+        let data = null;
+        try {
+          const settings = await getUserSettings(user.uid);
+          if (settings) {
+            data = {
+              stockItems: settings.stockItems || settings.businessData?.stockItems || [],
+              salesHistory: settings.salesHistory || settings.businessData?.salesHistory || [],
+              marketData: settings.marketData || settings.businessData?.marketData || DEFAULT_BUSINESS_DATA.marketData,
+            };
+          }
+        } catch (e) {
+          // ignore - we'll fallback to legacy collection
+          data = null;
+        }
+
+        if (!data) {
+          // fallback to legacy businessData collection
+          data = await fetchBusinessData(user.uid);
+        }
+
+        const mappedSales = data.marketData?.sales?.length
+          ? data.marketData.sales
+          : mapSalesHistoryToFinance(data.salesHistory || []);
+
+        if (cancelled) return;
+        setStockItems(data.stockItems || []);
+        setSalesHistory(data.salesHistory || []);
+        setMarketData({
+          period: data.marketData?.period || new Date().toISOString().slice(0, 7),
+          sales: mappedSales,
+          incomes: data.marketData?.incomes || [],
+          marketing: data.marketData?.marketing || [],
+          salesHistory: data.salesHistory || [],
+        });
+        setDataLoaded(true);
+      } catch (err) {
+        console.warn('Failed to load business data (fallback):', err?.message || err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.uid]);
+
+  // Persist business data whenever it changes (and user logged in)
+  useEffect(() => {
+    if (!user?.uid || !dataLoaded) return;
+    const payload = {
+      stockItems,
+      salesHistory,
+      marketData,
+    };
+    // Save to the users doc (same place MenuPengaturan writes) to avoid
+    // permission mismatches. If that fails or is not allowed, fall back
+    // to the legacy businessData collection.
+    (async () => {
+      try {
+        const ok = await saveUserSettings(user.uid, payload);
+        if (!ok) {
+          // legacy fallback
+          await saveBusinessData(user.uid, payload);
+        }
+      } catch (e) {
+        console.warn('Failed to save to users doc, trying legacy collection:', e?.message || e);
+        try { await saveBusinessData(user.uid, payload); } catch (_) {}
+      }
+    })();
+  }, [user?.uid, dataLoaded, stockItems, salesHistory, marketData]);
+
   const handleLogin = async () => {
     try {
       await loginWithGoogle();
@@ -252,6 +346,92 @@ export default function Home() {
           // Should not happen if coming from DashboardView
           toast.error("Tidak ada user aktif untuk dihapus.");
       }
+  };
+
+  // --- STOCK & SALES HANDLERS ---
+  const syncSalesToFinance = (newHistory) => {
+    const salesForFinance = mapSalesHistoryToFinance(newHistory);
+    setMarketData((prev) => ({
+      ...(prev || {}),
+      period: prev?.period || new Date().toISOString().slice(0, 7),
+      sales: salesForFinance,
+      incomes: prev?.incomes || [],
+      marketing: prev?.marketing || [],
+      salesHistory: newHistory,
+    }));
+  };
+
+  const handleAddStockItem = (item) => {
+    const withId = { ...item, id: item.id || item.kodeBarang || Date.now().toString() };
+    setStockItems((prev) => [...prev, withId]);
+  };
+
+  const handleUpdateStockItem = (updated) => {
+    setStockItems((prev) => prev.map((it) => (it.id === updated.id ? { ...it, ...updated } : it)));
+  };
+
+  const handleDeleteStockItem = (id) => {
+    setStockItems((prev) => prev.filter((it) => it.id !== id));
+  };
+
+  const handleRecordSale = (sale) => {
+    const entry = {
+      ...sale,
+      // Normalisasi dateTime jika belum diset
+      dateTime:
+        sale.dateTime ||
+        (() => {
+          const now = new Date();
+          const y = now.getFullYear();
+          const m = String(now.getMonth() + 1).padStart(2, "0");
+          const d = String(now.getDate()).padStart(2, "0");
+          const h = String(now.getHours()).padStart(2, "0");
+          const min = String(now.getMinutes()).padStart(2, "0");
+          return `${y}/${m}/${d} - ${h}:${min}`;
+        })(),
+    };
+
+    setSalesHistory((prev) => {
+      const updated = [entry, ...prev];
+      syncSalesToFinance(updated);
+      return updated;
+    });
+
+    // Kurangi stok sesuai kode barang
+    if (entry.kodeBarang && entry.jumlah) {
+      setStockItems((prev) =>
+        prev.map((it) =>
+          it.kodeBarang === entry.kodeBarang
+            ? { ...it, qty: Math.max(0, (it.qty || 0) - (entry.jumlah || 0)) }
+            : it
+        )
+      );
+    }
+  };
+
+  const handleAddMarketingExpense = (expense) => {
+    const entry = {
+      date: expense.date || new Date().toISOString().split('T')[0],
+      channel: expense.channel || expense.source || 'Pemasaran',
+      amount: Number(expense.amount) || 0,
+      note: expense.note || 'Dicatat dari Riwayat Penjualan',
+    };
+    setMarketData((prev) => ({
+      ...(prev || {}),
+      marketing: [...(prev?.marketing || []), entry],
+    }));
+  };
+
+  const handleAddOtherIncome = (income) => {
+    const entry = {
+      date: income.date || new Date().toISOString().split('T')[0],
+      source: income.source || 'Pendapatan lain-lain',
+      amount: Number(income.amount) || 0,
+    };
+    setMarketData((prev) => ({
+      ...(prev || {}),
+      incomes: [...(prev?.incomes || []), entry],
+    }));
   };
 
 
@@ -589,6 +769,14 @@ Berikan data yang AKURAT, REALISTIS, dan DAPAT DIVERIFIKASI.`
         onCloseAdModal={() => setShowAdModal(false)}
         onUpdateSettings={handleUpdateSettings}
         onDeleteAccount={handleDeleteAccount}
+        stockItems={stockItems}
+        onAddStockItem={handleAddStockItem}
+        onUpdateStockItem={handleUpdateStockItem}
+        onDeleteStockItem={handleDeleteStockItem}
+        salesHistory={salesHistory}
+        onRecordSale={handleRecordSale}
+        onAddMarketingExpense={handleAddMarketingExpense}
+        onAddOtherIncome={handleAddOtherIncome}
       />
     );
   }

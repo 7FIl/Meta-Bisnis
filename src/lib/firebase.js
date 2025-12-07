@@ -3,7 +3,7 @@
 // src/lib/firebase.js
 import { initializeApp, getApps } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -34,10 +34,11 @@ export async function getThemeFromFirestore(userId) {
   }
 
   try {
-    const docRef = doc(db, 'userSettings', userId);
+    // Read theme from the canonical `users/{uid}` document to match other helpers
+    const docRef = doc(db, 'users', userId);
     const docSnap = await getDoc(docRef);
 
-    if (docSnap.exists() && docSnap.data().theme) {
+    if (docSnap.exists() && docSnap.data()?.theme) {
       return docSnap.data().theme;
     }
   } catch (error) {
@@ -58,9 +59,9 @@ export async function saveThemeToFirestore(userId, theme) {
   }
 
   try {
-    const docRef = doc(db, 'userSettings', userId);
-    // Menggunakan setDoc dengan merge: true agar hanya field 'theme' yang diupdate
-    await setDoc(docRef, { theme: theme }, { merge: true }); 
+    // Save theme to the canonical `users/{uid}` document so it matches saveUserSettings
+    const docRef = doc(db, 'users', userId);
+    await setDoc(docRef, { theme: theme }, { merge: true });
   } catch (error) {
     console.error('Error saving theme to Firestore:', error);
   }

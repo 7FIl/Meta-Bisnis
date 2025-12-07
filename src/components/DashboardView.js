@@ -3,12 +3,7 @@
 
 import { useAuth } from "@/lib/auth";
 import { useEffect, useRef, useState } from "react";
-import {
-  getTheme,
-  setTheme,
-  getCalendarEvents,
-  saveCalendarEvents,
-} from "@/lib/userSettings";
+import { getTheme, setTheme, getCalendarEvents, saveCalendarEvents } from "@/lib/userSettings";
 import EmployeeAbsence from "./EmployeeAbsence";
 import MarketIntelligence from "./MarketIntelligence";
 import MenuPemasaranAI from "./MenuPemasaranAI";
@@ -42,6 +37,10 @@ export default function DashboardView({
   onAddStockItem,
   onUpdateStockItem,
   onDeleteStockItem,
+  salesHistory = [],
+  onRecordSale,
+  onAddMarketingExpense,
+  onAddOtherIncome,
 }) {
   const chartRef = useRef(null);
   const [selectedMenu, setSelectedMenu] = useState("beranda");
@@ -61,6 +60,37 @@ export default function DashboardView({
       currency: "IDR",
       maximumFractionDigits: 0,
     }).format(v);
+
+  // Firebase fallback: Jika data props kosong tapi user sudah login, coba ambil dari Firebase
+  useEffect(() => {
+    if (!user?.uid || authLoading) return;
+
+    // Jika sudah ada data di props, tidak perlu load ulang
+    const hasData = (stockItems && stockItems.length > 0) || (salesHistory && salesHistory.length > 0);
+    if (hasData) {
+      console.log('[DashboardView] Data sudah ada di props, skip Firebase load');
+      return;
+    }
+
+    console.log('[DashboardView] Data kosong, mencoba diagnostik Firebase...');
+    
+    (async () => {
+      try {
+        const settings = await getUserSettings(user.uid);
+        if (settings && (settings.stockItems?.length > 0 || settings.salesHistory?.length > 0)) {
+          console.log('[DashboardView] Firebase data ditemukan:', {
+            stockItems: settings.stockItems?.length || 0,
+            salesHistory: settings.salesHistory?.length || 0,
+          });
+        } else {
+          console.log('[DashboardView] Firebase data kosong atau tidak ada');
+        }
+      } catch (err) {
+        console.error('[DashboardView] Gagal ambil dari Firebase:', err?.message || err);
+      }
+    })();
+  }, [user?.uid, authLoading, stockItems, salesHistory]);
+
 
   // Hitung total penjualan hari ini
   const calculateTodaySales = () => {
@@ -113,7 +143,7 @@ export default function DashboardView({
           if (theme === "dark") {
             root.classList.add("dark");
           } else {
-            root.classList.remove("dark");
+            root.classList.remove("dark"); 
           }
         }
       });
@@ -128,22 +158,45 @@ export default function DashboardView({
     } // Tambahkan user.uid dan authLoading ke dependency array
   }, [user, authLoading]);
 
-  const handleThemeToggle = async () => {
-    // Cek apakah user sudah tersedia
-    if (!user || !user.uid) {
-      console.warn("Tema tidak disimpan, user belum login.");
-      // Anda bisa menambahkan toast.info("Login untuk menyimpan preferensi tema") di sini
-      return;
+  // Apply theme class immediately when currentTheme changes (includes initial load)
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    if (currentTheme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
     }
+  }, [currentTheme]);
 
-    // 1. Tentukan tema baru berdasarkan state saat ini
+  // On first mount, initialize theme from localStorage if present (so toggle works before login)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem("theme");
+    if (saved && (saved === "dark" || saved === "light")) {
+      setCurrentTheme(saved);
+    }
+  }, []);
+
+  const handleThemeToggle = async () => {
+    // Toggle theme locally for instant feedback (works even when logged out)
     const newTheme = currentTheme === "light" ? "dark" : "light";
 
-    // 2. Simpan ke Firebase menggunakan user.uid yang sebenarnya
-    await setTheme(user.uid, newTheme);
-
-    // 3. SET STATE REACT LOKAL SEGERA
+    // Apply immediately in React state (effect will apply HTML class)
     setCurrentTheme(newTheme);
+
+    // Persist: save to Firestore if user is logged in, otherwise save to localStorage only
+    try {
+      if (user && user.uid) {
+        await setTheme(user.uid, newTheme);
+      } else if (typeof window !== "undefined") {
+        // setTheme will also apply class and localStorage when called, but
+        // we still call localStorage here to persist for anonymous users.
+        localStorage.setItem("theme", newTheme);
+      }
+    } catch (e) {
+      console.error("Failed to persist theme:", e);
+    }
   };
 
   // NEW FUNCTIONS FOR CALENDAR
@@ -289,11 +342,11 @@ export default function DashboardView({
     <div className="min-h-screen flex bg-white dark:bg-slate-900">
       {/* Sidebar - base colors set to light mode: bg-white */}
       <aside className="w-64 bg-white bg-slate-00 border-r border-slate-200 dark:border-slate-700 hidden md:flex flex-col fixed h-full z-10">
-        <div className="p-6 border-b border-slate-100 dark:border-slate-700">
-          <div className="flex items-center gap-2 font-bold text-xl text-indigo-700 dark:text-indigo-400">
+        <div className="p-6 border-b border-slate-300 dark:border-slate-700">
+          <div className="flex items-center gap-2 font-bold text-l text-indigo-700 dark:text-indigo-700">
             <i className="fas fa-store"></i> <span>{businessName}</span>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-slate-600 dark:text-slate-500 mt-1">
             Managed by Meta Bisnis
           </p>
         </div>
@@ -302,7 +355,7 @@ export default function DashboardView({
           {[
             { name: "Beranda", icon: "fa-home", menu: "beranda" },
             { name: "Pemasaran AI", icon: "fa-bullhorn", menu: "pemasaran" },
-            { name: "Keuangan", icon: "fa-calculator", menu: "keuangan" },
+            { name: "Laporan keuangan", icon: "fa-calculator", menu: "keuangan" },
             { name: "Stok Barang", icon: "fa-boxes", menu: "stok" },
             {
               name: "Riwayat Penjualan",
@@ -530,9 +583,7 @@ export default function DashboardView({
             </div>
             <MenuRiwayatPenjualan
               businessName={businessName}
-              period={
-                marketData?.period || new Date().toISOString().slice(0, 7)
-              }
+              period={marketData?.period || new Date().toISOString().slice(0, 7)}
               salesHistoryData={marketData?.salesHistory || null}
             />
           </div>

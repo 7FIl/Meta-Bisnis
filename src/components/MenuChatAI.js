@@ -51,7 +51,7 @@ export default function MenuChatAI({ businessName, onSend }) {
         })),
         { role: 'user', content: prompt }
       ],
-      model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+      model: 'llama-3.3-70b-versatile',
       max_tokens: 800,
       temperature: 0.7,
       topic,
@@ -163,7 +163,7 @@ export default function MenuChatAI({ businessName, onSend }) {
       <div className="p-4 border-b border-slate-100">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h3 className="font-bold text-slate-800">Chat AI — {businessName}</h3>
+            <h3 className="font-bold text-slate-800">Chat AI ~ {businessName}</h3>
             <div className="text-xs text-slate-700 mt-1">Tanya jawab bisnis dengan AI yang memahami konteks usahamu</div>
           </div>
         </div>

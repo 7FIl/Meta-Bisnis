@@ -364,7 +364,7 @@ export default function MenuPengaturan({
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white :bg-slate-800 text-slate-900 dark:text-slate-900 min-h-[96px]"
                   disabled={loading}
                 />
-                <p className="text-xs text-slate-500 mt-1">Opsional, tetapi membantu AI memahami bisnismu.</p>
+                <p className="text-xs text-slate-700 mt-1">Opsional, tetapi membantu AI memahami bisnismu.</p>
               </div>
 
               {/* Nama Pengguna */}
@@ -396,7 +396,7 @@ export default function MenuPengaturan({
                     <option key={type} value={type}>{type}</option>
                   ))}
                 </select>
-                <p className="text-xs text-slate-500 mt-1">✓ Dipilih untuk mengoptimasi hasil AI, tren pasar, dan konsultasi bisnis Anda</p>
+                <p className="text-xs text-slate-700 mt-1">✓ Dipilih untuk mengoptimasi hasil AI, tren pasar, dan konsultasi bisnis Anda</p>
               </div>
 
               <div className="md:col-span-1">
@@ -433,7 +433,7 @@ export default function MenuPengaturan({
               {/* Social Media Usernames */}
               <div className="md:col-span-2">
                 <h4 className="text-md font-semibold text-slate-800 dark:text-slate-900 mb-3 mt-4">Username Media Sosial (Opsional)</h4>
-                <p className="text-xs text-slate-500 mb-3">Bantu AI mengarahkan pelanggan ke akun sosial media Anda dalam strategi pemasaran.</p>
+                <p className="text-xs text-slate-700 mb-3">Bantu AI mengarahkan pelanggan ke akun sosial media Anda dalam strategi pemasaran.</p>
               </div>
 
               <div className="md:col-span-1">
@@ -441,13 +441,13 @@ export default function MenuPengaturan({
                   <i className="fab fa-instagram text-pink-600"></i> Instagram
                 </label>
                 <div className="flex items-center">
-                  <span className="px-3 py-2 bg-slate-100 bg-white border border-r-0 border-slate-300 rounded-l-lg text-sm text-slate-600">@</span>
+                  <span className="px-3 py-2 bg-slate-00 border border-r-0 border-slate-500 rounded-l-lg text-sm text-slate-00">@</span>
                   <input
                     type="text"
                     value={newInstagramUsername}
                     onChange={(e) => setNewInstagramUsername(e.target.value)}
                     placeholder="username"
-                    className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-r-lg text-sm bg-white text-slate-900"
+                    className="flex-1 px-3 py-2 border border-slate-500 dark:border-slate-600 rounded-r-lg text-sm bg-white text-slate-900"
                     disabled={loading}
                   />
                 </div>
@@ -458,7 +458,7 @@ export default function MenuPengaturan({
                   <i className="fab fa-tiktok"></i> TikTok
                 </label>
                 <div className="flex items-center">
-                  <span className="px-3 py-2 bg-slate-100 bg-white border border-r-0 border-slate-300 rounded-l-lg text-sm text-slate-600">@</span>
+                  <span className="px-3 py-2 bg-slate-00 border border-r-0 border-slate-600 rounded-l-lg text-sm text-slate-00">@</span>
                   <input
                     type="text"
                     value={newTiktokUsername}
@@ -475,7 +475,7 @@ export default function MenuPengaturan({
                   <i className="fab fa-whatsapp text-green-600"></i> WhatsApp
                 </label>
                 <div className="flex items-center">
-                  <span className="px-3 py-2 bg-slate-100 bg-white border border-r-0 border-slate-300 rounded-l-lg text-sm text-slate-600">+62</span>
+                  <span className="px-3 py-2 bg-slate-00 border border-r-0 border-slate-600 rounded-l-lg text-sm text-slate-00">+62</span>
                   <input
                     type="text"
                     value={newWhatsappNumber}
@@ -485,7 +485,7 @@ export default function MenuPengaturan({
                     disabled={loading}
                   />
                 </div>
-                <p className="text-xs text-slate-500 mt-1">Tanpa 0 di awal. Contoh: 8123456789</p>
+                <p className="text-xs text-slate-700 mt-1">Tanpa 0 di awal. Contoh: 8123456789</p>
               </div>
 
               {/* Additional settings can be added here */}
@@ -496,7 +496,7 @@ export default function MenuPengaturan({
           <div className="flex justify-end gap-3">
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 text-white font-semibold py-2 px-6 rounded-lg transition-all flex items-center gap-2"
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-00 text-white font-semibold py-2 px-6 rounded-lg transition-all flex items-center gap-2"
               disabled={loading || isFormUnchanged}
             >
               {loading ? (

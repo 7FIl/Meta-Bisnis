@@ -393,13 +393,6 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
           {user ? (
           <div className="flex items-center gap-3">
             <span className="text-sm text-slate-600 hidden md:block">Halo, {user.displayName}</span>
-            <Image
-              src={user.photoURL}
-              alt="Profile"
-              width={32}
-              height={32}
-              className="rounded-full border border-blue-200"
-            />
             <button 
               onClick={onLogout}
               className="text-sm text-red-500 hover:text-red-700 font-medium"
