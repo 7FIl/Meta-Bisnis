@@ -106,10 +106,10 @@ export default function MenuKeuangan({
   };
 
   return (
-    <div className="bg-white bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 border-slate-700">
+    <div className="bg-white bg-slate-00 p-6 rounded-2xl shadow-sm border border-slate-200 border-slate-700">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-xl font-bold">Laporan Keuangan</h3>
+          <h3 className="text-1 font-bold">Laporan Keuangan</h3>
           <div className="text-l font-bold">{businessName} • Periode: {period}</div>
         </div>
         <div className="flex gap-2">
@@ -122,20 +122,20 @@ export default function MenuKeuangan({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="p-4 border border-slate-100 dark:border-slate-700 rounded-lg">
           <div className="block text-s font-semibold text-slate-700 dark:text-slate-900">Total Penjualan</div>
-          <div className="block text-xl font-bold text-slate-800 dark:text-slate-900 mt-1">{currency(totals.totalSales)}</div>
+          <div className="block text-s font-bold text-slate-800 dark:text-slate-900 mt-1">{currency(totals.totalSales)}</div>
         </div>
         <div className="p-4 border border-slate-100 dark:border-slate-700 rounded-lg">
           <div className="block text-s font-semibold text-slate-700 dark:text-slate-900">Total Pendapatan</div>
-          <div className="block text-xl font-bold text-slate-800 dark:text-slate-900 mt-1">{currency(totals.totalIncome)}</div>
+          <div className="block text-s font-bold text-slate-800 dark:text-slate-900 mt-1">{currency(totals.totalIncome)}</div>
         </div>
         <div className="p-4 border border-slate-100 dark:border-slate-700 rounded-lg">
           <div className="block text-s font-semibold text-slate-700 dark:text-slate-900">Total Pemasaran</div>
-          <div className="block text-xl font-bold text-slate-800 dark:text-slate-900 mt-1">{currency(totals.totalMarketing)}</div>
+          <div className="block text-s font-bold text-slate-800 dark:text-slate-900 mt-1">{currency(totals.totalMarketing)}</div>
         </div>
       </div>
 
       <div className="mb-6">
-        <h4 className="text-xl font-bold">Rincian Penjualan</h4>
+        <h3 className="text-1 font-bold">Rincian Penjualan</h3>
         <div className="overflow-x-auto border border-slate-200 dark:border-slate-500 rounded-lg">
           <table className="w-full text-sm">
             <thead className="p-4 border border-slate-100 dark:border-slate-100 rounded-lg text-left">
@@ -168,7 +168,7 @@ export default function MenuKeuangan({
       </div>
 
       <div className="mb-6">
-        <h4 className="text-xl font-bold">Pendapatan Lain</h4>
+        <h3 className="text-l font-bold">Pendapatan Lain</h3>
         <div className="overflow-x-auto border border-slate-200 dark:border-slate-500 rounded-lg">
           <table className="w-full text-sm">
             <thead className="p-4 border border-slate-100 dark:border-slate-100 rounded-lg text-left">
@@ -192,7 +192,7 @@ export default function MenuKeuangan({
       </div>
 
       <div className="mb-4">
-        <h4 className="text-xl font-bold">Pengeluaran Pemasaran</h4>
+        <h3 className="text-l font-bold">Pengeluaran Pemasaran</h3>
         <div className="overflow-x-auto border border-slate-200 dark:border-slate-500 rounded-lg">
           <table className="w-full text-sm">
             <thead className="p-4 border border-slate-100 dark:border-slate-100 rounded-lg text-left">
@@ -219,8 +219,8 @@ export default function MenuKeuangan({
 
       <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
         <div className="flex justify-between items-center">
-          <div className="text-xl font-bold">NET (Pendapatan - Pemasaran)</div>
-          <div className="text-xl font-bold">{currency(totals.net)}</div>
+          <div className="text-s font-bold">NET (Pendapatan - Pemasaran)</div>
+          <div className="text-s font-bold">{currency(totals.net)}</div>
         </div>
       </div>
     </div>

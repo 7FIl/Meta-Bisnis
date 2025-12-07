@@ -10,6 +10,7 @@ import MenuPemasaranAI from "./MenuPemasaranAI";
 import MenuChatAI from "./MenuChatAI";
 import MenuKeuangan from "./MenuKeuangan";
 import MenuPengaturan from "./MenuPengaturan";
+import MenuRiwayatPenjualan from "./MenuRiwayatPenjualan";
 
 export default function DashboardView({
   businessName,
@@ -227,7 +228,7 @@ export default function DashboardView({
     // Base colors set to pure light (white) by default, dark remains for toggle
     <div className="min-h-screen flex bg-white dark:bg-slate-900">
       {/* Sidebar - base colors set to light mode: bg-white */}
-      <aside className="w-64 bg-white bg-slate-800 border-r border-slate-200 dark:border-slate-700 hidden md:flex flex-col fixed h-full z-10">
+      <aside className="w-64 bg-white bg-slate-00 border-r border-slate-200 dark:border-slate-700 hidden md:flex flex-col fixed h-full z-10">
         <div className="p-6 border-b border-slate-100 dark:border-slate-700">
           <div className="flex items-center gap-2 font-bold text-xl text-indigo-700 dark:text-indigo-400">
             <i className="fas fa-store"></i> <span>{businessName}</span>
@@ -242,6 +243,7 @@ export default function DashboardView({
             { name: "Beranda", icon: "fa-home", menu: "beranda" },
             { name: "Pemasaran AI", icon: "fa-bullhorn", menu: "pemasaran" },
             { name: "Keuangan", icon: "fa-calculator", menu: "keuangan" },
+            { name: "Riwayat Penjualan", icon: "fa-shopping-cart", menu: "riwayat" },
             { name: "Chat AI", icon: "fa-comments", menu: "chat" },
             { name: "Pengaturan", icon: "fa-cog", menu: "pengaturan" },
           ].map((item) => (
@@ -249,34 +251,31 @@ export default function DashboardView({
               key={item.menu}
               onClick={() => setSelectedMenu(item.menu)}
               className={`w-full text-left flex items-center justify-between gap-3 px-4 py-3 rounded-lg font-medium transition-colors
-            ${
-              selectedMenu === item.menu
-                ? // KONDISI KETIKA MENU AKTIF: Latar belakang biru muda, font-weight diatur di <span>
+            ${selectedMenu === item.menu
+                  ? // KONDISI KETIKA MENU AKTIF: Latar belakang biru muda, font-weight diatur di <span>
                   ""
-                : // KONDISI KETIKA MENU TIDAK AKTIF: Teks abu-abu
+                  : // KONDISI KETIKA MENU TIDAK AKTIF: Teks abu-abu
                   "text-slate-600 hover:bg-slate-100"
-            }
+                }
           `}
             >
               <div className="flex items-center gap-3">
                 {/* 1. KONTROL IKON: Warna biru ketika aktif, abu-abu ketika tidak */}
                 <i
                   className={`fas ${item.icon} w-5 
-                ${
-                  selectedMenu === item.menu
-                    ? "text-blue-700" // IKON TETAP BIRU
-                    : "text-slate-500"
-                }
+                ${selectedMenu === item.menu
+                      ? "text-blue-700" // IKON TETAP BIRU
+                      : "text-slate-500"
+                    }
               `}
                 ></i>
 
                 {/* 2. KONTROL TEKS: Bold dan warna hitam ketika aktif */}
                 <span
-                  className={`${
-                    selectedMenu === item.menu
+                  className={`${selectedMenu === item.menu
                       ? "font-bold text-slate-800" // TEKS JADI BOLD DAN WARNA HITAM
                       : "font-medium" // Teks tidak aktif
-                  }`}
+                    }`}
                 >
                   {item.name}
                 </span>
@@ -302,12 +301,12 @@ export default function DashboardView({
               className={`fas ${
                 // Ganti isDarkMode di sini
                 currentTheme === "dark"
-                  ? "fa-sun text-yellow-500"
-                  : "fa-moon text-indigo-700"
-              } w-5`}
+                  ? "fa-moon text-indigo-700"
+                  : "fa-sun text-yellow-500"
+                } w-5`}
             ></i>
             {/* Ganti isDarkMode di sini */}
-            {currentTheme === "dark" ? "Mode Terang" : "Mode Gelap"}
+            {currentTheme === "dark" ? "Mode Gelap" : "Mode Terang"}
           </button>
 
           {/* Logout Button */}
@@ -430,6 +429,23 @@ export default function DashboardView({
               salesData={marketData?.sales || []}
               incomes={marketData?.incomes || []}
               marketingExpenses={marketData?.marketing || []}
+            />
+          </div>
+        ) : selectedMenu === "riwayat" ? (
+          // Riwayat Penjualan view
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <button
+                onClick={() => setSelectedMenu("beranda")}
+                className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-900"
+              >
+                ← Kembali ke Dashboard
+              </button>
+            </div>
+            <MenuRiwayatPenjualan
+              businessName={businessName}
+              period={marketData?.period || new Date().toISOString().slice(0, 7)}
+              salesHistoryData={marketData?.salesHistory || null}
             />
           </div>
         ) : selectedMenu === "pengaturan" ? (
