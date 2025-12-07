@@ -22,3 +22,46 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+/**
+ * Mengambil tema saat ini dari Firestore untuk pengguna yang login.
+ * @param {string} userId - UID pengguna yang login.
+ * @returns {Promise<string>} 'light' atau 'dark'. Default: 'light'.
+ */
+export async function getThemeFromFirestore(userId) {
+  if (!userId) {
+    return 'light'; // Jika belum login, default ke light
+  }
+
+  try {
+    const docRef = doc(db, 'userSettings', userId);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists() && docSnap.data().theme) {
+      return docSnap.data().theme;
+    }
+  } catch (error) {
+    console.error('Error fetching theme from Firestore:', error);
+  }
+  return 'light'; // Default jika data tidak ditemukan atau error
+}
+
+/**
+ * Menyimpan tema ke Firestore untuk pengguna yang login.
+ * @param {string} userId - UID pengguna yang login.
+ * @param {string} theme - 'light' atau 'dark'.
+ */
+export async function saveThemeToFirestore(userId, theme) {
+  if (!userId) {
+    console.warn('Cannot save theme: User ID is missing.');
+    return;
+  }
+
+  try {
+    const docRef = doc(db, 'userSettings', userId);
+    // Menggunakan setDoc dengan merge: true agar hanya field 'theme' yang diupdate
+    await setDoc(docRef, { theme: theme }, { merge: true }); 
+  } catch (error) {
+    console.error('Error saving theme to Firestore:', error);
+  }
+}

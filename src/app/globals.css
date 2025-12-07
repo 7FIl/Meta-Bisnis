@@ -9,15 +9,15 @@
 }
 
 /* Base Light Theme */
-body {
-  background-color: #ffffff;
-  color: #1e293b;
+html, body {
+  background-color: #ffffff !important;
+  color: #1e293b !important; /* text-slate-800 */
 }
 
 /* Dark Theme Overrides using the dark selector on html (document.documentElement) */
 html.dark body {
- background-color: #0f172a; /* bg-slate-900 */
- color: #f1f5f9; /* text-slate-100 */
+ background-color: #0f172a !important; /* bg-slate-900 */
+ color: #f1f5f9 !important; /* text-slate-100 */
 }
 
 /* General component background and text adjustments in dark mode */
@@ -38,7 +38,7 @@ html.dark .text-slate-800 {
  color: #f1f5f9; /* slate-100 */
 }
 html.dark .text-slate-700 {
- color: #cbd5e1; /* slate-300 */
+ color: #cbd5e1 !important; /* slate-300 */
 }
 html.dark .text-slate-600 {
  color: #94a3b8; /* slate-400 */
@@ -129,4 +129,17 @@ html.dark .glass-panel {
 
 .scrollbar-hide::-webkit-scrollbar {
  display: none;
+}
+
+
+.main-content-bg {
+    /* Pastikan menang melawan semua aturan lain yang lebih umum */
+    background-color: #ffffff !important; 
+    color: #000000 !important; 
+}
+
+/* 🌙 ATURAN UNTUK MODE GELAP 🌙 */
+html.dark .main-content-bg {
+    background-color: #0f172a !important; 
+    color: #f1f5f9; 
 }

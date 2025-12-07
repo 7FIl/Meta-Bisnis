@@ -1,8 +1,9 @@
 // src/components/MenuPengaturan.js
 'use client';
 
+import { useAuth } from '@/lib/auth'; 
 import { useEffect, useState } from 'react';
-import { saveUserSettings } from '@/lib/userSettings';
+import { saveUserSettings, setTheme } from '@/lib/userSettings';
 
 // fallback wrapper jika hook useToast/useAlert tidak tersedia
 const _toast = {
@@ -188,7 +189,9 @@ export default function MenuPengaturan({
   currentBusinessDescription = '',
   currentBusinessType = '',
   onUpdateSettings,
-  onDeleteAccount
+  onDeleteAccount,
+  currentTheme, 
+  onThemeChange,
 }) {
   // use injected hooks if available, otherwise fallback to wrappers above
   const toast = (typeof useToast === 'function') ? useToast() : _toast;
@@ -202,7 +205,7 @@ export default function MenuPengaturan({
   const [newProvince, setNewProvince] = useState("");
   const [newCity, setNewCity] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false); // State tema lokal hanya untuk icon
+  const { user } = useAuth();
 
   useEffect(() => {
     // Sync local form state
@@ -221,23 +224,25 @@ export default function MenuPengaturan({
     }
 
     // Sync theme state from HTML element
-    setIsDarkMode(document.documentElement.classList.contains('dark'));
   }, [currentBusinessName, currentUserName, currentBusinessLocation, currentBusinessDescription, currentBusinessType]);
 
   // Handler untuk toggle tema
-  const handleThemeToggle = () => {
-    const newMode = !document.documentElement.classList.contains('dark');
-    setIsDarkMode(newMode);
+  const handleThemeToggle = async () => {
+    // Cek user yang sudah diambil dari useAuth()
+    if (!user || !user.uid) {
+        toast.info("Anda perlu login untuk menyimpan preferensi tema.");
+        return;
+    };
 
-    if (newMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  };
-
+    // Tentukan tema baru menggunakan prop currentTheme
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    // Panggil fungsi setTheme menggunakan user.uid yang sebenarnya
+    await setTheme(user.uid, newTheme); 
+    
+    // Update state di parent (DashboardView)
+    onThemeChange(newTheme);
+  };
 
   // when submitting combine province + optional city
   const handleSubmit = async (e) => {

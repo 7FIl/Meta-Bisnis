@@ -1,24 +1,15 @@
 // src/components/DashboardView.js
 "use client";
 
+import { useAuth } from "@/lib/auth";
 import { useEffect, useRef, useState } from "react";
+import { getTheme, setTheme } from "@/lib/userSettings";
 import EmployeeAbsence from "./EmployeeAbsence";
 import MarketIntelligence from "./MarketIntelligence";
 import MenuPemasaranAI from "./MenuPemasaranAI";
 import MenuChatAI from "./MenuChatAI";
 import MenuKeuangan from "./MenuKeuangan";
 import MenuPengaturan from "./MenuPengaturan";
-
-// Helper to set/get theme outside of React flow (for instant effect)
-const applyTheme = (isDark) => {
-  if (isDark) {
-    document.documentElement.classList.add("dark");
-    localStorage.setItem("theme", "dark");
-  } else {
-    document.documentElement.classList.remove("dark");
-    localStorage.setItem("theme", "light");
-  }
-};
 
 export default function DashboardView({
   businessName,
@@ -40,26 +31,51 @@ export default function DashboardView({
 }) {
   const chartRef = useRef(null);
   const [selectedMenu, setSelectedMenu] = useState("beranda");
-  const [isDarkMode, setIsDarkMode] = useState(false); // NEW STATE
+  const [currentTheme, setCurrentTheme] = useState("light");
 
   // NEW STATE FOR CALENDAR
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState({}); // Object: key is date string (YYYY-MM-DD), value is array of event strings
   const [selectedDate, setSelectedDate] = useState(null); // Selected date for event panel
-  const [newEvent, setNewEvent] = useState(''); // Input for new event
+  const [newEvent, setNewEvent] = useState(""); // Input for new event
+  const { user, loading: authLoading } = useAuth();
 
   // Theme initialization - default light, honor saved preference
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    const initialDark = savedTheme === "dark";
-    setIsDarkMode(initialDark);
-    applyTheme(initialDark);
-  }, []);
+    // Tunggu sampai auth loading selesai DAN user tersedia
+    if (user && user.uid && !authLoading) {
+      getTheme(user.uid).then((theme) => {
+        // Kirim user.uid yang sebenarnya
+        // ... (Logika sinkronisasi tema)
+        setCurrentTheme(theme);
+        if (typeof document !== "undefined") {
+          const root = document.documentElement;
+          if (theme === "dark") {
+            root.classList.add("dark");
+          } else {
+            root.classList.remove("dark"); 
+          }
+        }
+      });
+    } // Tambahkan user.uid dan authLoading ke dependency array
+  }, [user, authLoading]);
 
-  const handleThemeToggle = () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    applyTheme(newMode);
+  const handleThemeToggle = async () => {
+    // Cek apakah user sudah tersedia
+    if (!user || !user.uid) {
+      console.warn("Tema tidak disimpan, user belum login.");
+      // Anda bisa menambahkan toast.info("Login untuk menyimpan preferensi tema") di sini
+      return;
+    }
+
+    // 1. Tentukan tema baru berdasarkan state saat ini
+    const newTheme = currentTheme === "light" ? "dark" : "light";
+
+    // 2. Simpan ke Firebase menggunakan user.uid yang sebenarnya
+    await setTheme(user.uid, newTheme);
+
+    // 3. SET STATE REACT LOKAL SEGERA
+    setCurrentTheme(newTheme);
   };
 
   // NEW FUNCTIONS FOR CALENDAR
@@ -84,29 +100,35 @@ export default function DashboardView({
   };
 
   const handlePrevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    setCurrentDate(
+      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
+    );
     setSelectedDate(null); // Reset selected date on month change
   };
 
   const handleNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    setCurrentDate(
+      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1)
+    );
     setSelectedDate(null); // Reset selected date on month change
   };
 
   const handleDateClick = (day) => {
     if (!day) return;
-    const dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateKey = `${currentDate.getFullYear()}-${String(
+      currentDate.getMonth() + 1
+    ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     setSelectedDate(dateKey);
-    setNewEvent(''); // Reset input
+    setNewEvent(""); // Reset input
   };
 
   const handleAddEvent = () => {
     if (!selectedDate || !newEvent.trim()) return;
-    setEvents(prev => ({
+    setEvents((prev) => ({
       ...prev,
-      [selectedDate]: [...(prev[selectedDate] || []), newEvent.trim()]
+      [selectedDate]: [...(prev[selectedDate] || []), newEvent.trim()],
     }));
-    setNewEvent('');
+    setNewEvent("");
   };
 
   const handleDeleteEvent = (dateKey, index) => {
@@ -120,26 +142,40 @@ export default function DashboardView({
 
   const getEventsForDay = (day) => {
     if (!day) return [];
-    const dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dateKey = `${currentDate.getFullYear()}-${String(
+      currentDate.getMonth() + 1
+    ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     return events[dateKey] || [];
   };
 
   const monthNames = [
-    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
   ];
-  const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+  const dayNames = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
   return (
     // Base colors set to pure light (white) by default, dark remains for toggle
     <div className="min-h-screen flex bg-white dark:bg-slate-900">
       {/* Sidebar - base colors set to light mode: bg-white */}
-      <aside className="w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 hidden md:flex flex-col fixed h-full z-10">
+      <aside className="w-64 bg-white bg-slate-800 border-r border-slate-200 dark:border-slate-700 hidden md:flex flex-col fixed h-full z-10">
         <div className="p-6 border-b border-slate-100 dark:border-slate-700">
           <div className="flex items-center gap-2 font-bold text-xl text-indigo-700 dark:text-indigo-400">
             <i className="fas fa-store"></i> <span>{businessName}</span>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Managed by Meta Bisnis</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Managed by Meta Bisnis
+          </p>
         </div>
 
         <nav className="p-4 space-y-1 flex-1">
@@ -156,26 +192,31 @@ export default function DashboardView({
               className={`w-full text-left flex items-center justify-between gap-3 px-4 py-3 rounded-lg font-medium transition-colors
             ${
               selectedMenu === item.menu
-                ? "bg-blue-50 text-blue-700 dark:bg-slate-700/60 dark:text-blue-200"
-                : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
+                ? // KONDISI KETIKA MENU AKTIF: Latar belakang biru muda, font-weight diatur di <span>
+                  ""
+                : // KONDISI KETIKA MENU TIDAK AKTIF: Teks abu-abu
+                  "text-slate-600 hover:bg-slate-100"
             }
           `}
             >
               <div className="flex items-center gap-3">
+                {/* 1. KONTROL IKON: Warna biru ketika aktif, abu-abu ketika tidak */}
                 <i
                   className={`fas ${item.icon} w-5 
                 ${
                   selectedMenu === item.menu
-                    ? "text-blue-700 dark:text-blue-300"
-                    : "text-slate-500 dark:text-slate-400"
+                    ? "text-blue-700" // IKON TETAP BIRU
+                    : "text-slate-500"
                 }
               `}
                 ></i>
+
+                {/* 2. KONTROL TEKS: Bold dan warna hitam ketika aktif */}
                 <span
                   className={`${
                     selectedMenu === item.menu
-                      ? "font-semibold text-slate-900 dark:text-slate-100"
-                      : "font-medium text-slate-700 dark:text-slate-300"
+                      ? "font-bold text-slate-800" // TEKS JADI BOLD DAN WARNA HITAM
+                      : "font-medium" // Teks tidak aktif
                   }`}
                 >
                   {item.name}
@@ -190,17 +231,24 @@ export default function DashboardView({
           {/* Theme Toggle Button (Master Toggle - 'Disetiap menu' access point) */}
           <button
             onClick={handleThemeToggle}
-            className="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg w-full transition-colors text-sm font-medium"
-            title={isDarkMode ? "Ganti ke Mode Terang" : "Ganti ke Mode Gelap"}
+            className="flex items-center gap-3 px-4 py-2 text-slate-600 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg w-full transition-colors text-sm font-medium"
+            // Ganti isDarkMode di sini
+            title={
+              currentTheme === "dark"
+                ? "Ganti ke Mode Terang"
+                : "Ganti ke Mode Gelap"
+            }
           >
             <i
               className={`fas ${
-                isDarkMode
+                // Ganti isDarkMode di sini
+                currentTheme === "dark"
                   ? "fa-sun text-yellow-500"
                   : "fa-moon text-indigo-700"
               } w-5`}
             ></i>
-            {isDarkMode ? "Mode Terang" : "Mode Gelap"}
+            {/* Ganti isDarkMode di sini */}
+            {currentTheme === "dark" ? "Mode Terang" : "Mode Gelap"}
           </button>
 
           {/* Logout Button */}
@@ -214,12 +262,13 @@ export default function DashboardView({
       </aside>
 
       {/* Main Content (All content will adapt via global CSS and dark: utilities) */}
-      <main className="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto bg-white dark:bg-slate-900">
+      <main className="main-content-bg flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto">
         {selectedMenu === "pemasaran" ? (
           <MenuPemasaranAI
             businessName={businessName}
             salesData={marketData?.sales}
-            isDarkMode={isDarkMode}
+            // HAPUS PROP isDarkMode
+            // isDarkMode={isDarkMode}
             onSave={(payload) => {
               console.log("Konten disimpan:", payload);
             }}
@@ -342,10 +391,10 @@ export default function DashboardView({
           </div>
         ) : (
           <>
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-2xl p-6 mb-8 shadow-lg flex justify-between items-center">
+            <div className="bg-white border border-slate-200 dark:border-slate-700 text-slate-900 rounded-2xl p-6 mb-8 shadow-lg flex justify-between items-center">
               <div>
                 <h1 className="text-xl font-bold">Halo, {userName}!</h1>
-                <p className="text-sm text-slate-700 dark:text-white/90">
+                <p className="text-sm text-slate-700">
                   AI telah menyiapkan strategi hari ini untuk{" "}
                   <span className="font-bold underline">{businessName}</span>.
                 </p>
@@ -369,25 +418,37 @@ export default function DashboardView({
                   businessType={businessType}
                 />
                 {/* NEW: Custom Calendar below the MarketIntelligence (grafik toko) - Full width like the graph */}
-                <div className="bg-white dark:bg-slate-800 rounded-lg shadow p-4">
-                  <h2 className="text-lg font-semibold mb-4 text-slate-800 dark:text-slate-200">Kalender Acara</h2>
+                <div className="bg-white rounded-lg shadow p-4">
+                  <h2 className="text-lg font-semibold mb-4 text-slate-800 dark:text-slate-700">
+                    Kalender Acara
+                  </h2>
                   <div className="flex flex-col lg:flex-row gap-4">
                     {/* Calendar Grid (Tanggal di sebelah kiri) */}
                     <div className="flex-1">
                       <div className="flex justify-between items-center mb-4">
-                        <button onClick={handlePrevMonth} className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
+                        <button
+                          onClick={handlePrevMonth}
+                          className="text-slate-600 dark:text-slate-600 hover:text-slate-800 dark:hover:text-slate-200"
+                        >
                           <i className="fas fa-chevron-left"></i>
                         </button>
-                        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-                          {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-700">
+                          {monthNames[currentDate.getMonth()]}{" "}
+                          {currentDate.getFullYear()}
                         </h3>
-                        <button onClick={handleNextMonth} className="text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
+                        <button
+                          onClick={handleNextMonth}
+                          className="text-slate-600 dark:text-slate-600 hover:text-slate-800 dark:hover:text-slate-200"
+                        >
                           <i className="fas fa-chevron-right"></i>
                         </button>
                       </div>
                       <div className="grid grid-cols-7 gap-1 mb-2">
-                        {dayNames.map(day => (
-                          <div key={day} className="text-center text-sm font-medium text-slate-500 dark:text-slate-400">
+                        {dayNames.map((day) => (
+                          <div
+                            key={day}
+                            className="text-center text-sm font-medium text-slate-500 dark:text-slate-600"
+                          >
                             {day}
                           </div>
                         ))}
@@ -395,13 +456,27 @@ export default function DashboardView({
                       <div className="grid grid-cols-7 gap-1">
                         {getDaysInMonth(currentDate).map((day, index) => {
                           const eventCount = getEventsForDay(day).length;
-                          const dots = eventCount > 0 ? '.'.repeat(Math.min(eventCount, 5)) : '';
+                          const dots =
+                            eventCount > 0
+                              ? ".".repeat(Math.min(eventCount, 5))
+                              : "";
                           return (
                             <div
                               key={index}
                               onClick={() => handleDateClick(day)}
-                              className={`text-center py-2 px-1 text-sm cursor-pointer rounded hover:bg-slate-100 dark:hover:bg-slate-700 ${day ? 'text-slate-800 dark:text-slate-200' : ''
-                                } ${selectedDate === `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` ? 'bg-blue-100 dark:bg-blue-900' : ''}`}
+                              className={`text-center py-2 px-1 text-sm cursor-pointer rounded hover:bg-slate-100 dark:hover:bg-slate-300 ${
+                                day ? "text-slate-800 dark:text-slate-700" : ""
+                              } ${
+                                selectedDate ===
+                                `${currentDate.getFullYear()}-${String(
+                                  currentDate.getMonth() + 1
+                                ).padStart(2, "0")}-${String(day).padStart(
+                                  2,
+                                  "0"
+                                )}`
+                                  ? "bg-blue-100 dark:bg-blue-300"
+                                  : ""
+                              }`}
                             >
                               {day}
                               {dots && (
@@ -420,24 +495,36 @@ export default function DashboardView({
                     <div className="flex-1 border-l border-slate-200 dark:border-slate-700 pl-4">
                       {selectedDate ? (
                         <>
-                          <h3 className="text-md font-semibold mb-2 text-slate-800 dark:text-slate-200">
+                          <h3 className="text-md font-semibold mb-2 text-slate-800 dark:text-slate-700">
                             Acara pada {selectedDate}
                           </h3>
                           <div className="space-y-2 max-h-48 overflow-y-auto mb-4">
-                            {(events[selectedDate] || []).map((event, index) => (
-                              <div key={index} className="flex justify-between items-center bg-slate-100 dark:bg-slate-700 rounded px-2 py-1">
-                                <span className="text-sm text-slate-800 dark:text-slate-200">{event}</span>
-                                <button
-                                  onClick={() => handleDeleteEvent(selectedDate, index)}
-                                  className="text-red-500 hover:text-red-700 text-sm"
-                                  title="Hapus Acara"
+                            {(events[selectedDate] || []).map(
+                              (event, index) => (
+                                <div
+                                  key={index}
+                                  className="flex justify-between items-center bg-slate-100 dark:bg-slate-100 rounded px-2 py-1"
                                 >
-                                  <i className="fas fa-trash-alt"></i>
-                                </button>
-                              </div>
-                            ))}
-                            {(!events[selectedDate] || events[selectedDate].length === 0) && (
-                              <p className="text-sm text-slate-500 dark:text-slate-400">Tidak ada acara untuk tanggal ini.</p>
+                                  <span className="text-sm text-slate-800 dark:text-slate-600">
+                                    {event}
+                                  </span>
+                                  <button
+                                    onClick={() =>
+                                      handleDeleteEvent(selectedDate, index)
+                                    }
+                                    className="text-red-500 hover:text-red-700 text-sm"
+                                    title="Hapus Acara"
+                                  >
+                                    <i className="fas fa-trash-alt"></i>
+                                  </button>
+                                </div>
+                              )
+                            )}
+                            {(!events[selectedDate] ||
+                              events[selectedDate].length === 0) && (
+                              <p className="text-sm text-slate-500 dark:text-slate-600">
+                                Tidak ada acara untuk tanggal ini.
+                              </p>
                             )}
                           </div>
                           <div className="flex gap-2">
@@ -445,7 +532,7 @@ export default function DashboardView({
                               type="text"
                               value={newEvent}
                               onChange={(e) => setNewEvent(e.target.value)}
-                              className="flex-1 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200"
+                              className="flex-1 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 text-sm bg-white dark:bg-slate-100 text-slate-800 dark:text-slate-700"
                               placeholder="Tambah acara baru..."
                             />
                             <button
@@ -457,7 +544,9 @@ export default function DashboardView({
                           </div>
                         </>
                       ) : (
-                        <p className="text-sm text-slate-500 dark:text-slate-400">Pilih tanggal untuk melihat atau menambah acara.</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                          Pilih tanggal untuk melihat atau menambah acara.
+                        </p>
                       )}
                     </div>
                   </div>

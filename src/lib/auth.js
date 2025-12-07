@@ -1,5 +1,6 @@
 'use client';
 
+import { createContext, useContext, useEffect, useState } from 'react';
 // src/lib/auth.js
 import {
   signInWithPopup,
@@ -7,6 +8,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendEmailVerification,
+  onAuthStateChanged,
 } from 'firebase/auth';
 import { auth, googleProvider } from './firebase';
 
@@ -203,3 +205,36 @@ export const resendVerificationEmail = async ({ email, password } = {}) => {
     throw err;
   }
 };
+
+// 1. Buat Context
+const AuthContext = createContext({
+  user: null,
+  loading: true,
+  // Anda bisa menambahkan fungsi login, logout, dll. di sini
+});
+
+// 2. Buat Provider
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Memantau perubahan status otentikasi Firebase
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser); // firebaseUser adalah objek user Firebase
+      setLoading(false);
+    });
+
+    // Clean up subscription
+    return () => unsubscribe();
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ user, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+// 3. Buat Custom Hook untuk mengkonsumsi Context
+export const useAuth = () => useContext(AuthContext);

@@ -161,34 +161,42 @@ export default function Home() {
   };
 
   const handleLogout = async () => {
-    await alert.warning(
-      'Keluar Akun?',
-      'Apakah Anda yakin ingin keluar dari dashboard bisnis?',
-      async () => {
-        try {
-          await logoutUser();
-          setCurrentView('consultation');
-          setBusinessData(null);
-          setAbsences([]);
-          setShowAdModal(false);
-          setMarketData(null);
-          setCurrentBusinessName('Dashboard'); // Reset custom name
-          setCurrentUserName('Pengguna'); // Reset custom name
-          setCurrentBusinessLocation('Lokasi Tidak Diketahui');
-          setCurrentBusinessDescription('');
-          setEmployees([]);
-        } catch (err) {
-          console.error('Logout failed', err);
-          alert.error('Gagal Keluar', 'Gagal logout: ' + err.message, () => {
-            // Optional callback setelah error alert ditutup
-          }, null);
-        }
-      },
-      null, // onCancel
-      'Keluar',
-      'Batal'
-    );
-  };
+    await alert.warning(
+      'Keluar Akun?',
+      'Apakah Anda yakin ingin keluar dari dashboard bisnis?',
+      async () => {
+        try {
+          await logoutUser();
+          
+          // Reset state lokal
+          setCurrentView('consultation');
+          setBusinessData(null);
+          setAbsences([]);
+          setShowAdModal(false);
+          setMarketData(null);
+          setCurrentBusinessName('Dashboard'); // Reset custom name
+          setCurrentUserName('Pengguna'); // Reset custom name
+          setCurrentBusinessLocation('Lokasi Tidak Diketahui');
+          setCurrentBusinessDescription('');
+          setEmployees([]);
+          
+          // 🚨 PERBAIKAN: Lakukan Hard Refresh setelah state direset dan logout berhasil
+          if (typeof window !== 'undefined') {
+              window.location.reload(); 
+          }
+
+        } catch (err) {
+          console.error('Logout failed', err);
+          alert.error('Gagal Keluar', 'Gagal logout: ' + err.message, () => {
+            // Optional callback setelah error alert ditutup
+          }, null);
+        }
+      },
+      null, // onCancel
+      'Keluar',
+      'Batal'
+    );
+  };
   
   // Handler to delete account (existing)
   const handleDeleteAccount = async () => {

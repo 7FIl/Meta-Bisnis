@@ -119,7 +119,7 @@ function AlertItem({ alert, onRemove }) {
   const messageColor = {
     success: 'text-green-700',
     error: 'text-red-700',
-    warning: 'text-amber-700',
+    warning: 'text-amber-100',
     info: 'text-blue-700',
   }[alert.type];
 

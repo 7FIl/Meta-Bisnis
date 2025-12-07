@@ -382,7 +382,7 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-white">
       {/* Navbar Sederhana */}
       <nav className="w-full py-4 px-6 flex justify-between items-center bg-white shadow-sm">
         <div className="font-bold text-xl flex items-center gap-2">
@@ -756,7 +756,7 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
       </nav>
 
       {/* Hero Section */}
-      <main className="flex-grow flex flex-col items-center justify-center px-4 py-10 text-center relative overflow-hidden">
+      <main className="flex-grow flex flex-col items-center justify-center px-4 py-10 text-center relative overflow-hidden bg-white">
         {/* Background Decoration */}
         <div className="absolute top-0 left-0 w-64 h-64 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
         <div className="absolute top-0 right-0 w-64 h-64 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>

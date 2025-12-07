@@ -3,6 +3,7 @@ import "./globals.css";
 import { ToastProvider } from "@/components/Toast";
 import { ConfirmDialogProvider } from "@/components/ConfirmDialog";
 import { AlertProvider } from "@/components/Alert";
+import { AuthProvider } from "@/lib/auth";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
@@ -12,7 +13,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 export const metadata = {
   title: "Meta Bisnis",
-  description: "Platform AI untuk konsultasi ide bisnis, manajemen operasional, dan pemasaran otomatis untuk UMKM Indonesia.",
+  description:
+    "Platform AI untuk konsultasi ide bisnis, manajemen operasional, dan pemasaran otomatis untuk UMKM Indonesia.",
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75' fill='%232563eb'>🤖</text></svg>",
   },
@@ -31,11 +33,15 @@ export default function RootLayout({ children }) {
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       </head>
-      <body className={`${plusJakartaSans.variable} antialiased text-slate-800 bg-slate-50`}>
+      <body
+        className={`${plusJakartaSans.variable} antialiased text-slate-800 bg-slate-50`}
+      >
         <AlertProvider>
           <ConfirmDialogProvider>
             <ToastProvider>
-              {children}
+              <AuthProvider>
+                {children}
+              </AuthProvider>
             </ToastProvider>
           </ConfirmDialogProvider>
         </AlertProvider>
