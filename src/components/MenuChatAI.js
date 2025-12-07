@@ -7,6 +7,7 @@ export default function MenuChatAI({ businessName, onSend }) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]); // {id, role, text, topic}
   const [loading, setLoading] = useState(false);
+  const [useWebSearch, setUseWebSearch] = useState(false); // Toggle untuk web search
   const [toast, setToast] = useState("");
   const toastRef = useRef(null);
   const listRef = useRef(null);
@@ -38,8 +39,9 @@ export default function MenuChatAI({ businessName, onSend }) {
   const sendToAI = async ({ topic, prompt, history = [] }) => {
     // If parent provided onSend, use it (allows server-side/openai integration)
     if (onSend) {
-      return await onSend({ topic, prompt, history });
+      return await onSend({ topic, prompt, history, useWebSearch });
     }
+    
     // Build payload (compatible with server route)
     const canned = sampleReplyFor(topic, prompt);
     const payload = {
@@ -55,6 +57,7 @@ export default function MenuChatAI({ businessName, onSend }) {
       max_tokens: 800,
       temperature: 0.7,
       topic,
+      useWebSearch, // Include web search flag
     };
 
     // Use absolute URL to avoid issues when app runs under a basePath or proxy
@@ -179,6 +182,24 @@ export default function MenuChatAI({ businessName, onSend }) {
             <i className="fas fa-handshake mr-2"></i>Penjualan
           </button>
         </div>
+
+        {/* Web Search Toggle */}
+        <div className="mt-3 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-blue-50 px-3 py-2 rounded-lg border border-indigo-100">
+          <div className="flex items-center gap-2">
+            <i className="fas fa-globe text-indigo-600"></i>
+            <div>
+              <span className="text-sm font-medium text-slate-700">Web Search</span>
+              <div className="text-xs text-slate-500">Dapatkan data terkini dari internet (Tavily AI)</div>
+            </div>
+          </div>
+          <button
+            onClick={() => setUseWebSearch(!useWebSearch)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${useWebSearch ? 'bg-indigo-600' : 'bg-slate-300'}`}
+            title={useWebSearch ? 'Web search aktif - AI akan mencari data real-time' : 'Klik untuk aktifkan web search'}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${useWebSearch ? 'translate-x-6' : 'translate-x-1'}`} />
+          </button>
+        </div>
       </div>
 
       <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -237,7 +258,16 @@ export default function MenuChatAI({ businessName, onSend }) {
                   <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
                   <div className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                 </div>
-                <span className="text-xs">AI sedang menjawab...</span>
+                <span className="text-xs">
+                  {useWebSearch ? (
+                    <>
+                      <i className="fas fa-globe mr-1 text-indigo-600"></i>
+                      Mencari data real-time & menganalisis...
+                    </>
+                  ) : (
+                    'AI sedang menjawab...'
+                  )}
+                </span>
               </div>
             </div>
           </div>

@@ -62,21 +62,21 @@ export async function POST(req) {
       brandTone = '',
       targetAudience = '',
       uniqueSellingPoints = '',
+      useWebSearch = false, // Flag untuk web search
     } = body;
     const { platform = '' } = body;
     const messagesFromBody = Array.isArray(body.messages) ? body.messages : null;
-    console.log('[api/chat] incoming request', { hasMessage: !!message, hasMessagesArray: !!messagesFromBody, model: body.model, max_tokens: body.max_tokens, topic: body.topic, businessType });
+    console.log('[api/chat] incoming request', { hasMessage: !!message, hasMessagesArray: !!messagesFromBody, model: body.model, max_tokens: body.max_tokens, topic: body.topic, businessType, useWebSearch });
     
     // history opsional: array percakapan sebelumnya jika frontend support context aware
 
-    // Coba cari data real-time dari Tavily untuk query tertentu
-    // (khususnya untuk topik analysis dan sales yang mungkin butuh konteks pasar)
+    // Cari data real-time dari Tavily jika useWebSearch = true
     let webData = '';
-    if (message && (body.topic === 'analysis' || body.topic === 'sales')) {
+    if (useWebSearch && message) {
       const webSearchResult = await searchWeb(message);
       if (webSearchResult) {
         webData = webSearchResult;
-        console.log('[api/chat] Tavily web search completed');
+        console.log('[api/chat] Tavily web search completed with real-time data');
       }
     }
 
