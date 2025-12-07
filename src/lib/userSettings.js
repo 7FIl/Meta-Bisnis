@@ -38,21 +38,21 @@ export const getUserSettings = async (uid) => {
  * @returns {Promise<string>} 'light' atau 'dark'. Default: 'dark'.
  */
 export const getTheme = async (uid) => {
-  if (!uid) return "dark";
+  if (!uid) return "light"; // Jika belum login, default ke light
   try {
     const settings = await getUserSettings(uid);
-    // Prioritaskan tema dari Firestore, fallback ke 'dark'
-    return settings?.theme || "dark";
+    // Prioritaskan tema dari Firestore, fallback ke 'light'
+    return settings?.theme || "light";
   } catch (error) {
     console.error("Error getting theme from Firestore:", error);
     // Fallback ke tema lokal browser jika Firebase error
     if (
       typeof window !== "undefined" &&
-      localStorage.getItem("theme") === "light"
+      localStorage.getItem("theme") === "dark"
     ) {
-      return "light";
+      return "dark";
     }
-    return "dark";
+    return "light";
   }
 };
 
