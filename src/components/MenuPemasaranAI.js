@@ -183,7 +183,7 @@ export default function MenuPemasaranAI({
             <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-50 via-white to-slate-50 border border-slate-100">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-xs text-slate-500">Platform</p>
+                  <p className="text-xs text-slate-900">Platform</p>
                   <p className="text-sm font-semibold text-slate-900">Pilih target distribusi</p>
                 </div>
                 <i className="far fa-paper-plane text-slate-500"></i>
@@ -211,21 +211,21 @@ export default function MenuPemasaranAI({
             <div className="p-4 rounded-2xl bg-white border border-slate-200">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-xs text-slate-500">Profil Brand</p>
-                  <p className="text-sm font-semibold text-slate-900">Disisipkan otomatis ke prompt</p>
+                  <p className="text-xs text-slate-700">Profil Brand</p>
+                  <p className="text-sm font-semibold text-slate-300">Disisipkan otomatis ke prompt</p>
                 </div>
                 <i className="far fa-id-card text-slate-500"></i>
               </div>
               {brandContext.length ? (
                 <div className="flex flex-wrap gap-2">
                   {brandContext.map((item) => (
-                    <span key={item} className="px-3 py-1 rounded-full text-xs bg-slate-100 text-slate-700 border border-slate-200">
+                    <span key={item} className="px-3 py-1 rounded-full text-xs bg-slate-00 text-slate-00 border border-slate-200">
                       {item}
                     </span>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-slate-500">Lengkapi nama bisnis, lokasi, dan detail brand di pengaturan supaya konten lebih konsisten.</p>
+                <p className="text-xs text-slate-900">Lengkapi nama bisnis, lokasi, dan detail brand di pengaturan supaya konten lebih konsisten.</p>
               )}
             </div>
 
@@ -238,7 +238,7 @@ export default function MenuPemasaranAI({
                 rows={8}
                 className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200"
               />
-              <div className="text-xs text-slate-500">Semakin spesifik detailnya, semakin tajam copywriting dari AI.</div>
+              <div className="text-xs text-slate-700">Semakin spesifik detailnya, semakin tajam copywriting dari AI.</div>
             </div>
 
             <div className="flex flex-wrap gap-3 items-center">
@@ -252,7 +252,7 @@ export default function MenuPemasaranAI({
                 {loading ? <i className="fas fa-spinner fa-spin"></i> : <i className="far fa-magic"></i>}
                 {loading ? "Membuat..." : "Generate Konten"}
               </button>
-              <span className="text-xs text-slate-500">Tunggu beberapa detik, hasil akan muncul di panel kanan.</span>
+              <span className="text-xs text-slate-700">Tunggu beberapa detik, hasil akan muncul di panel kanan.</span>
             </div>
           </div>
 
@@ -260,15 +260,15 @@ export default function MenuPemasaranAI({
             <div className="p-4 h-full rounded-2xl border border-slate-200 bg-slate-50 flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-slate-500">Hasil AI</p>
-                  <p className="text-sm font-semibold text-slate-900">Copy siap posting</p>
+                  <p className="text-xs text-slate-700">Hasil AI</p>
+                  <p className="text-sm font-semibold text-slate-700">Copy siap posting</p>
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={handleCopy}
                     disabled={!result}
                     className={`px-3 py-2 text-xs rounded-lg border flex items-center gap-2 ${
-                      result ? "text-slate-700 border-slate-300 hover:border-slate-400" : "text-slate-400 border-slate-200 cursor-not-allowed"
+                      result ? "text-slate-700 border-slate-300 hover:border-slate-400" : "text-slate-00 border-slate-00 cursor-not-allowed"
                     }`}
                   >
                     <i className="far fa-copy"></i>
@@ -278,7 +278,7 @@ export default function MenuPemasaranAI({
                     onClick={handleSaveToCalendar}
                     disabled={!result}
                     className={`px-3 py-2 text-xs rounded-lg border flex items-center gap-2 ${
-                      result ? "text-green-700 border-green-300 hover:border-green-400" : "text-slate-400 border-slate-200 cursor-not-allowed"
+                      result ? "text-green-700 border-green-300 hover:border-green-400" : "text-slate-00 border-slate-00 cursor-not-allowed"
                     }`}
                   >
                     <i className="far fa-calendar-plus"></i>
@@ -308,7 +308,7 @@ export default function MenuPemasaranAI({
                 </div>
               </div>
               <div className="flex-1 rounded-xl bg-white border border-slate-100 p-3 text-sm text-slate-800 overflow-y-auto whitespace-pre-wrap min-h-[240px]">
-                {result || <span className="text-slate-400">Hasil akan tampil di sini setelah generate.</span>}
+                {result || <span className="text-slate-600">Hasil akan tampil di sini setelah generate.</span>}
               </div>
             </div>
           </div>

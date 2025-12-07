@@ -175,7 +175,7 @@ export default function MenuKeuangan({
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-1 font-bold">Laporan Keuangan</h3>
-          <div className="text-l font-bold flex items-center gap-4 mt-2">
+          <div className="text-sm text-slate-800 dark:text-slate-700 flex items-center gap-4">
             <span>{businessName}</span>
             
             <PeriodFilter
