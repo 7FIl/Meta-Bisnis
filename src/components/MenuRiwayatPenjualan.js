@@ -180,7 +180,7 @@ export default function MenuRiwayatPenjualan({
 
       {showManualInput && (
         <div className="mb-6 p-4 border border-slate-200 dark:border-slate-500 rounded-lg bg-slate-50 dark:bg-slate-700">
-          <h4 className="text-lg font-bold mb-4">Input Manual Penjualan</h4>
+          <h4 className="text-lg font-bold mb-4">Input Penjualan</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
