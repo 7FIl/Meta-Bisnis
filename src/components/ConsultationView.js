@@ -223,7 +223,7 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
       {/* Navbar Sederhana */}
       <nav className="w-full py-4 px-6 flex justify-between items-center bg-white shadow-sm">
         <div className="font-bold text-xl flex items-center gap-2">
-          <i className="fas fa-robot text-blue-600"></i> META BISNIS
+          <Image src="/Logo.png" alt="Meta Bisnis Logo" width={32} height={32} className="object-contain" /> META BISNIS
         </div>
         {/* LOGIC TOMBOL LOGIN/LOGOUT */}
         <div className="relative">

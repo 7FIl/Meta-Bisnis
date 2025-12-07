@@ -41,65 +41,26 @@ export default function Home() {
   const [stockItems, setStockItems] = useState([]);
   const [salesHistory, setSalesHistory] = useState([]);
   const [marketData, setMarketData] = useState({
-    // Onboarding disabled: skip OnboardingView
+    period: new Date().toISOString().slice(0, 7),
+    sales: [],
+    incomes: [],
+    marketing: [],
+    salesHistory: [],
+  });
+  const [loading, setLoading] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [onboardingCompleted, setOnboardingCompleted] = useState(false);
   // State mock untuk nama pengguna dan bisnis yang bisa diubah di Pengaturan
-  const [currentBusinessName, setCurrentBusinessName] = useState('Dashboard');
   const [currentUserName, setCurrentUserName] = useState('Pengguna');
+  const [currentBusinessName, setCurrentBusinessName] = useState('Dashboard');
   const [currentBusinessLocation, setCurrentBusinessLocation] = useState('Lokasi Tidak Diketahui');
   const [currentBusinessDescription, setCurrentBusinessDescription] = useState('');
   const [currentBusinessType, setCurrentBusinessType] = useState('');
   const [currentInstagramUsername, setCurrentInstagramUsername] = useState('');
   const [currentTiktokUsername, setCurrentTiktokUsername] = useState('');
   const [currentWhatsappNumber, setCurrentWhatsappNumber] = useState('');
-  
-  /**
-   * Generate stok barang otomatis dari capitalBreakdown AI
-   * Hanya ambil item yang relevan untuk dijual (bukan peralatan/renovasi)
-   */
-  const generateStockFromCapitalBreakdown = (capitalBreakdown = [], businessType = '', businessName = '') => {
-    if (!capitalBreakdown || capitalBreakdown.length === 0) {
-      console.log('[generateStock] No capitalBreakdown data');
-      return [];
-    }
-    
-    console.log('[generateStock] Processing', capitalBreakdown.length, 'items for business:', businessName, '(', businessType, ')');
-    
-    // Kata kunci untuk filter item yang bukan barang jualan
-    const excludeKeywords = [
-      'sewa', 'renovasi', 'perizinan', 'izin', 'modal kerja', 'promosi awal',
-      'biaya', 'deposit', 'peralatan', 'kompor', 'kulkas', 'freezer', 'meja', 
-      'kursi', 'etalase', 'furniture', 'display', 'gerobak', 'booth', 'bangunan'
-    ];
-    
-    // Filter item yang kemungkinan adalah barang jualan (bahan baku/produk)
-    const stockItems = capitalBreakdown
-      .filter(item => {
-        const itemName = (item.item || '').toLowerCase();
-        // Exclude jika mengandung kata kunci non-stok
-        const isExcluded = excludeKeywords.some(keyword => itemName.includes(keyword));
-        // Include jika punya quantity dan unit yang masuk akal untuk stok
-        const hasValidUnit = item.unit && !['set', 'paket', 'bulan'].includes(item.unit.toLowerCase());
-        
-        const included = !isExcluded && hasValidUnit && item.quantity && item.price;
-        console.log(`  [${included ? '✓' : '✗'}] ${item.item} (${item.unit}) - excluded: ${isExcluded}, validUnit: ${hasValidUnit}`);
-        
-        return included;
-      })
-      .map(item => ({
-        name: item.item || 'Item',
-        category: businessType || 'Lainnya',
-        stock: parseInt(item.quantity) || 0,
-        unit: item.unit || 'pcs',
-        purchasePrice: parseInt(item.price) || 0,
-        sellingPrice: Math.round((parseInt(item.price) || 0) * 1.3), // Markup 30% default
-        minStock: Math.max(5, Math.round((parseInt(item.quantity) || 0) * 0.2)), // 20% dari stok awal sebagai min
-        supplier: 'Supplier Lokal',
-        lastRestocked: new Date().toISOString().split('T')[0]
-      }));
-    
-    console.log(`[generateStock] ✅ Generated ${stockItems.length} stock items from ${capitalBreakdown.length} capital items`);
-    return stockItems;
-  };
+  const autoSaveTimerRef = useRef(null);
+  const persistTimerRef = useRef(null); // Timer untuk debounce persist
   
   /**
    * AUTO-SAVE ke Firebase dengan debounce
@@ -162,7 +123,9 @@ export default function Home() {
     }
   }, []);
   
-  // Auto-save watchers - trigger save when data changes
+  // Auto-save watchers - DISABLED to prevent conflicts with main persist useEffect
+  // The main persist useEffect at line ~328 handles all saving
+  /*
   useEffect(() => {
     if (user?.uid && dataLoaded) {
       autoSaveToFirebase('employees changed');
@@ -192,6 +155,7 @@ export default function Home() {
       autoSaveToFirebase('absences changed');
     }
   }, [absences, user, dataLoaded, autoSaveToFirebase]);
+  */
   
   // Auth listener
   useEffect(() => {
@@ -244,87 +208,31 @@ export default function Home() {
               hasBusinessData = true;
             }
             
-            // Jika belum ada business data dari temp, load dari Firebase seperti biasa
+            // Jika belum ada business data dari temp (artinya ini refresh page atau login biasa)
             if (!hasBusinessData) {
               const settings = await getUserSettings(currentUser.uid);
+              
               if (settings) {
-                // Apply loaded settings to state
-                setCurrentBusinessName(settings.businessName || (currentUser.displayName ? `${currentUser.displayName}'s Business` : 'Dashboard Bisnis'));
-                setCurrentUserName(settings.userName || (currentUser.displayName || currentUser.email.split('@')[0]));
+                // 1. Masukkan data dari Firebase ke State
+                setCurrentBusinessName(settings.businessName || 'Dashboard Bisnis');
+                setCurrentUserName(settings.userName || currentUser.displayName || 'Pengguna');
                 setCurrentBusinessLocation(settings.businessLocation || 'Lokasi Tidak Diketahui');
                 setCurrentBusinessDescription(settings.businessDescription || '');
                 setCurrentBusinessType(settings.businessType || '');
-                setCurrentInstagramUsername(settings.instagramUsername || '');
-                setCurrentTiktokUsername(settings.tiktokUsername || '');
-                setCurrentWhatsappNumber(settings.whatsappNumber || '');
                 setEmployees(settings.employees || []);
-                
-                // Baca status onboarding jika sudah pernah diselesaikan
-                if (settings.onboardingCompleted) {
-                  setOnboardingCompleted(true);
-                  hasBusinessData = true; // hormati flag tersimpan
+
+                if (settings.businessData) {
+                  setBusinessData(settings.businessData);
                 }
 
-                // Cek apakah ada data bisnis - PERBAIKAN: termasuk cek stockItems & salesHistory & marketData
-                if (settings.businessData && settings.businessData.name) {
-                    setBusinessData(settings.businessData);
-                    setCurrentBusinessType(settings.businessData.businessType || settings.businessType || '');
-                    hasBusinessData = true;
-                } else if (settings.businessName && settings.businessName !== 'Dashboard Bisnis') {
-                    // Fallback: Jika ada nama bisnis tersimpan (dari setup manual sebelumnya)
-                    const fallbackData = {
-                        name: settings.businessName,
-                        description: settings.businessDescription || 'Detail bisnis diatur manual',
-                        capital_est: 'N/A',
-                        target_market: 'N/A',
-                        challenge: 'N/A',
-                        location: settings.businessLocation,
-                        businessType: settings.businessType || ''
-                    };
-                    setBusinessData(fallbackData);
-                    setCurrentBusinessType(settings.businessType || '');
-                    hasBusinessData = true;
-                }
-                
-                // PERBAIKAN: Jika user sudah pernah input data operasional, skip onboarding (lebih agresif)
-                const hasOperationalData =
-                  (settings.stockItems && settings.stockItems.length > 0) ||
-                  (settings.salesHistory && settings.salesHistory.length > 0) ||
-                  (settings.marketData && (
-                    (settings.marketData.sales && settings.marketData.sales.length > 0) ||
-                    (settings.marketData.incomes && settings.marketData.incomes.length > 0) ||
-                    (settings.marketData.marketing && settings.marketData.marketing.length > 0) ||
-                    (settings.marketData.salesHistory && settings.marketData.salesHistory.length > 0)
-                  ));
-
-                if (!hasBusinessData && hasOperationalData) {
-                  console.log('[page.js] User sudah memiliki data operasional, skip onboarding');
-                  // Buat fallback businessData agar tidak stuck di onboarding
-                  const fallbackData = {
-                    name: settings.businessName || `Bisnis ${currentUser.displayName || 'Saya'}`,
-                    description: settings.businessDescription || 'Data bisnis dari aktivitas operasional',
-                    capital_est: 'N/A',
-                    target_market: 'N/A',
-                    challenge: 'N/A',
-                    location: settings.businessLocation || 'Lokasi Tidak Diketahui',
-                    businessType: settings.businessType || 'Lainnya'
-                  };
-                  setBusinessData(fallbackData);
-                  setCurrentBusinessName(fallbackData.name);
-                  setCurrentBusinessType(fallbackData.businessType);
-                  hasBusinessData = true;
-                  // Sekaligus tandai onboarding selesai
-                  markOnboardingCompleted();
-                }
+                // ONBOARDING DISABLED: Semua user langsung ke dashboard
+                setCurrentView('dashboard');
+                setOnboardingCompleted(true);
+              } else {
+                // Jika dokumen settings sama sekali tidak ada di Firebase -> User Baru -> Dashboard
+                setCurrentView('dashboard');
+                setOnboardingCompleted(true);
               }
-            }
-
-            // LOGIKA ONBOARDING: jika tidak ada data bisnis tersimpan, arahkan ke onboarding
-            // Onboarding dinonaktifkan: selalu arahkan ke dashboard
-            console.log('[page.js] Onboarding disabled, langsung ke dashboard');
-            setCurrentView('dashboard');
-            if (!onboardingCompleted) {
-              markOnboardingCompleted();
             }
 
           } catch (e) {
@@ -387,6 +295,13 @@ export default function Home() {
           : mapSalesHistoryToFinance(data.salesHistory || []);
 
         if (cancelled) return;
+        
+        console.log('[Load] Setting data from Firebase:', {
+          stockItems: data.stockItems?.length || 0,
+          salesHistory: data.salesHistory?.length || 0,
+          marketData: data.marketData
+        });
+        
         setStockItems(data.stockItems || []);
         setSalesHistory(data.salesHistory || []);
         setMarketData({
@@ -422,28 +337,59 @@ export default function Home() {
 
   // Persist business data whenever it changes (and user logged in)
   useEffect(() => {
-    if (!user?.uid || !dataLoaded) return;
-    const payload = {
-      stockItems,
-      salesHistory,
-      marketData,
-    };
-    // Save to the users doc (same place MenuPengaturan writes) to avoid
-    // permission mismatches. If that fails or is not allowed, fall back
-    // to the legacy businessData collection.
-    (async () => {
-      try {
-        const ok = await saveUserSettings(user.uid, payload);
-        if (!ok) {
-          // legacy fallback
-          await saveBusinessData(user.uid, payload);
+    // PENTING: Jangan save jika data belum di-load atau masih loading
+    // Ini mencegah state kosong menimpa data yang ada di Firebase
+    if (!user?.uid || !dataLoaded || loading) {
+      console.log('[Persist] Skipping save - dataLoaded:', dataLoaded, 'loading:', loading);
+      return;
+    }
+    
+    // Clear previous timer untuk debounce
+    if (persistTimerRef.current) {
+      clearTimeout(persistTimerRef.current);
+    }
+    
+    // Debounce 3 detik - tunggu sampai user selesai melakukan perubahan
+    persistTimerRef.current = setTimeout(() => {
+      console.log('[Persist] Saving data to Firebase...', {
+        stockItems: stockItems.length,
+        salesHistory: salesHistory.length,
+        marketDataKeys: Object.keys(marketData || {})
+      });
+      
+      // PERBAIKAN: Hanya save field yang spesifik, merge akan mempertahankan field lain
+      const payload = {
+        stockItems,
+        salesHistory,
+        marketData,
+        lastUpdated: new Date().toISOString(), // Track terakhir update
+      };
+      
+      // Save to the users doc (same place MenuPengaturan writes) to avoid
+      // permission mismatches. If that fails or is not allowed, fall back
+      // to the legacy businessData collection.
+      (async () => {
+        try {
+          const ok = await saveUserSettings(user.uid, payload);
+          if (!ok) {
+            // legacy fallback
+            await saveBusinessData(user.uid, payload);
+          }
+          console.log('[Persist] ✅ Data saved successfully');
+        } catch (e) {
+          console.warn('[Persist] Failed to save to users doc, trying legacy collection:', e?.message || e);
+          try { await saveBusinessData(user.uid, payload); } catch (_) {}
         }
-      } catch (e) {
-        console.warn('Failed to save to users doc, trying legacy collection:', e?.message || e);
-        try { await saveBusinessData(user.uid, payload); } catch (_) {}
+      })();
+    }, 3000); // 3 detik debounce
+    
+    // Cleanup timer saat component unmount atau dependency berubah
+    return () => {
+      if (persistTimerRef.current) {
+        clearTimeout(persistTimerRef.current);
       }
-    })();
-  }, [user?.uid, dataLoaded, stockItems, salesHistory, marketData]);
+    };
+  }, [user?.uid, dataLoaded, loading, stockItems, salesHistory, marketData]);
 
   const handleLogin = async () => {
     try {
@@ -540,12 +486,34 @@ export default function Home() {
   };
 
   const handleAddStockItem = (item) => {
-    const withId = { ...item, id: item.id || item.kodeBarang || Date.now().toString() };
+    // Pastikan kodeBarang dan id ter-set dengan baik
+    const kodeBarang = item.kodeBarang || item.id || Date.now().toString();
+    const withId = { 
+      ...item, 
+      id: kodeBarang,
+      kodeBarang: kodeBarang,
+      // Normalisasi nama field untuk konsistensi
+      hargaJual: item.sellPrice || item.hargaJual || 0,
+      namaBarang: item.name || item.namaBarang || ''
+    };
     setStockItems((prev) => [...prev, withId]);
   };
 
   const handleUpdateStockItem = (updated) => {
-    setStockItems((prev) => prev.map((it) => (it.id === updated.id ? { ...it, ...updated } : it)));
+    setStockItems((prev) => prev.map((it) => {
+      if (it.id === updated.id) {
+        return { 
+          ...it, 
+          ...updated,
+          // Pastikan kodeBarang tetap konsisten
+          kodeBarang: updated.kodeBarang || it.kodeBarang || it.id,
+          // Normalisasi field untuk riwayat penjualan
+          hargaJual: updated.sellPrice || updated.hargaJual || it.hargaJual || 0,
+          namaBarang: updated.name || updated.namaBarang || it.namaBarang || ''
+        };
+      }
+      return it;
+    }));
   };
 
   const handleDeleteStockItem = (id) => {
@@ -633,17 +601,6 @@ export default function Home() {
       setCurrentBusinessType(finalBusinessData.businessType || '');
       setCurrentView('dashboard');
       
-      // Generate stok barang otomatis dari capitalBreakdown AI
-      let generatedStock = [];
-      if (finalBusinessData.capitalBreakdown && finalBusinessData.capitalBreakdown.length > 0) {
-        generatedStock = generateStockFromCapitalBreakdown(
-          finalBusinessData.capitalBreakdown,
-          finalBusinessData.businessType || '',
-          finalBusinessData.name || ''
-        );
-        console.log('[handleConsultAI] Generated stock items:', generatedStock);
-      }
-      
       // Generate laporan keuangan default (kosong tapi terstruktur)
       const defaultFinancialReport = {
         sales: [], // Akan diisi dari salesHistory
@@ -659,19 +616,17 @@ export default function Home() {
               businessType: finalBusinessData.businessType || '',
               businessLocation: finalBusinessData.location,
               businessDescription: finalBusinessData.description,
-              // Tambahkan stok barang hasil generate
-              stockItems: generatedStock,
-              // Laporan keuangan default
+              stockItems: [],
               salesHistory: [],
               marketData: defaultFinancialReport
           });
           
           // Update state local agar langsung muncul di dashboard
-          setStockItems(generatedStock);
+          setStockItems([]);
           setSalesHistory([]);
           setMarketData(defaultFinancialReport);
           
-          toast.success(`Bisnis "${finalBusinessData.name}" berhasil dibuat! ${generatedStock.length} item stok digenerate otomatis.`);
+          toast.success(`Bisnis "${finalBusinessData.name}" berhasil dibuat!`);
       }
       return;
     }

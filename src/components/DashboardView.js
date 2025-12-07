@@ -138,37 +138,12 @@ export default function DashboardView({
     
     // Load calendar events dari Firebase jika user login
     if (user && user.uid && !authLoading) {
-<<<<<<< HEAD
       getCalendarEvents(user.uid).then((loadedEvents) => {
         setEvents(loadedEvents || {});
       }).catch((err) => {
         console.error("Failed to load calendar events:", err);
       });
     }
-=======
-      getTheme(user.uid).then((theme) => {
-        // Kirim user.uid yang sebenarnya
-        // ... (Logika sinkronisasi tema)
-        setCurrentTheme(theme);
-        if (typeof document !== "undefined") {
-          const root = document.documentElement;
-          if (theme === "dark") {
-            root.classList.add("dark");
-          } else {
-            root.classList.remove("dark"); 
-          }
-        }
-      });
-      // Load calendar events from Firebase
-      getCalendarEvents(user.uid)
-        .then((loadedEvents) => {
-          setEvents(loadedEvents || {});
-        })
-        .catch((err) => {
-          console.error("Failed to load calendar events:", err);
-        });
-    } // Tambahkan user.uid dan authLoading ke dependency array
->>>>>>> efb6763bfaa1946aaea8aa7915474a70e1debf3d
   }, [user, authLoading]);
 
   // Apply theme class immediately when currentTheme changes (includes initial load)

@@ -112,10 +112,13 @@ export default function MenuRiwayatPenjualan({
     customAmount: '', // used for non-penjualan
   });
 
-  const selectedStockItem = useMemo(
-    () => stockItems.find((it) => it.kodeBarang === newSale.kodeBarang) || null,
-    [stockItems, newSale.kodeBarang]
-  );
+  const selectedStockItem = useMemo(() => {
+    if (!newSale.kodeBarang) return null;
+    // Cari berdasarkan kodeBarang atau id yang match
+    return stockItems.find((it) => 
+      it.kodeBarang === newSale.kodeBarang || it.id === newSale.kodeBarang
+    ) || null;
+  }, [stockItems, newSale.kodeBarang]);
 
   useEffect(() => {
     if (newSale.entryType !== 'penjualan') {
@@ -361,11 +364,15 @@ export default function MenuRiwayatPenjualan({
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-100 text-slate-800 dark:text-slate-700"
                   >
                     <option value="">Pilih kode dari stok</option>
-                    {stockItems.map((item) => (
-                      <option key={item.id || item.kodeBarang} value={item.kodeBarang}>
-                        {item.kodeBarang} - {item.name || item.namaBarang}
-                      </option>
-                    ))}
+                    {stockItems.map((item) => {
+                      const kode = item.kodeBarang || item.id;
+                      const nama = item.name || item.namaBarang || 'Tanpa Nama';
+                      return (
+                        <option key={item.id || kode} value={kode}>
+                          {kode} - {nama}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
                 <div>
