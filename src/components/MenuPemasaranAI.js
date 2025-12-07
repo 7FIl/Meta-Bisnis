@@ -183,10 +183,8 @@ export default function MenuPemasaranAI({
             <div className="p-4 rounded-2xl border border-slate-100">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-xs text-slate-700">Platform</p>
-                  <p className="text-sm font-semibold dark:text-slate-400">Pilih target distribusi</p>
-                  <p className="text-xs text-slate-900">Platform</p>
-                  <p className="text-sm font-semibold text-slate-900">Pilih target distribusi</p>
+                  <p className="text-xs text-slate-800">Platform</p>
+                  <p className="text-sm font-semibold text-slate-700">Pilih target distribusi</p>
                 </div>
                 <i className="far fa-paper-plane text-slate-500"></i>
               </div>
@@ -214,9 +212,7 @@ export default function MenuPemasaranAI({
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <p className="text-xs text-slate-700">Profil Brand</p>
-                  <p className="text-sm font-semibold dark:text-slate-400">Disisipkan otomatis ke prompt</p>
-                  <p className="text-xs text-slate-700">Profil Brand</p>
-                  <p className="text-sm font-semibold text-slate-300">Disisipkan otomatis ke prompt</p>
+                  <p className="text-sm font-semibold text-slate-600">Disisipkan otomatis ke prompt</p>
                 </div>
                 <i className="far fa-id-card text-slate-500"></i>
               </div>
