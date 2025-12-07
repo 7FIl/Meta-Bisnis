@@ -10,28 +10,50 @@ export default function MenuChatAI({ businessName, onSend, userId }) {
   const [loading, setLoading] = useState(false);
   const [useWebSearch, setUseWebSearch] = useState(false); // Toggle untuk web search
   const [toast, setToast] = useState("");
-  const [historyLoaded, setHistoryLoaded] = useState(false);
   const toastRef = useRef(null);
   const listRef = useRef(null);
   const saveTimerRef = useRef(null);
+  const loadedRef = useRef(false); // Track if history has been loaded in this mount
+  const messagesRef = useRef(messages); // Keep reference to latest messages for unmount save
+
+  // Keep messagesRef in sync with messages state
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   useEffect(() => {
     return () => {
       clearTimeout(toastRef.current);
       clearTimeout(saveTimerRef.current);
+      
+      // Save immediately on unmount if there are unsaved messages
+      if (userId && messagesRef.current.length > 0 && loadedRef.current) {
+        saveUserSettings(userId, {
+          chatHistory: messagesRef.current,
+          lastChatUpdate: new Date().toISOString(),
+        }).catch(err => {
+          console.error('Failed to save chat history on unmount:', err);
+        });
+      }
     };
-  }, []);
+  }, [userId]);
 
-  // Load chat history from Firebase on mount
+  // Load chat history from Firebase on mount (always reload when component mounts)
   useEffect(() => {
-    if (userId && !historyLoaded) {
+    if (userId && !loadedRef.current) {
       loadChatHistory();
+      loadedRef.current = true;
     }
-  }, [userId, historyLoaded]);
+    
+    // Reset on unmount so it reloads on next mount
+    return () => {
+      loadedRef.current = false;
+    };
+  }, [userId]);
 
   // Auto-save chat history with debounce
   useEffect(() => {
-    if (!userId || messages.length === 0 || !historyLoaded) return;
+    if (!userId || messages.length === 0 || !loadedRef.current) return;
 
     // Clear previous timer
     if (saveTimerRef.current) {
@@ -48,7 +70,7 @@ export default function MenuChatAI({ businessName, onSend, userId }) {
         clearTimeout(saveTimerRef.current);
       }
     };
-  }, [messages, userId, historyLoaded]);
+  }, [messages, userId]);
 
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
@@ -147,14 +169,26 @@ export default function MenuChatAI({ businessName, onSend, userId }) {
       const res = await sendToAI({ topic, prompt: trimmed, history: nextHistory });
       const aiText = (res && res.text) ? res.text : String(res || "");
       const aiMsg = { id: `a-${Date.now()}`, role: "ai", text: aiText, topic };
-      setMessages((m) => [...m, aiMsg]);
+      const updatedMessages = [...nextHistory, aiMsg];
+      setMessages(updatedMessages);
+      
+      // Save immediately after successful message
+      if (userId) {
+        saveChatHistory(updatedMessages);
+      }
     } catch (err) {
       const msg = String(err?.message || 'Terjadi kesalahan saat memanggil AI.');
-      setMessages((m) => [
-        ...m,
+      const errorMessages = [
+        ...nextHistory,
         { id: `a-err-${Date.now()}`, role: "ai", text: msg, topic },
-      ]);
+      ];
+      setMessages(errorMessages);
       showToast(msg);
+      
+      // Save even error messages
+      if (userId) {
+        saveChatHistory(errorMessages);
+      }
     } finally {
       setLoading(false);
     }
@@ -170,19 +204,18 @@ export default function MenuChatAI({ businessName, onSend, userId }) {
       if (userData?.chatHistory && Array.isArray(userData.chatHistory)) {
         setMessages(userData.chatHistory);
       }
-      setHistoryLoaded(true);
     } catch (err) {
       console.error('Failed to load chat history:', err);
-      setHistoryLoaded(true);
     }
   };
 
-  const saveChatHistory = async () => {
-    if (!userId || messages.length === 0) return;
+  const saveChatHistory = async (messagesToSave = null) => {
+    const dataToSave = messagesToSave || messages;
+    if (!userId || dataToSave.length === 0) return;
     
     try {
       await saveUserSettings(userId, {
-        chatHistory: messages,
+        chatHistory: dataToSave,
         lastChatUpdate: new Date().toISOString(),
       });
     } catch (err) {
@@ -237,8 +270,9 @@ export default function MenuChatAI({ businessName, onSend, userId }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full">
-      <div className="p-4 border-b border-slate-100">
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col" style={{ height: 'calc(100vh - 120px)' }}>
+      {/* Header - Fixed */}
+      <div className="p-4 border-b border-slate-100 flex-shrink-0">
         <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="font-bold text-slate-800">Chat AI ~ {businessName}</h3>
@@ -272,35 +306,41 @@ export default function MenuChatAI({ businessName, onSend, userId }) {
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${useWebSearch ? 'bg-indigo-600' : 'bg-slate-300'}`}
             title={useWebSearch ? 'Web search aktif - AI akan mencari data real-time' : 'Klik untuk aktifkan web search'}
           >
-            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${useWebSearch ? 'translate-x-6' : 'translate-x-1'}`} />
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${useWebSearch ? 'translate-x-3' : 'translate-x-0.5'}`} />
           </button>
         </div>
       </div>
 
-      <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Chat Messages Area - Scrollable */}
+      <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50"
+        style={{ 
+          minHeight: 0,
+          scrollBehavior: 'smooth'
+        }}
+      >
         {messages.length === 0 && (
           <div className="h-full flex flex-col items-center justify-end text-center">
             <div className="mb-4">
               <i className="fas fa-comments text-4xl text-slate-300"></i>
             </div>
-            <h4 className="text-sm font-semibold text-slate 700 mb-2">Mulai Percakapan</h4>
+            <h4 className="text-sm font-semibold text-slate-700 mb-2">Mulai Percakapan</h4>
             <p className="text-xs text-slate-600 max-w-xs mb-4">Tanyakan tentang pasar, strategi penjualan, atau pengelolaan keuangan bisnis Anda.</p>
             <div className="grid grid-cols-1 gap-2 w-full">
               <button
                 onClick={() => handleQuick("Apa yang bisa saya lakukan untuk meningkatkan penjualan bulan ini?")}
-                className="px-3 py-2 text-xs bg-indigo-00 text-indigo-700 rounded-lg hover:bg-indigo-100 transition text-left border border-indigo-200"
+                className="px-3 py-2 text-xs bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition text-left border border-indigo-200"
               >
                 💡 Tingkatkan penjualan
               </button>
               <button
                 onClick={() => handleQuick("Bagaimana cara menganalisis kompetitor saya?")}
-                className="px-3 py-2 text-xs bg-blue-00 text-blue-500 rounded-lg hover:bg-blue-100 transition text-left border border-blue-200"
+                className="px-3 py-2 text-xs bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-left border border-blue-200"
               >
                 📊 Analisis kompetitor
               </button>
               <button
                 onClick={() => handleQuick("Bagaimana cara mengoptimalkan biaya operasional?")}
-                className="px-3 py-2 text-xs bg-green-00 text-green-700 rounded-lg hover:bg-green-100 transition text-left border border-green-200"
+                className="px-3 py-2 text-xs bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition text-left border border-green-200"
               >
                 💰 Optimalkan keuangan
               </button>
@@ -349,7 +389,8 @@ export default function MenuChatAI({ businessName, onSend, userId }) {
         )}
       </div>
 
-      <div className="border-t border-slate-100 p-4 space-y-3">
+      {/* Input Area - Fixed */}
+      <div className="border-t border-slate-100 p-4 space-y-3 bg-white flex-shrink-0">
         <div className="flex gap-2">
           <input
             value={input}
@@ -367,7 +408,7 @@ export default function MenuChatAI({ businessName, onSend, userId }) {
           <button
             onClick={handleSend}
             disabled={loading || !input.trim()}
-            className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-00 text-white px-6 py-3 rounded-lg text-sm font-medium transition flex items-center gap-2"
+            className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg text-sm font-medium transition flex items-center gap-2"
           >
             <i className={`fas ${loading ? 'fa-spinner fa-spin' : 'fa-paper-plane'}`}></i>
             {loading ? "Mengirim" : "Kirim"}
@@ -378,13 +419,13 @@ export default function MenuChatAI({ businessName, onSend, userId }) {
           <div className="flex gap-2">
             <button
               onClick={() => handleQuick(topic === "analysis" ? "Analisis lokasi usaha saya" : topic === "finance" ? "Bagaimana cara menekan biaya operasional?" : "Cara meningkatkan penjualan harian?")}
-              className="px-3 py-1.5 rounded-lg bg-slate-00 text-slate-00 hover:bg-slate-500 transition"
+              className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
             >
               <i className="fas fa-lightning-bolt mr-1"></i>Contoh
             </button>
             <button
               onClick={handleClear}
-              className="px-3 py-1.5 rounded-lg bg-slate-00 text-slate-00 hover:bg-slate-500 transition"
+              className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition"
             >
               <i className="fas fa-trash mr-1"></i>Bersihkan
             </button>

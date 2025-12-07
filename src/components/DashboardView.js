@@ -421,8 +421,8 @@ export default function DashboardView({
             onBack={() => setSelectedMenu("beranda")}
           />
         ) : selectedMenu === "chat" ? (
-          <div className="flex flex-col h-full">
-            <div className="flex items-center gap-3 mb-4">
+          <div className="flex flex-col" style={{ height: 'calc(100vh - 80px)' }}>
+            <div className="flex items-center gap-3 mb-4 flex-shrink-0">
               <button
                 onClick={() => setSelectedMenu("beranda")}
                 className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-900"
@@ -431,10 +431,11 @@ export default function DashboardView({
               </button>
             </div>
 
-            <MenuChatAI
-              userId={user?.uid}
-              businessName={businessName}
-              onSend={async ({ topic, prompt, history = [] }) => {
+            <div className="flex-1" style={{ minHeight: 0 }}>
+              <MenuChatAI
+                userId={user?.uid}
+                businessName={businessName}
+                onSend={async ({ topic, prompt, history = [], useWebSearch }) => {
                 // Integrasi: panggil API server `/api/chat` (sesuai route yang tersedia)
                 try {
                   const url = new URL("/api/chat", window.location.origin).href;
@@ -463,6 +464,7 @@ export default function DashboardView({
                     context: businessContext,
                     businessName,
                     businessType,
+                    useWebSearch, // Forward web search flag to API
                   };
 
                   const res = await fetch(url, {
@@ -491,6 +493,7 @@ export default function DashboardView({
                 }
               }}
             />
+            </div>
           </div>
         ) : selectedMenu === "keuangan" ? (
           // Keuangan view
