@@ -87,7 +87,8 @@ export default function MenuKeuangan({
     const totalSales = filteredSales.reduce((s, r) => s + (r.qty ? r.qty * (r.price || 0) : (r.amount || 0)), 0);
     const totalIncome = filteredIncomes.reduce((s, r) => s + (r.amount || 0), 0);
     const totalMarketing = filteredMarketing.reduce((s, r) => s + (r.amount || 0), 0);
-    const net = totalIncome - totalMarketing;
+    // PERBAIKAN: NET = (Penjualan + Pendapatan Lain) - Pemasaran
+    const net = (totalSales + totalIncome) - totalMarketing;
     return { totalSales, totalIncome, totalMarketing, net };
   }, [filteredSales, filteredIncomes, filteredMarketing]);
 

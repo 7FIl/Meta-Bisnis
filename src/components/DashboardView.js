@@ -3,7 +3,7 @@
 
 import { useAuth } from "@/lib/auth";
 import { useEffect, useRef, useState } from "react";
-import { getTheme, setTheme, getCalendarEvents, saveCalendarEvents } from "@/lib/userSettings";
+import { getTheme, setTheme, saveCalendarEvents } from "@/lib/userSettings";
 import EmployeeAbsence from "./EmployeeAbsence";
 import MarketIntelligence from "./MarketIntelligence";
 import MenuPemasaranAI from "./MenuPemasaranAI";
@@ -41,6 +41,8 @@ export default function DashboardView({
   onRecordSale,
   onAddMarketingExpense,
   onAddOtherIncome,
+  calendarEvents = {},
+  onSetCalendarEvents,
 }) {
   const chartRef = useRef(null);
   const [selectedMenu, setSelectedMenu] = useState("beranda");
@@ -48,7 +50,7 @@ export default function DashboardView({
 
   // NEW STATE FOR CALENDAR
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [events, setEvents] = useState({}); // Object: key is date string (YYYY-MM-DD), value is array of event objects
+  const [events, setEvents] = useState(calendarEvents || {}); // Object: key is date string (YYYY-MM-DD), value is array of event objects
   const [selectedDate, setSelectedDate] = useState(null); // Selected date for event panel
   const [newEvent, setNewEvent] = useState(""); // Input for new event
   const { user, loading: authLoading } = useAuth();
@@ -135,16 +137,8 @@ export default function DashboardView({
     // Load theme dari cookie (tidak perlu tunggu user login)
     const theme = getTheme();
     setCurrentTheme(theme);
-    
-    // Load calendar events dari Firebase jika user login
-    if (user && user.uid && !authLoading) {
-      getCalendarEvents(user.uid).then((loadedEvents) => {
-        setEvents(loadedEvents || {});
-      }).catch((err) => {
-        console.error("Failed to load calendar events:", err);
-      });
-    }
-  }, [user, authLoading]);
+    // Calendar events sudah di-load dari parent (page.js) via props, jadi tidak perlu load di sini
+  }, []);
 
   // Apply theme class immediately when currentTheme changes (includes initial load)
   useEffect(() => {
@@ -228,6 +222,10 @@ export default function DashboardView({
       [selectedDate]: [...(events[selectedDate] || []), eventObj],
     };
     setEvents(updatedEvents);
+    // Sync with parent component
+    if (onSetCalendarEvents) {
+      onSetCalendarEvents(updatedEvents);
+    }
     setNewEvent("");
     // Save to Firebase
     if (user && user.uid) {
@@ -244,6 +242,10 @@ export default function DashboardView({
         (item) => item.id !== id
       );
       if (newEvents[dateKey]?.length === 0) delete newEvents[dateKey];
+      // Sync with parent component
+      if (onSetCalendarEvents) {
+        onSetCalendarEvents(newEvents);
+      }
       // Save to Firebase
       if (user && user.uid) {
         saveCalendarEvents(user.uid, newEvents).catch((err) => {
@@ -278,6 +280,10 @@ export default function DashboardView({
       [dateKey]: [...(events[dateKey] || []), eventObj],
     };
     setEvents(updatedEvents);
+    // Sync with parent component
+    if (onSetCalendarEvents) {
+      onSetCalendarEvents(updatedEvents);
+    }
     // Save to Firebase
     if (user && user.uid) {
       saveCalendarEvents(user.uid, updatedEvents).catch((err) => {
@@ -556,6 +562,10 @@ export default function DashboardView({
               businessName={businessName}
               period={marketData?.period || new Date().toISOString().slice(0, 7)}
               salesHistoryData={marketData?.salesHistory || null}
+              stockItems={stockItems}
+              onAddSale={onRecordSale}
+              onAddMarketingExpense={onAddMarketingExpense}
+              onAddOtherIncome={onAddOtherIncome}
             />
           </div>
         ) : selectedMenu === "pengaturan" ? (

@@ -34,6 +34,7 @@ export default function Home() {
   const [currentView, setCurrentView] = useState('consultation'); // 'consultation', 'onboarding', atau 'dashboard'
   const [businessData, setBusinessData] = useState(null);
   const [absences, setAbsences] = useState([]);
+  const [calendarEvents, setCalendarEvents] = useState({}); // Calendar events: { 'YYYY-MM-DD': [{ id, title, type, content, source }] }
   const [employees, setEmployees] = useState([]);
   const [showAdModal, setShowAdModal] = useState(false);
 
@@ -62,100 +63,6 @@ export default function Home() {
   const autoSaveTimerRef = useRef(null);
   const persistTimerRef = useRef(null); // Timer untuk debounce persist
   
-  /**
-   * AUTO-SAVE ke Firebase dengan debounce
-   * Menghindari terlalu banyak write operations
-   */
-  const autoSaveToFirebase = useCallback(async (reason = 'data changed') => {
-    if (!user?.uid) {
-      console.log('[AutoSave] Skipped - no user logged in');
-      return;
-    }
-    
-    // Clear previous timer
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-    }
-    
-    // Debounce: tunggu 2 detik sebelum save
-    autoSaveTimerRef.current = setTimeout(async () => {
-      try {
-        console.log(`[AutoSave] Saving to Firebase... (reason: ${reason})`);
-        
-        const dataToSave = {
-          businessName: currentBusinessName,
-          userName: currentUserName,
-          businessLocation: currentBusinessLocation,
-          businessDescription: currentBusinessDescription,
-          businessType: currentBusinessType,
-          instagramUsername: currentInstagramUsername,
-          tiktokUsername: currentTiktokUsername,
-          whatsappNumber: currentWhatsappNumber,
-          businessData: businessData,
-          employees: employees,
-          stockItems: stockItems,
-          salesHistory: salesHistory,
-          marketData: marketData,
-          absences: absences,
-          onboardingCompleted,
-          lastAutoSave: new Date().toISOString()
-        };
-        
-        await saveUserSettings(user.uid, dataToSave);
-        console.log('[AutoSave] ✅ Successfully saved to Firebase');
-      } catch (error) {
-        console.error('[AutoSave] ❌ Failed:', error);
-      }
-    }, 2000); // 2 second debounce
-  }, [user, currentBusinessName, currentUserName, currentBusinessLocation, currentBusinessDescription, 
-      currentBusinessType, currentInstagramUsername, currentTiktokUsername, currentWhatsappNumber,
-      businessData, employees, stockItems, salesHistory, marketData, absences]);
-
-  // Tandai onboarding selesai dan simpan ke Firebase
-  const markOnboardingCompleted = useCallback(async () => {
-    setOnboardingCompleted(true);
-    if (auth.currentUser?.uid) {
-      try {
-        await saveUserSettings(auth.currentUser.uid, { onboardingCompleted: true });
-      } catch (e) {
-        console.error('Failed marking onboarding completed:', e);
-      }
-    }
-  }, []);
-  
-  // Auto-save watchers - DISABLED to prevent conflicts with main persist useEffect
-  // The main persist useEffect at line ~328 handles all saving
-  /*
-  useEffect(() => {
-    if (user?.uid && dataLoaded) {
-      autoSaveToFirebase('employees changed');
-    }
-  }, [employees, user, dataLoaded, autoSaveToFirebase]);
-  
-  useEffect(() => {
-    if (user?.uid && dataLoaded) {
-      autoSaveToFirebase('stock items changed');
-    }
-  }, [stockItems, user, dataLoaded, autoSaveToFirebase]);
-  
-  useEffect(() => {
-    if (user?.uid && dataLoaded) {
-      autoSaveToFirebase('sales history changed');
-    }
-  }, [salesHistory, user, dataLoaded, autoSaveToFirebase]);
-  
-  useEffect(() => {
-    if (user?.uid && dataLoaded) {
-      autoSaveToFirebase('market data changed');
-    }
-  }, [marketData, user, dataLoaded, autoSaveToFirebase]);
-  
-  useEffect(() => {
-    if (user?.uid && dataLoaded) {
-      autoSaveToFirebase('absences changed');
-    }
-  }, [absences, user, dataLoaded, autoSaveToFirebase]);
-  */
   
   // Auth listener
   useEffect(() => {
@@ -220,6 +127,14 @@ export default function Home() {
                 setCurrentBusinessDescription(settings.businessDescription || '');
                 setCurrentBusinessType(settings.businessType || '');
                 setEmployees(settings.employees || []);
+                // Load social media usernames
+                setCurrentInstagramUsername(settings.instagramUsername || '');
+                setCurrentTiktokUsername(settings.tiktokUsername || '');
+                setCurrentWhatsappNumber(settings.whatsappNumber || '');
+                // Load absences
+                setAbsences(settings.absences || []);
+                // Load calendar events
+                setCalendarEvents(settings.calendarEvents || {});
 
                 if (settings.businessData) {
                   setBusinessData(settings.businessData);
@@ -362,6 +277,14 @@ export default function Home() {
         stockItems,
         salesHistory,
         marketData,
+        // Save social media usernames
+        instagramUsername: currentInstagramUsername,
+        tiktokUsername: currentTiktokUsername,
+        whatsappNumber: currentWhatsappNumber,
+        // Save absences
+        absences: absences,
+        // Save calendar events
+        calendarEvents: calendarEvents,
         lastUpdated: new Date().toISOString(), // Track terakhir update
       };
       
@@ -389,7 +312,7 @@ export default function Home() {
         clearTimeout(persistTimerRef.current);
       }
     };
-  }, [user?.uid, dataLoaded, loading, stockItems, salesHistory, marketData]);
+  }, [user?.uid, dataLoaded, loading, stockItems, salesHistory, marketData, currentInstagramUsername, currentTiktokUsername, currentWhatsappNumber, absences, calendarEvents]);
 
   const handleLogin = async () => {
     try {
@@ -990,6 +913,8 @@ Berikan data yang AKURAT, REALISTIS, dan DAPAT DIVERIFIKASI.`
         onRecordSale={handleRecordSale}
         onAddMarketingExpense={handleAddMarketingExpense}
         onAddOtherIncome={handleAddOtherIncome}
+        calendarEvents={calendarEvents}
+        onSetCalendarEvents={setCalendarEvents}
       />
     );
   }
