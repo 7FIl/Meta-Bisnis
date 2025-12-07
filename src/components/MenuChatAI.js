@@ -183,7 +183,7 @@ export default function MenuChatAI({ businessName, onSend }) {
 
       <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
-          <div className="h-full flex flex-col items-center justify-center text-center">
+          <div className="h-full flex flex-col items-center justify-end text-center">
             <div className="mb-4">
               <i className="fas fa-comments text-4xl text-slate-300"></i>
             </div>
@@ -213,7 +213,7 @@ export default function MenuChatAI({ businessName, onSend }) {
         )}
         {messages.map((m) => (
           <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
-            <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${m.role === "user" ? "bg-indigo-600 text-white rounded-br-none" : "bg-slate-100 text-slate-800 rounded-bl-none border border-slate-200"}`}>
+            <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${m.role === "user" ? "bg-indigo-600 text-white rounded-br-none" : "bg-white text-slate-800 rounded-bl-none border border-slate-200"}`}>
               <div
                 className="text-sm whitespace-pre-wrap leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: formatText(m.text) }}

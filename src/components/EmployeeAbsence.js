@@ -157,7 +157,7 @@ export default function EmployeeAbsence({ absences, onAddAbsence, employees = []
             <i className="fas fa-list text-blue-500"></i> Daftar Karyawan Hari Ini
           </h4>
           {/* Warna container diubah menjadi putih (bg-white) di kedua mode */}
-          <div className="bg-white dark:bg-white border-2 border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+          <div className="bg-white dark:bg-white border-2 border-slate-200 dark:border-slate-300 rounded-xl overflow-hidden">
             <div className="max-h-60 overflow-y-auto scrollbar-hide">
               {employeesList.length === 0 ? (
                 <div className="p-4 text-sm text-slate-500 text-center">

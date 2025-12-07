@@ -180,11 +180,11 @@ export default function MenuPemasaranAI({
       {activeTab === "generate" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-50 via-white to-slate-50 border border-slate-100">
+            <div className="p-4 rounded-2xl border border-slate-100">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-xs text-slate-900">Platform</p>
-                  <p className="text-sm font-semibold text-slate-900">Pilih target distribusi</p>
+                  <p className="text-xs text-slate-700">Platform</p>
+                  <p className="text-sm font-semibold dark:text-slate-400">Pilih target distribusi</p>
                 </div>
                 <i className="far fa-paper-plane text-slate-500"></i>
               </div>
@@ -212,14 +212,14 @@ export default function MenuPemasaranAI({
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <p className="text-xs text-slate-700">Profil Brand</p>
-                  <p className="text-sm font-semibold text-slate-300">Disisipkan otomatis ke prompt</p>
+                  <p className="text-sm font-semibold dark:text-slate-400">Disisipkan otomatis ke prompt</p>
                 </div>
                 <i className="far fa-id-card text-slate-500"></i>
               </div>
               {brandContext.length ? (
                 <div className="flex flex-wrap gap-2">
                   {brandContext.map((item) => (
-                    <span key={item} className="px-3 py-1 rounded-full text-xs bg-slate-00 text-slate-00 border border-slate-200">
+                    <span key={item} className="px-3 py-1 rounded-full text-xs bg-white dark:bg-slate-300 dark:text-slate-800 text-slate-200 border border-slate-200">
                       {item}
                     </span>
                   ))}
@@ -260,10 +260,10 @@ export default function MenuPemasaranAI({
             <div className="p-4 h-full rounded-2xl border border-slate-200 bg-slate-50 flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-slate-700">Hasil AI</p>
-                  <p className="text-sm font-semibold text-slate-700">Copy siap posting</p>
+                  <p className="text-xs dark:text-slate-700 text-slate-800">Hasil AI</p>
+                  <p className="text-sm font-semibold text-slate-700 dark:text-slate-700">Copy siap posting</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 text-slate-500">
                   <button
                     onClick={handleCopy}
                     disabled={!result}
