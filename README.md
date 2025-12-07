@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 🚀 Meta Bisnis - Asisten Cerdas UMKM Indonesia
 
-## Getting Started
+**Meta Bisnis** adalah platform web terintegrasi berbasis AI yang dirancang untuk memberdayakan UMKM di Indonesia. Aplikasi ini membantu pengguna mulai dari tahap ideasi bisnis (konsultasi modal, lokasi, minat) hingga manajemen operasional sehari-hari (stok, keuangan, pemasaran, dan SDM).
 
-First, run the development server:
+Dibangun menggunakan **Next.js** dan ditenagai oleh **Groq AI (Llama 3)** serta **Firebase**, aplikasi ini menawarkan solusi *all-in-one* yang modern, responsif, dan mudah digunakan.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## ✨ Fitur Utama
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 1. 🤖 Konsultasi & Pendirian Bisnis (AI-Powered)
+* **Rekomendasi Bisnis:** Analisis peluang bisnis berdasarkan input modal, lokasi, dan minat pengguna.
+* **Analisis Finansial Mendalam:** Estimasi BEP (Break Even Point), ROI, dan margin keuntungan.
+* **Export Rincian Modal:** Menghasilkan file Excel (.xlsx) berisi rincian belanja modal dan proyeksi keuangan secara otomatis.
+* **Onboarding Fleksibel:** Mendukung pengguna yang baru ingin memulai bisnis atau yang sudah memiliki bisnis berjalan.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### 2. 📊 Dashboard Operasional
+* **Manajemen Stok (Inventory):** CRUD (Create, Read, Update, Delete) barang dengan pelacakan harga beli dan harga jual.
+* **Kasir & Riwayat Penjualan:** Pencatatan transaksi penjualan real-time yang terhubung langsung dengan pengurangan stok.
+* **Manajemen Karyawan:** Sistem absensi sederhana (Hadir, Sakit, Izin, Alfa) dan manajemen data pegawai.
+* **Kalender Kegiatan:** Penjadwalan event manual atau rencana konten pemasaran.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. 💰 Manajemen Keuangan
+* **Laporan Otomatis:** Perhitungan otomatis untuk Penjualan Kotor, Pendapatan Lain, dan Pengeluaran Pemasaran.
+* **Filter Periode:** Filter laporan keuangan berdasarkan rentang tanggal atau bulan tertentu.
+* **Ekspor Data:** Kemampuan mengunduh laporan keuangan dalam format CSV.
 
-## Learn More
+### 4. 📢 Studio Pemasaran AI & Market Intelligence
+* **Generator Konten:** Membuat caption Instagram, skrip TikTok, dan pesan broadcast WhatsApp menggunakan AI yang disesuaikan dengan *tone* brand.
+* **Market Intelligence:** Grafik trafik toko dan analisis tren pasar viral (menggunakan integrasi Tavily API untuk data real-time).
+* **Chatbot Bisnis:** Asisten virtual kontekstual yang memahami data bisnis pengguna untuk menjawab pertanyaan strategi.
 
-To learn more about Next.js, take a look at the following resources:
+## 🛠️ Tech Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+* **Frontend:** [Next.js 16](https://nextjs.org/) (App Router), React 19.
+* **Styling:** [Tailwind CSS v4](https://tailwindcss.com/).
+* **Backend / API:** Next.js API Routes.
+* **Database & Auth:** [Google Firebase](https://firebase.google.com/) (Firestore, Authentication, Storage).
+* **AI Integration:**
+    * [Groq API](https://groq.com/) (LLM Inference - Llama 3).
+    * [Tavily API](https://tavily.com/) (Real-time Web Search & Trends).
+* **Utilities:**
+    * `xlsx`: Generasi file Excel.
+    * `chart.js`: Visualisasi data grafik.
+    * `react-toastify` (Custom implementation): Notifikasi UI.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## ⚙️ Persyaratan Sistem
 
-## Deploy on Vercel
+* Node.js (versi 18.17 atau lebih baru)
+* npm / yarn / pnpm
+* Akun Firebase (untuk database dan autentikasi)
+* API Key Groq (untuk fitur AI)
+* API Key Tavily (untuk fitur pencarian tren)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🚀 Cara Instalasi & Menjalankan
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1.  **Clone Repository**
+    ```bash
+    git clone [https://github.com/username-anda/meta-bisnis.git](https://github.com/username-anda/meta-bisnis.git)
+    cd meta-bisnis
+    ```
+
+2.  **Install Dependencies**
+    ```bash
+    npm install
+    # atau
+    yarn install
+    ```
+
+3.  **Konfigurasi Environment Variables**
+    Buat file `.env.local` di root folder dan isi dengan kredensial berikut (lihat `Sample.env.txt`):
+
+    ```env
+    NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+    # Firebase Config
+    NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+    NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
+    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+    NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+
+    # AI Providers
+    TAVILY_API_KEY=tvly-xxxxxxxxxxxx
+    GROQ_API_KEY=gsk_xxxxxxxxxxxx
+    ```
+
+4.  **Jalankan Server Development**
+    ```bash
+    npm run dev
+    ```
+    Buka [http://localhost:3000](http://localhost:3000) di browser Anda.
+
+## 🔐 Aturan Keamanan & Privasi
+
+* **Autentikasi:** Menggunakan Firebase Auth. Hanya domain email umum (Gmail, Yahoo, dll) yang diizinkan mendaftar untuk mencegah spam bot.
+* **Data Pengguna:** Data bisnis dan profil disimpan di Firestore dengan aturan keamanan (Security Rules) yang membatasi akses hanya kepada pemilik data (`users/{uid}`).
+* **Verifikasi Email:** Pengguna diwajibkan memverifikasi email sebelum bisa login sepenuhnya.
+
+## 🤝 Kontribusi
+
+Kontribusi sangat diterima! Silakan buat *Pull Request* atau laporkan *Issues* jika menemukan bug atau memiliki ide fitur baru.
+
+1.  Fork repository ini.
+2.  Buat branch fitur baru (`git checkout -b fitur-keren`).
+3.  Commit perubahan Anda (`git commit -m 'Menambahkan fitur keren'`).
+4.  Push ke branch (`git push origin fitur-keren`).
+5.  Buat Pull Request.
+
+## 📄 Lisensi
+
+Proyek ini dilisensikan di bawah [MIT License](LICENSE).
+
+---
+*Dibuat dengan ❤️ untuk kemajuan UMKM Indonesia.*
