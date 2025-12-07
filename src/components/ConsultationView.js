@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { applyActionCode } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -14,8 +14,8 @@ import {
 import { useToast } from "./Toast";
 import { generateCapitalExcel } from '@/lib/excelGenerator';
 
-// Terima props baru: user, onLogin, onLogout
-export default function ConsultationView({ onSetupBusiness, businessData, loading, user, onLogin, onLogout }) {
+// Inner component that uses useSearchParams
+function ConsultationViewInner({ onSetupBusiness, businessData, loading, user, onLogin, onLogout }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
@@ -716,5 +716,16 @@ export default function ConsultationView({ onSetupBusiness, businessData, loadin
         )}
       </main>
     </div>
+  );
+}
+
+// Wrapper with Suspense boundary
+export default function ConsultationView(props) {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+      <div className="text-white text-xl">Loading...</div>
+    </div>}>
+      <ConsultationViewInner {...props} />
+    </Suspense>
   );
 }

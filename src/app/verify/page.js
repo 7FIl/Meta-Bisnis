@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { applyActionCode } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { resendVerificationEmail } from "@/lib/auth";
 
-export default function VerifyEmailPage() {
+function VerifyEmailPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState("idle");
@@ -243,5 +243,18 @@ export default function VerifyEmailPage() {
         )}
       </div>
     </div>
+  );
+}
+
+// Wrapper with Suspense boundary for useSearchParams
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading verification...</div>
+      </div>
+    }>
+      <VerifyEmailPageInner />
+    </Suspense>
   );
 }
