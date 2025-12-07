@@ -3,7 +3,7 @@
 
 import { useAuth } from "@/lib/auth";
 import { useEffect, useRef, useState } from "react";
-import { getTheme, setTheme, getCalendarEvents, saveCalendarEvents } from "@/lib/userSettings";
+import { getTheme, setTheme, getCalendarEvents, saveCalendarEvents, getUserSettings } from "@/lib/userSettings";
 import EmployeeAbsence from "./EmployeeAbsence";
 import MarketIntelligence from "./MarketIntelligence";
 import MenuPemasaranAI from "./MenuPemasaranAI";
@@ -57,6 +57,37 @@ export default function DashboardView({
   const currency = (v) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(v);
 
+  // Firebase fallback: Jika data props kosong tapi user sudah login, coba ambil dari Firebase
+  useEffect(() => {
+    if (!user?.uid || authLoading) return;
+
+    // Jika sudah ada data di props, tidak perlu load ulang
+    const hasData = (stockItems && stockItems.length > 0) || (salesHistory && salesHistory.length > 0);
+    if (hasData) {
+      console.log('[DashboardView] Data sudah ada di props, skip Firebase load');
+      return;
+    }
+
+    console.log('[DashboardView] Data kosong, mencoba diagnostik Firebase...');
+    
+    (async () => {
+      try {
+        const settings = await getUserSettings(user.uid);
+        if (settings && (settings.stockItems?.length > 0 || settings.salesHistory?.length > 0)) {
+          console.log('[DashboardView] Firebase data ditemukan:', {
+            stockItems: settings.stockItems?.length || 0,
+            salesHistory: settings.salesHistory?.length || 0,
+          });
+        } else {
+          console.log('[DashboardView] Firebase data kosong atau tidak ada');
+        }
+      } catch (err) {
+        console.error('[DashboardView] Gagal ambil dari Firebase:', err?.message || err);
+      }
+    })();
+  }, [user?.uid, authLoading, stockItems, salesHistory]);
+
+
   // Hitung total penjualan hari ini
   const calculateTodaySales = () => {
     // Menggunakan tanggal mock '2025-12-07' untuk konsistensi dengan mock data dari page.js
@@ -87,14 +118,6 @@ export default function DashboardView({
         // Kirim user.uid yang sebenarnya
         // ... (Logika sinkronisasi tema)
         setCurrentTheme(theme);
-        if (typeof document !== "undefined") {
-          const root = document.documentElement;
-          if (theme === "dark") {
-            root.classList.add("dark");
-          } else {
-            root.classList.remove("dark"); 
-          }
-        }
       });
       // Load calendar events from Firebase
       getCalendarEvents(user.uid).then((loadedEvents) => {
@@ -105,22 +128,45 @@ export default function DashboardView({
     } // Tambahkan user.uid dan authLoading ke dependency array
   }, [user, authLoading]);
 
-  const handleThemeToggle = async () => {
-    // Cek apakah user sudah tersedia
-    if (!user || !user.uid) {
-      console.warn("Tema tidak disimpan, user belum login.");
-      // Anda bisa menambahkan toast.info("Login untuk menyimpan preferensi tema") di sini
-      return;
+  // Apply theme class immediately when currentTheme changes (includes initial load)
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    if (currentTheme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
     }
+  }, [currentTheme]);
 
-    // 1. Tentukan tema baru berdasarkan state saat ini
+  // On first mount, initialize theme from localStorage if present (so toggle works before login)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem("theme");
+    if (saved && (saved === "dark" || saved === "light")) {
+      setCurrentTheme(saved);
+    }
+  }, []);
+
+  const handleThemeToggle = async () => {
+    // Toggle theme locally for instant feedback (works even when logged out)
     const newTheme = currentTheme === "light" ? "dark" : "light";
 
-    // 2. Simpan ke Firebase menggunakan user.uid yang sebenarnya
-    await setTheme(user.uid, newTheme);
-
-    // 3. SET STATE REACT LOKAL SEGERA
+    // Apply immediately in React state (effect will apply HTML class)
     setCurrentTheme(newTheme);
+
+    // Persist: save to Firestore if user is logged in, otherwise save to localStorage only
+    try {
+      if (user && user.uid) {
+        await setTheme(user.uid, newTheme);
+      } else if (typeof window !== "undefined") {
+        // setTheme will also apply class and localStorage when called, but
+        // we still call localStorage here to persist for anonymous users.
+        localStorage.setItem("theme", newTheme);
+      }
+    } catch (e) {
+      console.error("Failed to persist theme:", e);
+    }
   };
 
   // NEW FUNCTIONS FOR CALENDAR

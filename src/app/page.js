@@ -194,10 +194,31 @@ export default function Home() {
       }
       setLoading(true);
       try {
-        const data = await fetchBusinessData(user.uid);
+        // Prefer reading from the user's settings doc (same place MenuPengaturan writes)
+        let data = null;
+        try {
+          const settings = await getUserSettings(user.uid);
+          if (settings) {
+            data = {
+              stockItems: settings.stockItems || settings.businessData?.stockItems || [],
+              salesHistory: settings.salesHistory || settings.businessData?.salesHistory || [],
+              marketData: settings.marketData || settings.businessData?.marketData || DEFAULT_BUSINESS_DATA.marketData,
+            };
+          }
+        } catch (e) {
+          // ignore - we'll fallback to legacy collection
+          data = null;
+        }
+
+        if (!data) {
+          // fallback to legacy businessData collection
+          data = await fetchBusinessData(user.uid);
+        }
+
         const mappedSales = data.marketData?.sales?.length
           ? data.marketData.sales
           : mapSalesHistoryToFinance(data.salesHistory || []);
+
         if (cancelled) return;
         setStockItems(data.stockItems || []);
         setSalesHistory(data.salesHistory || []);
@@ -210,7 +231,7 @@ export default function Home() {
         });
         setDataLoaded(true);
       } catch (err) {
-        console.error('Failed to load business data:', err);
+        console.warn('Failed to load business data (fallback):', err?.message || err);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -229,7 +250,21 @@ export default function Home() {
       salesHistory,
       marketData,
     };
-    saveBusinessData(user.uid, payload);
+    // Save to the users doc (same place MenuPengaturan writes) to avoid
+    // permission mismatches. If that fails or is not allowed, fall back
+    // to the legacy businessData collection.
+    (async () => {
+      try {
+        const ok = await saveUserSettings(user.uid, payload);
+        if (!ok) {
+          // legacy fallback
+          await saveBusinessData(user.uid, payload);
+        }
+      } catch (e) {
+        console.warn('Failed to save to users doc, trying legacy collection:', e?.message || e);
+        try { await saveBusinessData(user.uid, payload); } catch (_) {}
+      }
+    })();
   }, [user?.uid, dataLoaded, stockItems, salesHistory, marketData]);
 
   const handleLogin = async () => {

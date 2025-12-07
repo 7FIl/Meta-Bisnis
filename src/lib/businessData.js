@@ -49,7 +49,14 @@ export async function saveBusinessData(userId, payload) {
       ...(payload || {}),
     };
     await setDoc(ref, merged, { merge: true });
+    return true;
   } catch (err) {
+    const msg = err?.message || String(err);
+    if (msg.toLowerCase().includes('permission') || msg.toLowerCase().includes('missing or insufficient')) {
+      console.warn('Permission denied when saving business data (suppressed):', msg);
+      return false;
+    }
     console.error('Failed to save business data:', err);
+    return false;
   }
 }
