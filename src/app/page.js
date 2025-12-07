@@ -1,14 +1,14 @@
 // src/app/page.js
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { onAuthStateChanged, deleteUser } from 'firebase/auth'; 
 import { auth } from '@/lib/firebase';
 import { saveUserSettings, getUserSettings } from '@/lib/userSettings';
 import { loginWithGoogle, logoutUser } from '@/lib/auth';
 import { useToast } from '@/components/Toast';
 import { useAlert } from '@/components/Alert';
-import { setTempData, getTempData, removeTempData, hasTempData } from '@/lib/cookies';
+import { setTempData, getTempData, removeTempData } from '@/lib/cookies';
 import { fetchBusinessData, saveBusinessData, DEFAULT_BUSINESS_DATA } from '@/lib/businessData';
 
 import ConsultationView from '@/components/ConsultationView';
@@ -79,7 +79,6 @@ export default function Home() {
             // CEK TEMP DATA: Jika ada data temporary dari consultation view, transfer ke Firebase
             const tempData = getTempData('meta_bisnis_temp');
             if (tempData && tempData.businessName) {
-              console.log('[Auth] Found temp data, transferring to Firebase:', tempData);
               // Cek apakah user dari AI recommendation (skipOnboarding = true)
               if (tempData.skipOnboarding) {
                 setShouldSkipOnboarding(true);
@@ -105,7 +104,6 @@ export default function Home() {
               
               // Save ke Firebase
               await saveUserSettings(currentUser.uid, mergedSettings);
-              console.log('[Auth] Temp data saved to Firebase');
               
               // Apply ke state
               setCurrentBusinessName(mergedSettings.businessName);
@@ -224,12 +222,6 @@ export default function Home() {
 
         if (cancelled) return;
         
-        console.log('[Load] Setting data from Firebase:', {
-          stockItems: data.stockItems?.length || 0,
-          salesHistory: data.salesHistory?.length || 0,
-          marketData: data.marketData
-        });
-        
         setStockItems(data.stockItems || []);
         setSalesHistory(data.salesHistory || []);
         setMarketData({
@@ -248,7 +240,6 @@ export default function Home() {
         ));
         if (hasOps && !onboardingCompleted) {
           setOnboardingCompleted(true);
-          markOnboardingCompleted();
         }
         setDataLoaded(true);
       } catch (err) {
@@ -268,7 +259,6 @@ export default function Home() {
     // PENTING: Jangan save jika data belum di-load atau masih loading
     // Ini mencegah state kosong menimpa data yang ada di Firebase
     if (!user?.uid || !dataLoaded || loading) {
-      console.log('[Persist] Skipping save - dataLoaded:', dataLoaded, 'loading:', loading);
       return;
     }
     
@@ -279,12 +269,6 @@ export default function Home() {
     
     // Debounce 3 detik - tunggu sampai user selesai melakukan perubahan
     persistTimerRef.current = setTimeout(() => {
-      console.log('[Persist] Saving data to Firebase...', {
-        stockItems: stockItems.length,
-        salesHistory: salesHistory.length,
-        marketDataKeys: Object.keys(marketData || {})
-      });
-      
       // PERBAIKAN: Hanya save field yang spesifik, merge akan mempertahankan field lain
       const payload = {
         stockItems,
@@ -311,7 +295,6 @@ export default function Home() {
             // legacy fallback
             await saveBusinessData(user.uid, payload);
           }
-          console.log('[Persist] ✅ Data saved successfully');
         } catch (e) {
           console.warn('[Persist] Failed to save to users doc, trying legacy collection:', e?.message || e);
           try { await saveBusinessData(user.uid, payload); } catch (_) {}
@@ -729,13 +712,6 @@ Berikan data yang AKURAT, REALISTIS, dan DAPAT DIVERIFIKASI.`
       setCurrentBusinessName(newBusinessData.name); // Set current name from the new data
       setCurrentBusinessType(newBusinessData.businessType || '');
       
-      console.log('[handleConsultAI] Business data parsed:', {
-        name: newBusinessData.name,
-        businessType: newBusinessData.businessType,
-        capitalBreakdownItems: newBusinessData.capitalBreakdown?.length || 0,
-        hasFinancialMetrics: !!newBusinessData.financialMetrics
-      });
-      
       // LOGIKA BARU: Simpan recommendation ke temporary storage (jika user belum login)
       // Data ini akan dipindahkan ke Firebase saat user melakukan login
       if (!user) {
@@ -749,7 +725,6 @@ Berikan data yang AKURAT, REALISTIS, dan DAPAT DIVERIFIKASI.`
           skipOnboarding: true, // Flag: user dari AI flow tidak perlu onboarding
         };
         setTempData('meta_bisnis_temp', tempPayload);
-        console.log('[handleConsultAI] Saved AI recommendation to temp storage (businessType:', tempPayload.businessType, ', skipOnboarding: true)');
       }
       
       // LOGIKA LAMA: Jika dari onboarding, langsung simpan dan pindah ke dashboard
