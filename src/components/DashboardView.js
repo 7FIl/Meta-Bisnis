@@ -654,7 +654,7 @@ export default function DashboardView({
                   salesHistory={salesHistory}
                 />
                 {/* NEW: Custom Calendar below the MarketIntelligence (grafik toko) - Full width like the graph */}
-                <div className="bg-white rounded-lg shadow p-4">
+                <div className="bg-white rounded-lg shadow p-4 h-1/2">
                   <h2 className="text-lg font-semibold mb-4 text-slate-800 dark:text-slate-700">
                     Kalender Acara
                   </h2>

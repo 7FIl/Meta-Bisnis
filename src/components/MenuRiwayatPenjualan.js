@@ -382,7 +382,7 @@ export default function MenuRiwayatPenjualan({
                     value={newSale.namaBarang}
                     readOnly
                     placeholder="Nama otomatis dari stok"
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 text-slate-800 dark:text-slate-700"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-100 text-slate-800 dark:text-slate-700"
                   />
                 </div>
                 <div>
@@ -410,7 +410,7 @@ export default function MenuRiwayatPenjualan({
                     readOnly
                     placeholder="Harga mengikuti stok"
                     min="0"
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-100 text-slate-800 dark:text-slate-700"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-100 text-slate-800 dark:text-slate-700"
                   />
                 </div>
               </>
