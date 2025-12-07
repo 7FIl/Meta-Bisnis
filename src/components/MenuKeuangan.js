@@ -1,27 +1,37 @@
 // src/components/MenuKeuangan.js
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import PeriodFilter from "./PeriodFilter";
 
 export default function MenuKeuangan({
   businessName = "Bisnis Anda",
   period = "2025-12",
-  salesData = null, // [{date, orderId, product, qty, price}]
-  incomes = null,   // [{date, source, amount}]
-  marketingExpenses = null, // [{date, channel, amount, note}]
+  salesData = null, // [{itemCode, product, qty, price}]
+  incomes = null,   // [{source, amount}]
+  marketingExpenses = null, // [{channel, amount, note}]
 }) {
+  // Parse initial period (YYYY-MM)
+  const [currentYear, setCurrentYear] = useState(parseInt(period.split('-')[0]) || 2025);
+  const [currentMonth, setCurrentMonth] = useState(parseInt(period.split('-')[1]) || 12);
+  const [filterMode, setFilterMode] = useState('all'); // 'all' | 'single' | 'range'
+  const [singleDate, setSingleDate] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [showCalendarPopup, setShowCalendarPopup] = useState(false);
+  
   // fallback contoh data bila tidak diberikan
   const SAMPLE_SALES = [
-    { date: "2025-11-24", orderId: "ORD001", product: "Nasi Goreng", qty: 10, price: 25000 },
-    { date: "2025-11-25", orderId: "ORD002", product: "Es Teh", qty: 20, price: 5000 },
+    { date: "2025-12-05", itemCode: "BRG001", product: "Nasi Goreng", qty: 10, price: 25000 },
+    { date: "2025-12-06", itemCode: "BRG002", product: "Es Teh", qty: 20, price: 5000 },
   ];
   const SAMPLE_INCOMES = [
-    { date: "2025-11-24", source: "Penjualan offline", amount: 200000 },
-    { date: "2025-11-25", source: "Penjualan online", amount: 150000 },
+    { date: "2025-12-05", source: "Penjualan offline", amount: 200000 },
+    { date: "2025-12-06", source: "Penjualan online", amount: 150000 },
   ];
   const SAMPLE_MARKETING = [
-    { date: "2025-11-20", channel: "Instagram Ads", amount: 50000, note: "Promo weekend" },
-    { date: "2025-11-22", channel: "Flyer", amount: 20000, note: "Distribusi lokal" },
+    { date: "2025-12-03", channel: "Instagram Ads", amount: 50000, note: "Promo weekend" },
+    { date: "2025-12-04", channel: "Flyer", amount: 20000, note: "Distribusi lokal" },
   ];
 
   const sales = salesData && salesData.length ? salesData : SAMPLE_SALES;
@@ -31,15 +41,70 @@ export default function MenuKeuangan({
   const currency = (v) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(v);
 
+  // Calculate auto date range for current month
+  const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1).toISOString().split('T')[0];
+  const lastDayOfMonth = new Date(currentYear, currentMonth, 0).toISOString().split('T')[0];
+  
+  // Auto update range dates when month/year changes or filter mode changes
+  useEffect(() => {
+    if (filterMode === 'range') {
+      // Initialize dengan hari pertama dan terakhir bulan jika belum ada
+      if (!startDate) setStartDate(firstDayOfMonth);
+      if (!endDate) setEndDate(lastDayOfMonth);
+    }
+  }, [currentMonth, currentYear, filterMode]);
+
+  // Apply date filter to all data
+  const filteredSales = useMemo(() => {
+    if (filterMode === 'all') return sales;
+    
+    if (filterMode === 'single' && singleDate) {
+      return sales.filter(s => s.date === singleDate);
+    }
+    
+    if (filterMode === 'range' && startDate && endDate) {
+      return sales.filter(s => s.date >= startDate && s.date <= endDate);
+    }
+    
+    return sales;
+  }, [sales, filterMode, singleDate, startDate, endDate]);
+
+  const filteredIncomes = useMemo(() => {
+    if (filterMode === 'all') return incs;
+    
+    if (filterMode === 'single' && singleDate) {
+      return incs.filter(i => i.date === singleDate);
+    }
+    
+    if (filterMode === 'range' && startDate && endDate) {
+      return incs.filter(i => i.date >= startDate && i.date <= endDate);
+    }
+    
+    return incs;
+  }, [incs, filterMode, singleDate, startDate, endDate]);
+
+  const filteredMarketing = useMemo(() => {
+    if (filterMode === 'all') return mkt;
+    
+    if (filterMode === 'single' && singleDate) {
+      return mkt.filter(m => m.date === singleDate);
+    }
+    
+    if (filterMode === 'range' && startDate && endDate) {
+      return mkt.filter(m => m.date >= startDate && m.date <= endDate);
+    }
+    
+    return mkt;
+  }, [mkt, filterMode, singleDate, startDate, endDate]);
+
   const totals = useMemo(() => {
-    const totalSales = sales.reduce((s, r) => s + (r.qty ? r.qty * (r.price || 0) : (r.amount || 0)), 0);
-    const totalIncome = incs.reduce((s, r) => s + (r.amount || 0), 0);
-    const totalMarketing = mkt.reduce((s, r) => s + (r.amount || 0), 0);
+    const totalSales = filteredSales.reduce((s, r) => s + (r.qty ? r.qty * (r.price || 0) : (r.amount || 0)), 0);
+    const totalIncome = filteredIncomes.reduce((s, r) => s + (r.amount || 0), 0);
+    const totalMarketing = filteredMarketing.reduce((s, r) => s + (r.amount || 0), 0);
     const net = totalIncome - totalMarketing;
     return { totalSales, totalIncome, totalMarketing, net };
-  }, [sales, incs, mkt]);
+  }, [filteredSales, filteredIncomes, filteredMarketing]);
 
-  const downloadRef = useRef(null);
   const [exporting, setExporting] = useState(false);
 
   const toCSV = ({ salesRows, incomeRows, marketingRows }) => {
@@ -47,18 +112,18 @@ export default function MenuKeuangan({
     rows.push([`Laporan Keuangan - ${businessName}`, `Periode: ${period}`]);
     rows.push([]);
     rows.push(["PENJUALAN"]);
-    rows.push(["Tanggal", "OrderId", "Produk", "Qty", "Harga Satuan", "Total"]);
+    rows.push(["Tanggal", "Kode Barang", "Produk", "Qty", "Harga Satuan", "Total"]);
     salesRows.forEach((r) =>
-      rows.push([r.date, r.orderId || "", r.product || "", r.qty ?? "", r.price ?? "", r.total ?? ""])
+      rows.push([r.date || "", r.itemCode || "", r.product || "", r.qty ?? "", r.price ?? "", r.total ?? ""])
     );
     rows.push([]);
     rows.push(["PENDAPATAN LAIN"]);
     rows.push(["Tanggal", "Sumber", "Jumlah"]);
-    incomeRows.forEach((r) => rows.push([r.date, r.source || "", r.amount ?? ""]));
+    incomeRows.forEach((r) => rows.push([r.date || "", r.source || "", r.amount ?? ""]));
     rows.push([]);
     rows.push(["PENGELUARAN PEMASARAN"]);
     rows.push(["Tanggal", "Kanal", "Jumlah", "Catatan"]);
-    marketingRows.forEach((r) => rows.push([r.date, r.channel || "", r.amount ?? "", r.note || ""]));
+    marketingRows.forEach((r) => rows.push([r.date || "", r.channel || "", r.amount ?? "", r.note || ""]));
     rows.push([]);
     rows.push(["RINGKASAN"]);
     rows.push(["Total Penjualan", totals.totalSales]);
@@ -110,8 +175,28 @@ export default function MenuKeuangan({
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-1 font-bold">Laporan Keuangan</h3>
-          <div className="text-l font-bold">{businessName} • Periode: {period}</div>
+          <div className="text-l font-bold flex items-center gap-4 mt-2">
+            <span>{businessName}</span>
+            
+            <PeriodFilter
+              currentYear={currentYear}
+              currentMonth={currentMonth}
+              onYearChange={setCurrentYear}
+              onMonthChange={setCurrentMonth}
+              filterMode={filterMode}
+              onFilterModeChange={setFilterMode}
+              singleDate={singleDate}
+              onSingleDateChange={setSingleDate}
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+              showCalendarPopup={showCalendarPopup}
+              onCalendarPopupToggle={setShowCalendarPopup}
+            />
+          </div>
         </div>
+
         <div className="flex gap-2">
           <button onClick={handleExportCSV} disabled={exporting} className="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg">
             {exporting ? "Mengekspor..." : "Export ke Excel (CSV)"}
@@ -141,7 +226,7 @@ export default function MenuKeuangan({
             <thead className="p-4 border border-slate-100 dark:border-slate-100 rounded-lg text-left">
               <tr>
                 <th className="px-3 py-2 text-slate-700 dark:text-slate-900">Tanggal</th>
-                <th className="px-3 py-2 text-slate-700 dark:text-slate-900">Order</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-900">Kode Barang</th>
                 <th className="px-3 py-2 text-slate-700 dark:text-slate-900">Produk</th>
                 <th className="px-3 py-2 text-slate-700 dark:text-slate-900">Qty</th>
                 <th className="px-3 py-2 text-slate-700 dark:text-slate-900">Harga</th>
@@ -149,12 +234,12 @@ export default function MenuKeuangan({
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-slate-50">
-              {sales.map((r, i) => {
+              {filteredSales.map((r, i) => {
                 const total = r.qty ? r.qty * (r.price || 0) : r.amount || 0;
                 return (
                   <tr key={i} className="border-t border-slate-100 dark:border-slate-700">
-                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.date}</td>
-                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.orderId || "-"}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.date || "-"}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.itemCode || "-"}</td>
                     <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.product || "-"}</td>
                     <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.qty ?? "-"}</td>
                     <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.price ? currency(r.price) : "-"}</td>
@@ -179,9 +264,9 @@ export default function MenuKeuangan({
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-slate-50">
-              {incs.map((r, i) => (
+              {filteredIncomes.map((r, i) => (
                 <tr key={i} className="border-t border-slate-100 dark:border-slate-700">
-                  <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.date}</td>
+                  <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.date || "-"}</td>
                   <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.source}</td>
                   <td className="px-3 py-2 font-semibold text-slate-800 dark:text-slate-900">{currency(r.amount)}</td>
                 </tr>
@@ -204,9 +289,9 @@ export default function MenuKeuangan({
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-slate-50">
-              {mkt.map((r, i) => (
+              {filteredMarketing.map((r, i) => (
                 <tr key={i} className="border-t border-slate-100 dark:border-slate-700">
-                  <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.date}</td>
+                  <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.date || "-"}</td>
                   <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.channel}</td>
                   <td className="px-3 py-2 font-semibold text-slate-800 dark:text-slate-900">{currency(r.amount)}</td>
                   <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{r.note || "-"}</td>
