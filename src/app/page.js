@@ -14,6 +14,19 @@ import ConsultationView from '@/components/ConsultationView';
 import DashboardView from '@/components/DashboardView';
 import OnboardingView from '@/components/OnboardingView'; // <-- IMPORTED
 
+const MOCK_SALES_DATA_TODAY = [
+  { date: "2025-12-07", orderId: "ORD005", product: "Americano", qty: 8, price: 15000 }, // 120.000
+  { date: "2025-12-07", orderId: "ORD006", product: "Latte", qty: 12, price: 20000 },  // 240.000
+];
+const MOCK_SALES_DATA_YESTERDAY = [
+  { date: "2025-12-06", orderId: "ORD004", product: "Croissant", qty: 5, price: 10000 }, // 50.000
+];
+const ALL_MOCK_SALES = [
+  ...MOCK_SALES_DATA_TODAY, 
+  ...MOCK_SALES_DATA_YESTERDAY,
+  { date: "2025-11-24", orderId: "ORD001", product: "Nasi Goreng", qty: 10, price: 25000 },
+];
+
 export default function Home() {
   const toast = useToast();
   const alert = useAlert();
@@ -23,7 +36,12 @@ export default function Home() {
   const [absences, setAbsences] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [showAdModal, setShowAdModal] = useState(false);
-  const [marketData, setMarketData] = useState(null);
+  const [marketData, setMarketData] = useState({
+    sales: ALL_MOCK_SALES, // Inisialisasi dengan mock data penjualan
+    period: new Date().toISOString().slice(0, 7),
+    incomes: [], 
+    marketing: [], 
+  });
   const [loading, setLoading] = useState(false);
 
   // State mock untuk nama pengguna dan bisnis yang bisa diubah di Pengaturan

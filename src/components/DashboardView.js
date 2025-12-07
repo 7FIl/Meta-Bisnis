@@ -43,6 +43,32 @@ export default function DashboardView({
   const [selectedDate, setSelectedDate] = useState(null); // Selected date for event panel
   const [newEvent, setNewEvent] = useState(""); // Input for new event
   const { user, loading: authLoading } = useAuth();
+  
+  // Helper function untuk format mata uang
+  const currency = (v) =>
+    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(v);
+
+  // Hitung total penjualan hari ini
+  const calculateTodaySales = () => {
+    // Menggunakan tanggal mock '2025-12-07' untuk konsistensi dengan mock data dari page.js
+    const today = "2025-12-07"; 
+    
+    // Ambil data sales dari marketData
+    const sales = marketData?.sales || [];
+    
+    // 1. Filter transaksi hari ini
+    const todaySales = sales.filter(item => item.date === today);
+    
+    // 2. Hitung totalnya: qty * price
+    const total = todaySales.reduce((sum, item) => {
+      const itemTotal = (item.qty && item.price) ? item.qty * item.price : item.amount || 0;
+      return sum + itemTotal;
+    }, 0);
+    
+    return total;
+  };
+
+  const totalSalesToday = calculateTodaySales();
 
   // Theme initialization - default light, honor saved preference
   useEffect(() => {
@@ -475,7 +501,7 @@ export default function DashboardView({
           </div>
         ) : (
           <>
-            <div className="bg-white border border-slate-200 dark:border-slate-700 text-slate-900 rounded-2xl p-6 mb-8 shadow-lg flex justify-between items-center">
+           <div className="bg-white border border-slate-200 dark:border-slate-700 text-slate-900 rounded-2xl p-6 mb-8 shadow-lg flex justify-between items-center">
               <div>
                 <h1 className="text-xl font-bold">Halo, {userName}!</h1>
                 <p className="text-sm text-slate-700">
@@ -486,13 +512,36 @@ export default function DashboardView({
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <EmployeeAbsence
-                absences={absences}
-                onAddAbsence={onAddAbsence}
-                employees={employees}
-                onAddEmployee={onAddEmployee}
-                onDeleteEmployee={onDeleteEmployee}
-              />
+              {/* Kolom Kiri: Total Penjualan & Kehadiran Karyawan */}
+              <div className="lg:col-span-1 space-y-6">
+                
+                {/* KOTAK BARU: TOTAL PENJUALAN HARI INI */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 h-fit">
+                  <h3 className="font-bold text-slate-800 dark:text-slate-900 mb-4 flex items-center gap-2">
+                    <i className="fas fa-sack-dollar text-green-500"></i> Total Penjualan Hari Ini
+                  </h3>
+                  <div className="rounded-xl p-4 border">
+                    <p className="text-xs text-slate-800 dark:text-slate-900 uppercase font-semibold">Penjualan Kotor</p>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-700 mt-1">
+                      {currency(totalSalesToday)}
+                    </h2>
+                    <p className="text-xs text-slate-600 dark:text-slate-600 mt-2">
+                      Per {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* KOMPONEN ASLI: Kehadiran Karyawan */}
+                <EmployeeAbsence
+                  absences={absences}
+                  onAddAbsence={onAddAbsence}
+                  employees={employees}
+                  onAddEmployee={onAddEmployee}
+                  onDeleteEmployee={onDeleteEmployee}
+                />
+              </div>
+
+              {/* Kolom Kanan: Market Intelligence & Kalender */}
               <div className="lg:col-span-2 space-y-6">
                 <MarketIntelligence
                   businessName={businessName}
