@@ -32,6 +32,9 @@ export default function Home() {
   const [currentBusinessLocation, setCurrentBusinessLocation] = useState('Lokasi Tidak Diketahui');
   const [currentBusinessDescription, setCurrentBusinessDescription] = useState('');
   const [currentBusinessType, setCurrentBusinessType] = useState('');
+  const [currentInstagramUsername, setCurrentInstagramUsername] = useState('');
+  const [currentTiktokUsername, setCurrentTiktokUsername] = useState('');
+  const [currentWhatsappNumber, setCurrentWhatsappNumber] = useState('');
   
   // Auth listener
   useEffect(() => {
@@ -94,6 +97,9 @@ export default function Home() {
                 setCurrentBusinessLocation(settings.businessLocation || 'Lokasi Tidak Diketahui');
                 setCurrentBusinessDescription(settings.businessDescription || '');
                 setCurrentBusinessType(settings.businessType || '');
+                setCurrentInstagramUsername(settings.instagramUsername || '');
+                setCurrentTiktokUsername(settings.tiktokUsername || '');
+                setCurrentWhatsappNumber(settings.whatsappNumber || '');
                 setEmployees(settings.employees || []);
                 
                 // Cek apakah ada data bisnis
@@ -456,8 +462,11 @@ Berikan data yang AKURAT, REALISTIS, dan DAPAT DIVERIFIKASI.`
     businessName, 
     userName, 
     businessLocation, 
-    businessDescription = currentBusinessDescription,
-    businessType = currentBusinessType
+    businessDescription,
+    businessType,
+    instagramUsername,
+    tiktokUsername,
+    whatsappNumber
   }) => {
     // 1. Update mock user name state
     setCurrentUserName(userName);
@@ -467,6 +476,9 @@ Berikan data yang AKURAT, REALISTIS, dan DAPAT DIVERIFIKASI.`
     setCurrentBusinessLocation(businessLocation);
     setCurrentBusinessDescription(businessDescription);
     setCurrentBusinessType(businessType);
+    setCurrentInstagramUsername(instagramUsername);
+    setCurrentTiktokUsername(tiktokUsername);
+    setCurrentWhatsappNumber(whatsappNumber);
     
     // 3. Create new businessData object
     const newBusinessData = { 
@@ -487,6 +499,9 @@ Berikan data yang AKURAT, REALISTIS, dan DAPAT DIVERIFIKASI.`
       businessLocation,
       businessDescription,
       businessType,
+      instagramUsername,
+      tiktokUsername,
+      whatsappNumber,
       businessData: newBusinessData,
     };
     
@@ -542,6 +557,9 @@ Berikan data yang AKURAT, REALISTIS, dan DAPAT DIVERIFIKASI.`
         businessLocation={currentBusinessLocation}
         businessDescription={currentBusinessDescription}
         businessType={currentBusinessType}
+        instagramUsername={currentInstagramUsername}
+        tiktokUsername={currentTiktokUsername}
+        whatsappNumber={currentWhatsappNumber}
         onLogout={handleLogout}
         absences={absences}
         onAddAbsence={handleAddAbsence}

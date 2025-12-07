@@ -3,7 +3,7 @@
 
 import { useAuth } from "@/lib/auth";
 import { useEffect, useRef, useState } from "react";
-import { getTheme, setTheme } from "@/lib/userSettings";
+import { getTheme, setTheme, getCalendarEvents, saveCalendarEvents } from "@/lib/userSettings";
 import EmployeeAbsence from "./EmployeeAbsence";
 import MarketIntelligence from "./MarketIntelligence";
 import MenuPemasaranAI from "./MenuPemasaranAI";
@@ -28,6 +28,9 @@ export default function DashboardView({
   businessLocation,
   businessDescription,
   businessType = "",
+  instagramUsername = "",
+  tiktokUsername = "",
+  whatsappNumber = "",
 }) {
   const chartRef = useRef(null);
   const [selectedMenu, setSelectedMenu] = useState("beranda");
@@ -35,7 +38,7 @@ export default function DashboardView({
 
   // NEW STATE FOR CALENDAR
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [events, setEvents] = useState({}); // Object: key is date string (YYYY-MM-DD), value is array of event strings
+  const [events, setEvents] = useState({}); // Object: key is date string (YYYY-MM-DD), value is array of event objects
   const [selectedDate, setSelectedDate] = useState(null); // Selected date for event panel
   const [newEvent, setNewEvent] = useState(""); // Input for new event
   const { user, loading: authLoading } = useAuth();
@@ -56,6 +59,12 @@ export default function DashboardView({
             root.classList.remove("dark"); 
           }
         }
+      });
+      // Load calendar events from Firebase
+      getCalendarEvents(user.uid).then((loadedEvents) => {
+        setEvents(loadedEvents || {});
+      }).catch((err) => {
+        console.error("Failed to load calendar events:", err);
       });
     } // Tambahkan user.uid dan authLoading ke dependency array
   }, [user, authLoading]);
@@ -124,18 +133,38 @@ export default function DashboardView({
 
   const handleAddEvent = () => {
     if (!selectedDate || !newEvent.trim()) return;
-    setEvents((prev) => ({
-      ...prev,
-      [selectedDate]: [...(prev[selectedDate] || []), newEvent.trim()],
-    }));
+    const eventObj = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      title: newEvent.trim(),
+      type: "Catatan",
+      content: "",
+      source: "manual",
+    };
+    const updatedEvents = {
+      ...events,
+      [selectedDate]: [...(events[selectedDate] || []), eventObj],
+    };
+    setEvents(updatedEvents);
     setNewEvent("");
+    // Save to Firebase
+    if (user && user.uid) {
+      saveCalendarEvents(user.uid, updatedEvents).catch((err) => {
+        console.error("Failed to save calendar events:", err);
+      });
+    }
   };
 
-  const handleDeleteEvent = (dateKey, index) => {
+  const handleDeleteEvent = (dateKey, id) => {
     setEvents((prev) => {
       const newEvents = { ...prev };
-      newEvents[dateKey] = newEvents[dateKey].filter((_, i) => i !== index);
-      if (newEvents[dateKey].length === 0) delete newEvents[dateKey];
+      newEvents[dateKey] = (newEvents[dateKey] || []).filter((item) => item.id !== id);
+      if (newEvents[dateKey]?.length === 0) delete newEvents[dateKey];
+      // Save to Firebase
+      if (user && user.uid) {
+        saveCalendarEvents(user.uid, newEvents).catch((err) => {
+          console.error("Failed to save calendar events:", err);
+        });
+      }
       return newEvents;
     });
   };
@@ -146,6 +175,30 @@ export default function DashboardView({
       currentDate.getMonth() + 1
     ).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     return events[dateKey] || [];
+  };
+
+  const addMarketingEvent = ({ date, type, content, platform }) => {
+    if (!date || !type || !content) return;
+    const dateKey = date;
+    const eventObj = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      title: `Iklan - ${type}`,
+      type,
+      content,
+      platform,
+      source: "marketing",
+    };
+    const updatedEvents = {
+      ...events,
+      [dateKey]: [...(events[dateKey] || []), eventObj],
+    };
+    setEvents(updatedEvents);
+    // Save to Firebase
+    if (user && user.uid) {
+      saveCalendarEvents(user.uid, updatedEvents).catch((err) => {
+        console.error("Failed to save calendar events:", err);
+      });
+    }
   };
 
   const monthNames = [
@@ -163,6 +216,12 @@ export default function DashboardView({
     "Desember",
   ];
   const dayNames = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+
+  const marketingEntries = Object.entries(events).flatMap(([dateKey, arr]) =>
+    (arr || [])
+      .filter((item) => item.source === "marketing")
+      .map((item) => ({ ...item, date: dateKey }))
+  );
 
   return (
     // Base colors set to pure light (white) by default, dark remains for toggle
@@ -266,9 +325,15 @@ export default function DashboardView({
         {selectedMenu === "pemasaran" ? (
           <MenuPemasaranAI
             businessName={businessName}
+            businessLocation={businessLocation}
+            businessType={businessType}
+            instagramUsername={instagramUsername}
+            tiktokUsername={tiktokUsername}
+            whatsappNumber={whatsappNumber}
+            calendarEntries={marketingEntries}
+            onAddCalendarItem={addMarketingEvent}
+            onDeleteCalendarItem={handleDeleteEvent}
             salesData={marketData?.sales}
-            // HAPUS PROP isDarkMode
-            // isDarkMode={isDarkMode}
             onSave={(payload) => {
               console.log("Konten disimpan:", payload);
             }}
@@ -385,6 +450,9 @@ export default function DashboardView({
               currentBusinessLocation={businessLocation}
               currentBusinessDescription={businessDescription}
               currentBusinessType={businessType}
+              currentInstagramUsername={instagramUsername}
+              currentTiktokUsername={tiktokUsername}
+              currentWhatsappNumber={whatsappNumber}
               onUpdateSettings={onUpdateSettings}
               onDeleteAccount={onDeleteAccount}
             />
@@ -456,10 +524,22 @@ export default function DashboardView({
                       <div className="grid grid-cols-7 gap-1">
                         {getDaysInMonth(currentDate).map((day, index) => {
                           const eventCount = getEventsForDay(day).length;
-                          const dots =
-                            eventCount > 0
-                              ? ".".repeat(Math.min(eventCount, 5))
-                              : "";
+                          const badgeClass = (() => {
+                            switch (true) {
+                              case eventCount === 1:
+                                return "bg-blue-100 text-blue-700";
+                              case eventCount === 2:
+                                return "bg-cyan-100 text-cyan-700";
+                              case eventCount === 3:
+                                return "bg-amber-100 text-amber-700";
+                              case eventCount === 4:
+                                return "bg-orange-100 text-orange-700";
+                              case eventCount >= 5:
+                                return "bg-red-100 text-red-700";
+                              default:
+                                return "";
+                            }
+                          })();
                           return (
                             <div
                               key={index}
@@ -479,11 +559,9 @@ export default function DashboardView({
                               }`}
                             >
                               {day}
-                              {dots && (
+                              {eventCount > 0 && (
                                 <div className="mt-1">
-                                  <div className="bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs rounded-full px-1">
-                                    {dots}
-                                  </div>
+                                  <div className={`${badgeClass} text-xs rounded-full px-2 py-0.5 font-semibold`}>{eventCount}</div>
                                 </div>
                               )}
                             </div>
@@ -499,29 +577,38 @@ export default function DashboardView({
                             Acara pada {selectedDate}
                           </h3>
                           <div className="space-y-2 max-h-48 overflow-y-auto mb-4">
-                            {(events[selectedDate] || []).map(
-                              (event, index) => (
-                                <div
-                                  key={index}
-                                  className="flex justify-between items-center bg-slate-100 dark:bg-slate-100 rounded px-2 py-1"
-                                >
-                                  <span className="text-sm text-slate-800 dark:text-slate-600">
-                                    {event}
-                                  </span>
-                                  <button
-                                    onClick={() =>
-                                      handleDeleteEvent(selectedDate, index)
-                                    }
-                                    className="text-red-500 hover:text-red-700 text-sm"
-                                    title="Hapus Acara"
-                                  >
-                                    <i className="fas fa-trash-alt"></i>
-                                  </button>
+                            {(events[selectedDate] || []).map((event) => (
+                              <div
+                                key={event.id}
+                                className="flex justify-between items-start bg-slate-100 dark:bg-slate-100 rounded px-2 py-2 gap-3"
+                              >
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-600">
+                                      {event.title}
+                                    </p>
+                                    {event.type && (
+                                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                        {event.type}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {event.content && (
+                                    <p className="text-xs text-slate-600 overflow-hidden text-ellipsis">
+                                      {event.content}
+                                    </p>
+                                  )}
                                 </div>
-                              )
-                            )}
-                            {(!events[selectedDate] ||
-                              events[selectedDate].length === 0) && (
+                                <button
+                                  onClick={() => handleDeleteEvent(selectedDate, event.id)}
+                                  className="text-red-500 hover:text-red-700 text-sm"
+                                  title="Hapus Acara"
+                                >
+                                  <i className="fas fa-trash-alt"></i>
+                                </button>
+                              </div>
+                            ))}
+                            {(!events[selectedDate] || events[selectedDate].length === 0) && (
                               <p className="text-sm text-slate-500 dark:text-slate-600">
                                 Tidak ada acara untuk tanggal ini.
                               </p>

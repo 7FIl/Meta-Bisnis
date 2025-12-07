@@ -188,10 +188,13 @@ export default function MenuPengaturan({
   currentBusinessLocation,
   currentBusinessDescription = '',
   currentBusinessType = '',
+  currentInstagramUsername = '',
+  currentTiktokUsername = '',
+  currentWhatsappNumber = '',
   onUpdateSettings,
   onDeleteAccount,
   currentTheme, 
-  onThemeChange,
+  onThemeChange,
 }) {
   // use injected hooks if available, otherwise fallback to wrappers above
   const toast = (typeof useToast === 'function') ? useToast() : _toast;
@@ -201,6 +204,9 @@ export default function MenuPengaturan({
   const [newBusinessLocation, setNewBusinessLocation] = useState(currentBusinessLocation);
   const [newBusinessDescription, setNewBusinessDescription] = useState(currentBusinessDescription);
   const [newBusinessType, setNewBusinessType] = useState(currentBusinessType);
+  const [newInstagramUsername, setNewInstagramUsername] = useState(currentInstagramUsername);
+  const [newTiktokUsername, setNewTiktokUsername] = useState(currentTiktokUsername);
+  const [newWhatsappNumber, setNewWhatsappNumber] = useState(currentWhatsappNumber);
   // state
   const [newProvince, setNewProvince] = useState("");
   const [newCity, setNewCity] = useState("");
@@ -213,6 +219,9 @@ export default function MenuPengaturan({
     setNewUserName(currentUserName);
     setNewBusinessDescription(currentBusinessDescription || '');
     setNewBusinessType(currentBusinessType || '');
+    setNewInstagramUsername(currentInstagramUsername || '');
+    setNewTiktokUsername(currentTiktokUsername || '');
+    setNewWhatsappNumber(currentWhatsappNumber || '');
     // parse currentBusinessLocation into province/city if stored as "Province, City"
     if (currentBusinessLocation && currentBusinessLocation.includes(",")) {
       const parts = currentBusinessLocation.split(",").map(p => p.trim());
@@ -224,7 +233,7 @@ export default function MenuPengaturan({
     }
 
     // Sync theme state from HTML element
-  }, [currentBusinessName, currentUserName, currentBusinessLocation, currentBusinessDescription, currentBusinessType]);
+  }, [currentBusinessName, currentUserName, currentBusinessLocation, currentBusinessDescription, currentBusinessType, currentInstagramUsername, currentTiktokUsername, currentWhatsappNumber]);
 
   // Handler untuk toggle tema
   const handleThemeToggle = async () => {
@@ -275,6 +284,9 @@ export default function MenuPengaturan({
         businessLocation: newProvince + (newCity ? `, ${newCity}` : ""),
         businessDescription: newBusinessDescription,
         businessType: newBusinessType,
+        instagramUsername: newInstagramUsername,
+        tiktokUsername: newTiktokUsername,
+        whatsappNumber: newWhatsappNumber,
       });
 
       toast.success("Pengaturan berhasil diperbarui! AI & Tren Pasar telah dioptimasi.");
@@ -313,7 +325,10 @@ export default function MenuPengaturan({
     newProvince === _currProvince &&
     newCity === _currCity &&
     (newBusinessDescription || '') === (currentBusinessDescription || '') &&
-    (newBusinessType || '') === (currentBusinessType || '');
+    (newBusinessType || '') === (currentBusinessType || '') &&
+    (newInstagramUsername || '') === (currentInstagramUsername || '') &&
+    (newTiktokUsername || '') === (currentTiktokUsername || '') &&
+    (newWhatsappNumber || '') === (currentWhatsappNumber || '');
 
   return (
     <div className="space-y-6">
@@ -413,6 +428,64 @@ export default function MenuPengaturan({
                   ))}
                 </select>
                 {!newProvince && <p className="text-xs text-slate-400 mt-1">Pilih provinsi terlebih dahulu untuk memilih kota.</p>}
+              </div>
+
+              {/* Social Media Usernames */}
+              <div className="md:col-span-2">
+                <h4 className="text-md font-semibold text-slate-800 dark:text-slate-900 mb-3 mt-4">Username Media Sosial (Opsional)</h4>
+                <p className="text-xs text-slate-500 mb-3">Bantu AI mengarahkan pelanggan ke akun sosial media Anda dalam strategi pemasaran.</p>
+              </div>
+
+              <div className="md:col-span-1">
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-900 mb-2 flex items-center gap-2">
+                  <i className="fab fa-instagram text-pink-600"></i> Instagram
+                </label>
+                <div className="flex items-center">
+                  <span className="px-3 py-2 bg-slate-100 border border-r-0 border-slate-300 rounded-l-lg text-sm text-slate-600">@</span>
+                  <input
+                    type="text"
+                    value={newInstagramUsername}
+                    onChange={(e) => setNewInstagramUsername(e.target.value)}
+                    placeholder="username"
+                    className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-r-lg text-sm bg-white text-slate-900"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div className="md:col-span-1">
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-900 mb-2 flex items-center gap-2">
+                  <i className="fab fa-tiktok"></i> TikTok
+                </label>
+                <div className="flex items-center">
+                  <span className="px-3 py-2 bg-slate-100 border border-r-0 border-slate-300 rounded-l-lg text-sm text-slate-600">@</span>
+                  <input
+                    type="text"
+                    value={newTiktokUsername}
+                    onChange={(e) => setNewTiktokUsername(e.target.value)}
+                    placeholder="username"
+                    className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-r-lg text-sm bg-white text-slate-900"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-900 mb-2 flex items-center gap-2">
+                  <i className="fab fa-whatsapp text-green-600"></i> WhatsApp
+                </label>
+                <div className="flex items-center">
+                  <span className="px-3 py-2 bg-slate-100 border border-r-0 border-slate-300 rounded-l-lg text-sm text-slate-600">+62</span>
+                  <input
+                    type="text"
+                    value={newWhatsappNumber}
+                    onChange={(e) => setNewWhatsappNumber(e.target.value)}
+                    placeholder="8123456789"
+                    className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-r-lg text-sm bg-white text-slate-900"
+                    disabled={loading}
+                  />
+                </div>
+                <p className="text-xs text-slate-500 mt-1">Tanpa 0 di awal. Contoh: 8123456789</p>
               </div>
 
               {/* Additional settings can be added here */}

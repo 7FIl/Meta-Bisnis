@@ -53,7 +53,17 @@ export async function POST(req) {
     // 1. Terima payload dari Frontend
     const body = await req.json();
     // Accept either `message` (string) or `messages` (array of {role,content}) from frontend.
-    const { message, history, businessName = '', businessType = '' } = body;
+    const {
+      message,
+      history,
+      businessName = '',
+      businessType = '',
+      businessLocation = '',
+      brandTone = '',
+      targetAudience = '',
+      uniqueSellingPoints = '',
+    } = body;
+    const { platform = '' } = body;
     const messagesFromBody = Array.isArray(body.messages) ? body.messages : null;
     console.log('[api/chat] incoming request', { hasMessage: !!message, hasMessagesArray: !!messagesFromBody, model: body.model, max_tokens: body.max_tokens, topic: body.topic, businessType });
     
@@ -68,6 +78,125 @@ export async function POST(req) {
         webData = webSearchResult;
         console.log('[api/chat] Tavily web search completed');
       }
+    }
+
+    // === FASE GROQ: Jalur khusus untuk topik pembuatan konten ===
+    if (body.topic === 'content_creation') {
+      const groqApiKey = process.env.GROQ_API_KEY;
+      if (!groqApiKey) {
+        console.error('[api/chat] Missing GROQ_API_KEY');
+        return NextResponse.json({ success: false, error: 'Server missing GROQ_API_KEY' }, { status: 500 });
+      }
+
+      // Extract social media usernames
+      const instagramUsername = body.instagramUsername || '';
+      const tiktokUsername = body.tiktokUsername || '';
+      const whatsappNumber = body.whatsappNumber || '';
+
+      const platformPrompt = (() => {
+        switch ((platform || '').toLowerCase()) {
+          case 'instagram':
+            const igCTA = instagramUsername 
+              ? `Ajak follow atau DM ke @${instagramUsername}.` 
+              : `Ajak follow atau DM.`;
+            return `Kamu adalah Social Media Manager khusus Instagram. Buat caption singkat, persuasif, dengan emoji relevan dan 5-8 hashtag populer & kontekstual.
+Wajib pakai alur AIDA (Attention → Interest → Desire → Action):
+- Attention: buka dengan hook kuat.
+- Interest: bangun rasa ingin tahu pakai masalah/statistik singkat.
+- Desire: jelaskan solusi & keunggulan produk.
+- Action: ${igCTA}
+Bahasa Indonesia, nada ramah, tidak terlalu panjang.`;
+          case 'tiktok':
+            const ttCTA = tiktokUsername
+              ? `Follow @${tiktokUsername} untuk konten lainnya atau hubungi untuk info lebih lanjut.`
+              : `Follow untuk konten lainnya atau hubungi untuk info lebih lanjut.`;
+            return `Kamu adalah Penulis Naskah Video TikTok. Buat skrip detik-per-detik maksimal 60 detik.
+
+            Format WAJIB:
+            beri tulisan awalan seperti berikut Konten tiktok yang bisa anda gunakan untuk mempromosikan (isi konten) anda.
+            Visual = [rentang detik]: [deskripsi visual]
+            Audio = [rentang detik]: [teks audio/VO atau caption layar]
+            Tuliskan blok sesuai kebutuhan ide; jumlah blok bebas, namun setiap baris harus mengikuti format Visual= / Audio= di atas.
+            Terapkan alur AIDA: mulai dengan hook (Attention), munculkan masalah/statistik (Interest), tunjukkan solusi & keunggulan produk (Desire), tutup dengan CTA jelas (Action: ${ttCTA}).
+            Mulai dengan hook kuat, sisipkan CTA, akhiri dengan closing yang kuat.
+            Bahasa Indonesia, ringkas, energik, mudah dipindai.`;
+          case 'whatsapp':
+            const waCTA = whatsappNumber
+              ? `Chat via WhatsApp ke ${whatsappNumber} untuk info lebih lanjut.`
+              : `Balas pesan ini atau kunjungi lokasi kami untuk info lebih lanjut.`;
+            return `Kamu adalah Copywriter Direct Marketing untuk WhatsApp. Buat pesan personal, ramah, to-the-point (80-140 kata) dengan alur AIDA: hook pembuka (Attention), masalah/statistik singkat (Interest), solusi & keunggulan produk (Desire), CTA jelas (Action: ${waCTA}), lalu tutup dengan sapaan hangat. Hindari hashtag berlebihan, gunakan 1-2 emoji seperlunya.`;
+          default:
+            return `Kamu adalah asisten konten serbaguna. Buat materi promosi singkat dan jelas sesuai platform umum.
+Ikuti alur AIDA: Attention (hook), Interest (masalah/statistik), Desire (solusi/keunggulan produk), Action (CTA spesifik: beli/daftar/download/kunjungi).
+Gunakan Bahasa Indonesia, nada ramah, sertakan CTA.`;
+        }
+      })();
+
+      const brandContextParts = [];
+      if (businessName) brandContextParts.push(`Nama brand: ${businessName}`);
+      if (businessType) brandContextParts.push(`Kategori/jenis: ${businessType}`);
+      if (businessLocation) brandContextParts.push(`Lokasi: ${businessLocation}`);
+      if (targetAudience) brandContextParts.push(`Target audiens: ${targetAudience}`);
+      if (uniqueSellingPoints) brandContextParts.push(`Keunggulan: ${uniqueSellingPoints}`);
+      if (brandTone) brandContextParts.push(`Gaya komunikasi brand: ${brandTone}`);
+      
+      // Add social media handles to brand context
+      const socialMediaParts = [];
+      if (instagramUsername) socialMediaParts.push(`Instagram: @${instagramUsername}`);
+      if (tiktokUsername) socialMediaParts.push(`TikTok: @${tiktokUsername}`);
+      if (whatsappNumber) socialMediaParts.push(`WhatsApp: ${whatsappNumber}`);
+      
+      if (socialMediaParts.length > 0) {
+        brandContextParts.push(`Akun sosial media: ${socialMediaParts.join(', ')}`);
+      }
+      
+      const brandContextText = brandContextParts.length
+        ? `Gunakan konteks brand berikut untuk menjaga konsistensi identitas:
+${brandContextParts.map((p) => `- ${p}`).join('\n')}`
+        : '';
+
+      const userPrompt = message || body.prompt || 'Buatkan konten promosi singkat.';
+
+      const groqMessages = [
+        { role: 'system', content: [platformPrompt, brandContextText].filter(Boolean).join('\n\n') },
+        { role: 'user', content: userPrompt }
+      ];
+
+      const model = 'llama-3.3-70b-versatile';
+      const max_tokens = body.max_tokens || 800;
+      const temperature = typeof body.temperature !== 'undefined' ? body.temperature : 0.7;
+
+      let groqRes;
+      let groqData;
+      try {
+        groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${groqApiKey}`
+          },
+          body: JSON.stringify({
+            model,
+            messages: groqMessages,
+            max_tokens,
+            temperature
+          })
+        });
+
+        groqData = await groqRes.json().catch(() => null);
+      } catch (err) {
+        console.error('[api/chat] error calling Groq', err);
+        return NextResponse.json({ success: false, error: 'Groq request failed', details: String(err) }, { status: 502 });
+      }
+
+      if (!groqRes.ok) {
+        console.error('[api/chat] Groq error', groqRes.status, groqData);
+        return NextResponse.json({ success: false, error: groqData?.error || 'Groq error', providerStatus: groqRes.status, providerBody: groqData }, { status: 502 });
+      }
+
+      const replyText = groqData?.choices?.[0]?.message?.content || '';
+
+      return NextResponse.json({ success: true, reply: replyText });
     }
 
     // 2. Setup Payload ke Kolosal AI

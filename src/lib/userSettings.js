@@ -81,3 +81,34 @@ export const setTheme = async (uid, theme) => {
     localStorage.setItem("theme", theme);
   }
 };
+
+/**
+ * Menyimpan calendar events ke Firestore
+ * @param {string} uid - User ID
+ * @param {Object} events - Calendar events object
+ */
+export const saveCalendarEvents = async (uid, events) => {
+  if (!uid) return;
+  try {
+    await saveUserSettings(uid, { calendarEvents: events });
+  } catch (error) {
+    console.error("Error saving calendar events:", error);
+    throw error;
+  }
+};
+
+/**
+ * Mengambil calendar events dari Firestore
+ * @param {string} uid - User ID
+ * @returns {Promise<Object>} Calendar events object
+ */
+export const getCalendarEvents = async (uid) => {
+  if (!uid) return {};
+  try {
+    const settings = await getUserSettings(uid);
+    return settings?.calendarEvents || {};
+  } catch (error) {
+    console.error("Error getting calendar events:", error);
+    return {};
+  }
+};

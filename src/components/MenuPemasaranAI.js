@@ -3,30 +3,36 @@
 
 import { useEffect, useRef, useState } from "react";
 
-export default function MenuPemasaranAI({ businessName, onSave, salesData, onBack }) {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [duration, setDuration] = useState("00:30"); // format mm:ss
-  const [igUrl, setIgUrl] = useState("");
-  const [tiktokUrl, setTiktokUrl] = useState("");
-  const [fbUrl, setFbUrl] = useState("");
+export default function MenuPemasaranAI({
+  businessName = "",
+  businessLocation = "",
+  businessType = "",
+  brandTone = "",
+  targetAudience = "",
+  uniqueSellingPoints = "",
+  instagramUsername = "",
+  tiktokUsername = "",
+  whatsappNumber = "",
+  calendarEntries = [],
+  onAddCalendarItem,
+  onDeleteCalendarItem,
+  onSave,
+  salesData,
+  onBack,
+}) {
+  // keep props signature stable even if unused for now
+  void onSave;
+  void salesData;
+
+  const [activeTab, setActiveTab] = useState("generate"); // generate | calendar | ads
+  const [platform, setPlatform] = useState("instagram");
+  const [brief, setBrief] = useState("");
+  const [contentType, setContentType] = useState("Instagram");
+  const [saveDate, setSaveDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState("");
   const toastRef = useRef(null);
-
-  // Chart refs & state
-  const chartRef = useRef(null);
-  const chartInstanceRef = useRef(null);
-  const [chartType, setChartType] = useState("radar"); // 'radar' | 'line' | 'bar'
-
-  // fallback sample sales data (weekly)
-  const SAMPLE_SALES = {
-    labels: ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"],
-    values: [12, 19, 7, 14, 22, 18, 16],
-  };
-
-  const sales = salesData && salesData.length
-    ? { labels: salesData.map(s => s.label), values: salesData.map(s => s.value) }
-    : SAMPLE_SALES;
 
   const showToast = (msg = "Sukses") => {
     setToast(msg);
@@ -34,245 +40,336 @@ export default function MenuPemasaranAI({ businessName, onSave, salesData, onBac
     toastRef.current = setTimeout(() => setToast(""), 2500);
   };
 
-  const handleGenerate = () => {
-    if (!title) {
-      showToast("Isi judul konten terlebih dahulu");
+  const handleGenerate = async () => {
+    if (!brief.trim()) {
+      showToast("Isi ide atau detail konten terlebih dahulu");
       return;
     }
-    setContent(
-      `Judul: ${title}\n\nDeskripsi singkat: Ide konten untuk "${title}" — tampilkan keunggulan ${businessName || "bisnis Anda"}, CTA ke WhatsApp/IG. Durasi: ${duration}.`
-    );
-    showToast("Konten dibuat");
-  };
+    setLoading(true);
+    setResult("");
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic: "content_creation",
+          platform,
+          message: brief,
+          businessName,
+          businessLocation,
+          businessType,
+          brandTone,
+          targetAudience,
+          uniqueSellingPoints,
+          instagramUsername,
+          tiktokUsername,
+          whatsappNumber,
+        }),
+      });
 
-  const handleSave = () => {
-    const payload = { title, content, duration, igUrl, tiktokUrl, fbUrl };
-    if (onSave) onSave(payload);
-    showToast("Konten disimpan");
-  };
-
-  // render chart helper
-  const renderChart = (type = chartType) => {
-    if (typeof window === "undefined" || !window.Chart || !chartRef.current) return;
-
-    if (chartInstanceRef.current) {
-      chartInstanceRef.current.destroy();
-      chartInstanceRef.current = null;
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        showToast(json.error || "Gagal membuat konten");
+        return;
+      }
+      setResult(json.reply || "");
+      setContentType(platform.charAt(0).toUpperCase() + platform.slice(1));
+    } catch (err) {
+      console.error("generate error", err);
+      showToast("Gagal memanggil AI");
+    } finally {
+      setLoading(false);
     }
-
-    const ctx = chartRef.current.getContext("2d");
-
-    const commonDataset = {
-      label: "Penjualan",
-      data: sales.values,
-      backgroundColor: type === "radar"
-        ? "rgba(59,130,246,0.15)"
-        : "rgba(59,130,246,0.25)",
-      borderColor: "rgb(59,130,246)",
-      tension: 0.3,
-      fill: type !== "bar" ? true : false,
-    };
-
-    const config = {
-      type: type,
-      data: {
-        labels: sales.labels,
-        datasets: [commonDataset],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: type !== "line" ? true : false } },
-        scales: type === "radar" ? {} : {
-          y: { beginAtZero: true, grid: { color: "rgba(15,23,42,0.05)" } },
-          x: { grid: { display: false } },
-        },
-      },
-    };
-
-    chartInstanceRef.current = new window.Chart(ctx, config);
   };
 
-  useEffect(() => {
-    // initial render
-    renderChart(chartType);
-    return () => {
-      if (chartInstanceRef.current) chartInstanceRef.current.destroy();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const handleCopy = () => {
+    if (!result) return;
+    navigator.clipboard.writeText(result).then(() => showToast("Disalin"));
+  };
 
-  useEffect(() => {
-    // re-render when chart type or sales data changes
-    renderChart(chartType);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chartType, sales.labels.join(","), sales.values.join(",")]);
+  const handleSaveToCalendar = () => {
+    if (!result) {
+      showToast("Generate konten dulu");
+      return;
+    }
+    if (!saveDate) {
+      showToast("Pilih tanggal publikasi");
+      return;
+    }
+    if (typeof onAddCalendarItem === "function") {
+      onAddCalendarItem({
+        date: saveDate,
+        type: contentType || platform,
+        content: result,
+        platform,
+      });
+      showToast("Disimpan ke kalender");
+    }
+  };
 
-  useEffect(() => {
-    return () => clearTimeout(toastRef.current);
-  }, []);
+  useEffect(() => () => clearTimeout(toastRef.current), []);
+
+  const brandContext = [
+    businessName ? `Nama brand: ${businessName}` : "",
+    businessLocation ? `Lokasi: ${businessLocation}` : "",
+    businessType ? `Kategori: ${businessType}` : "",
+    targetAudience ? `Audiens: ${targetAudience}` : "",
+    uniqueSellingPoints ? `Keunggulan: ${uniqueSellingPoints}` : "",
+    brandTone ? `Gaya komunikasi: ${brandTone}` : "",
+  ].filter(Boolean);
+
+  const tabs = [
+    { key: "generate", label: "Buat Konten" },
+    { key: "calendar", label: "Kalender" },
+    { key: "ads", label: "Iklan & Data" },
+  ];
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    const [y, m, d] = dateStr.split("-");
+    if (!y || !m || !d) return dateStr;
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Agu",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Des",
+    ];
+    return `${d} ${monthNames[Number(m) - 1]} ${y}`;
+  };
 
   return (
     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between mb-6">
+        <button
+          onClick={() => {
+            if (typeof onBack === "function") return onBack();
+            if (typeof window !== "undefined" && window.history && window.history.length) window.history.back();
+          }}
+          className="text-sm text-slate-600 hover:text-slate-900 flex items-center gap-2"
+        >
+          <i className="fas fa-arrow-left"></i>
+          <span>Kembali ke Dashboard</span>
+        </button>
+        {businessName && <span className="text-xs text-slate-500">{businessName}</span>}
+      </div>
+
+      <div className="flex gap-2 mb-6">
+        {tabs.map((tab) => (
           <button
-            onClick={() => {
-              if (typeof onBack === "function") return onBack();
-              if (typeof window !== "undefined" && window.history && window.history.length) window.history.back();
-            }}
-            className="text-sm text-slate-500 hover:text-slate-900 flex items-center gap-2"
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-4 py-2 rounded-full text-sm border transition-colors ${
+              activeTab === tab.key
+                ? "bg-slate-900 text-white border-slate-900"
+                : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+            }`}
           >
-            <i className="fas fa-arrow-left"></i>
-            <span>Kembali ke Dashboard</span>
+            {tab.label}
           </button>
-        </div>
-
-        <span className="text-xs text-slate-500">{businessName}</span>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-3">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Judul Konten</label>
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Contoh: Promo Nasi Goreng Spesial"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-            />
-          </div>
+      {activeTab === "generate" && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-50 via-white to-slate-50 border border-slate-100">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-xs text-slate-500">Platform</p>
+                  <p className="text-sm font-semibold text-slate-900">Pilih target distribusi</p>
+                </div>
+                <i className="far fa-paper-plane text-slate-500"></i>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {["instagram", "tiktok", "whatsapp"].map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => {
+                      setPlatform(p);
+                      setContentType(p.charAt(0).toUpperCase() + p.slice(1));
+                    }}
+                    className={`px-4 py-2 rounded-xl text-sm border capitalize transition-colors ${
+                      platform === p
+                        ? "bg-indigo-600 text-white border-indigo-600"
+                        : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          {/* Layout Durasi dan Tombol Generate */}
-          <div className="flex gap-2 items-end">
-            <div className="flex-1">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Durasi (mm:ss)</label>
-              <input
-                value={duration}
-                onChange={(e) => setDuration(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+            <div className="p-4 rounded-2xl bg-white border border-slate-200">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-xs text-slate-500">Profil Brand</p>
+                  <p className="text-sm font-semibold text-slate-900">Disisipkan otomatis ke prompt</p>
+                </div>
+                <i className="far fa-id-card text-slate-500"></i>
+              </div>
+              {brandContext.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {brandContext.map((item) => (
+                    <span key={item} className="px-3 py-1 rounded-full text-xs bg-slate-100 text-slate-700 border border-slate-200">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500">Lengkapi nama bisnis, lokasi, dan detail brand di pengaturan supaya konten lebih konsisten.</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-700">Brief Konten</label>
+              <textarea
+                value={brief}
+                onChange={(e) => setBrief(e.target.value)}
+                placeholder="Ceritakan produk, promo, dan audiens. Contoh: Promo diskon 20% kopi susu untuk pelanggan kantor, highlight pakai kopi lokal."
+                rows={8}
+                className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200"
               />
+              <div className="text-xs text-slate-500">Semakin spesifik detailnya, semakin tajam copywriting dari AI.</div>
             </div>
-            <button
-              onClick={handleGenerate}
-              className="w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm h-[38px] flex items-center justify-center"
-            >
-              Generate
-            </button>
+
+            <div className="flex flex-wrap gap-3 items-center">
+              <button
+                onClick={handleGenerate}
+                disabled={loading}
+                className={`px-4 py-2 rounded-xl text-sm text-white flex items-center gap-2 shadow-sm ${
+                  loading ? "bg-slate-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"
+                }`}
+              >
+                {loading ? <i className="fas fa-spinner fa-spin"></i> : <i className="far fa-magic"></i>}
+                {loading ? "Membuat..." : "Generate Konten"}
+              </button>
+              <span className="text-xs text-slate-500">Tunggu beberapa detik, hasil akan muncul di panel kanan.</span>
+            </div>
           </div>
 
-          {/* Tautan IG dengan Icon di Label */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center">
-              <i className="fab fa-instagram mr-1 text-pink-600"></i> Tautan IG
-            </label>
-            <input
-              value={igUrl}
-              onChange={(e) => setIgUrl(e.target.value)}
-              placeholder="https://instagram.com/username"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-            />
-          </div>
-
-          {/* Tautan TikTok dengan Icon di Label */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center">
-              <i className="fab fa-tiktok mr-1"></i> Tautan TikTok
-            </label>
-            <input
-              value={tiktokUrl}
-              onChange={(e) => setTiktokUrl(e.target.value)}
-              placeholder="https://tiktok.com/@username"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-            />
-          </div>
-
-          {/* Tautan Facebook dengan Icon di Label */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center">
-              <i className="fab fa-facebook-f mr-1 text-blue-600"></i> Tautan Facebook
-            </label>
-            <input
-              value={fbUrl}
-              onChange={(e) => setFbUrl(e.target.value)}
-              placeholder="https://facebook.com/page"
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-            />
-          </div>
-
-          {/* Final Button Group (Hanya Simpan) */}
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={handleSave}
-              className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm"
-            >
-              Simpan
-            </button>
+          <div className="h-full">
+            <div className="p-4 h-full rounded-2xl border border-slate-200 bg-slate-50 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-500">Hasil AI</p>
+                  <p className="text-sm font-semibold text-slate-900">Copy siap posting</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleCopy}
+                    disabled={!result}
+                    className={`px-3 py-2 text-xs rounded-lg border flex items-center gap-2 ${
+                      result ? "text-slate-700 border-slate-300 hover:border-slate-400" : "text-slate-400 border-slate-200 cursor-not-allowed"
+                    }`}
+                  >
+                    <i className="far fa-copy"></i>
+                    Salin
+                  </button>
+                  <button
+                    onClick={handleSaveToCalendar}
+                    disabled={!result}
+                    className={`px-3 py-2 text-xs rounded-lg border flex items-center gap-2 ${
+                      result ? "text-green-700 border-green-300 hover:border-green-400" : "text-slate-400 border-slate-200 cursor-not-allowed"
+                    }`}
+                  >
+                    <i className="far fa-calendar-plus"></i>
+                    Simpan
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="space-y-1">
+                  <label className="block text-slate-600">Tanggal publish</label>
+                  <input
+                    type="date"
+                    value={saveDate}
+                    onChange={(e) => setSaveDate(e.target.value)}
+                    className="w-full px-2 py-1 border border-slate-300 rounded-lg text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-slate-600">Jenis konten</label>
+                  <input
+                    type="text"
+                    value={contentType}
+                    onChange={(e) => setContentType(e.target.value)}
+                    placeholder="Contoh: TikTok - Soft selling"
+                    className="w-full px-2 py-1 border border-slate-300 rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+              <div className="flex-1 rounded-xl bg-white border border-slate-100 p-3 text-sm text-slate-800 overflow-y-auto whitespace-pre-wrap min-h-[240px]">
+                {result || <span className="text-slate-400">Hasil akan tampil di sini setelah generate.</span>}
+              </div>
+            </div>
           </div>
         </div>
+      )}
 
-        <div className="space-y-3">
-          {/* Chart controls */}
-          <div className="flex items-center justify-between">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700">Grafik Penjualan</label>
-              <div className="text-xs text-slate-500">Tampilkan data penjualan dalam bentuk grafik</div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setChartType("radar")}
-                className={`px-3 py-1 text-xs rounded ${chartType === "radar" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-900"}`}
-              >
-                Radar
-              </button>
-              <button
-                onClick={() => setChartType("line")}
-                className={`px-3 py-1 text-xs rounded ${chartType === "line" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-900"}`}
-              >
-                Line
-              </button>
-              <button
-                onClick={() => setChartType("bar")}
-                className={`px-3 py-1 text-xs rounded ${chartType === "bar" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-900"}`}
-              >
-                Bar
-              </button>
-            </div>
+      {activeTab === "calendar" && (
+        <div className="space-y-4">
+          <div className="p-4 border border-slate-200 rounded-2xl bg-slate-50">
+            <p className="font-semibold text-slate-800 mb-1">Kalender Konten</p>
+            <p className="text-sm text-slate-600">Simpan ide AI dan lihat jadwal posting.</p>
           </div>
 
-          <div className="w-full h-44 p-2 border border-slate-100 rounded-lg bg-white">
-            <canvas ref={chartRef} className="w-full h-full" />
-          </div>
-
-          <label className="block text-xs font-semibold text-slate-700 mb-1">Preview Isi Konten</label>
-          <div className="w-full h-44 p-3 border border-slate-100 rounded-lg bg-slate-50 text-sm overflow-y-auto whitespace-pre-wrap">
-            {content || <span className="text-slate-400">Preview akan muncul di sini setelah generate.</span>}
-          </div>
-
-          <div className="pt-2 text-xs text-slate-500">
-            Tips: tambahkan CTA jelas dan gunakan durasi sesuai platform (IG Reels 15-60s, TikTok 15-60s, FB 30-120s).
-          </div>
-
-          <div className="flex gap-2 pt-3">
-            <a href={igUrl || "#"} target="_blank" rel="noreferrer" className="text-xs text-pink-600 hover:underline flex items-center gap-1">
-              <i className="fab fa-instagram"></i> Buka IG
-            </a>
-            <a href={tiktokUrl || "#"} target="_blank" rel="noreferrer" className="text-xs text-black-600 hover:underline flex items-center gap-1">
-              <i className="fab fa-tiktok"></i> Buka TikTok
-            </a>
-            <a href={fbUrl || "#"} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-              <i className="fab fa-facebook-f"></i> Buka Facebook
-            </a>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {calendarEntries && calendarEntries.length > 0 ? (
+              calendarEntries.map((item, idx) => (
+                <div key={idx} className="border border-slate-200 rounded-xl bg-white shadow-sm p-4 flex flex-col gap-2 relative">
+                  <button
+                    onClick={() => {
+                      if (typeof onDeleteCalendarItem === "function") {
+                        onDeleteCalendarItem(item.date || item.dateKey, item.id);
+                        showToast("Dihapus dari kalender");
+                      }
+                    }}
+                    className="absolute top-2 right-2 text-red-500 hover:text-red-700 text-xs p-1 rounded hover:bg-red-50 transition-colors"
+                    title="Hapus"
+                  >
+                    <i className="fas fa-times"></i>
+                  </button>
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-700 pr-6">
+                    <span>{formatDate(item.date || item.dateKey)}</span>
+                    <span className="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 text-[11px]">
+                      {item.type || "Konten"}
+                    </span>
+                  </div>
+                  <div className="text-sm text-slate-800 whitespace-pre-wrap leading-relaxed">
+                    {item.content || item.title}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="md:col-span-2 lg:col-span-3">
+                <div className="border border-dashed border-slate-300 rounded-2xl p-6 text-center text-slate-500 bg-white">
+                  Belum ada konten yang disimpan. Generate dulu, lalu klik "Simpan".
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Toast */}
+      {activeTab === "ads" && (
+        <div className="p-6 border border-dashed border-slate-300 rounded-2xl text-center text-slate-500 bg-slate-50">
+          <p className="font-semibold text-slate-700 mb-1">Iklan & Data</p>
+          <p className="text-sm">Segmentasi audiens, ide iklan, dan analitik akan muncul di sini.</p>
+        </div>
+      )}
+
       {toast && (
         <div className="fixed right-6 bottom-6 z-50">
-          <div className="bg-slate-900 text-white text-sm px-4 py-2 rounded shadow">
-            {toast}
-          </div>
+          <div className="bg-slate-900 text-white text-sm px-4 py-2 rounded shadow">{toast}</div>
         </div>
       )}
     </div>
