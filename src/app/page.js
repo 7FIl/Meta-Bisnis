@@ -13,6 +13,7 @@ import { fetchBusinessData, saveBusinessData, DEFAULT_BUSINESS_DATA } from '@/li
 
 import ConsultationView from '@/components/ConsultationView';
 import DashboardView from '@/components/DashboardView';
+import OnboardingView from '@/components/OnboardingView';
 
 const mapSalesHistoryToFinance = (history = []) =>
   history.map((s) => {
@@ -31,6 +32,7 @@ export default function Home() {
   const alert = useAlert();
   const [user, setUser] = useState(null);
   const [currentView, setCurrentView] = useState('consultation'); // 'consultation', 'onboarding', atau 'dashboard'
+  const [shouldSkipOnboarding, setShouldSkipOnboarding] = useState(false); // Flag untuk skip onboarding jika dari AI
   const [businessData, setBusinessData] = useState(null);
   const [absences, setAbsences] = useState([]);
   const [calendarEvents, setCalendarEvents] = useState({}); // Calendar events: { 'YYYY-MM-DD': [{ id, title, type, content, source }] }
@@ -78,6 +80,10 @@ export default function Home() {
             const tempData = getTempData('meta_bisnis_temp');
             if (tempData && tempData.businessName) {
               console.log('[Auth] Found temp data, transferring to Firebase:', tempData);
+              // Cek apakah user dari AI recommendation (skipOnboarding = true)
+              if (tempData.skipOnboarding) {
+                setShouldSkipOnboarding(true);
+              }
               // Merge dengan default settings
               const mergedSettings = {
                 businessName: tempData.businessName,
@@ -139,13 +145,21 @@ export default function Home() {
                   setBusinessData(settings.businessData);
                 }
 
-                // ONBOARDING DISABLED: Semua user langsung ke dashboard
+                // Returning user: langsung ke dashboard
                 setCurrentView('dashboard');
                 setOnboardingCompleted(true);
               } else {
-                // Jika dokumen settings sama sekali tidak ada di Firebase -> User Baru -> Dashboard
-                setCurrentView('dashboard');
-                setOnboardingCompleted(true);
+                // Jika dokumen settings tidak ada di Firebase -> User Baru
+                // Cek apakah dari AI temp data dengan skipOnboarding flag
+                if (shouldSkipOnboarding) {
+                  // User dari AI di ConsultationView -> langsung ke dashboard tanpa onboarding
+                  setCurrentView('dashboard');
+                  setOnboardingCompleted(false); // Masih dianggap baru tapi skip onboarding
+                } else {
+                  // User baru murni (dari registration flow) -> show onboarding
+                  setCurrentView('onboarding');
+                  setOnboardingCompleted(false);
+                }
               }
             }
 
@@ -732,9 +746,10 @@ Berikan data yang AKURAT, REALISTIS, dan DAPAT DIVERIFIKASI.`
           businessType: newBusinessData.businessType || '',
           businessData: newBusinessData,
           userName: 'Pengguna', // Default, akan diisi saat setup
+          skipOnboarding: true, // Flag: user dari AI flow tidak perlu onboarding
         };
         setTempData('meta_bisnis_temp', tempPayload);
-        console.log('[handleConsultAI] Saved AI recommendation to temp storage (businessType:', tempPayload.businessType, ')');
+        console.log('[handleConsultAI] Saved AI recommendation to temp storage (businessType:', tempPayload.businessType, ', skipOnboarding: true)');
       }
       
       // LOGIKA LAMA: Jika dari onboarding, langsung simpan dan pindah ke dashboard
@@ -858,11 +873,35 @@ Berikan data yang AKURAT, REALISTIS, dan DAPAT DIVERIFIKASI.`
   const handleSetupComplete = async (settingsPayload) => {
       // Use existing update settings logic to save to state and Firestore
       await handleUpdateSettings(settingsPayload);
-      await markOnboardingCompleted();
-      // Directly transition to dashboard
+      
+      // Mark onboarding as completed in Firebase
+      if (auth.currentUser?.uid) {
+        try {
+          await saveUserSettings(auth.currentUser.uid, { onboardingCompleted: true });
+          setOnboardingCompleted(true);
+        } catch (e) {
+          console.error('Failed marking onboarding completed:', e);
+        }
+      }
+      
+      // Transition to dashboard
       setCurrentView('dashboard');
   }
 
+
+  // NEW VIEW: ONBOARDING
+  if (currentView === 'onboarding' && user && !onboardingCompleted) {
+    return (
+      <OnboardingView
+        user={user}
+        onConsultAI={(input, setupBusiness) => handleConsultAI(input, setupBusiness, true)} 
+        onSetupComplete={handleSetupComplete}
+        businessData={businessData}
+        loading={loading}
+        businessType={currentBusinessType}
+      />
+    );
+  }
 
   // Show dashboard if user requested it and is logged in.
   if (currentView === 'dashboard' && user) {
