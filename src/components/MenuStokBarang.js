@@ -13,11 +13,14 @@ export default function MenuStokBarang({
 }) {
   const toast = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [newItem, setNewItem] = useState({
+    kodeBarang: '',
     name: '',
     qty: 0,
     unit: 'pcs',
-    price: 0,
+    buyPrice: 0,
+    sellPrice: 0,
   });
 
   const currency = (v) =>
@@ -25,31 +28,53 @@ export default function MenuStokBarang({
 
   const totals = useMemo(() => {
     const totalItems = stockItems.reduce((sum, item) => sum + (item.qty || 0), 0);
-    const totalValue = stockItems.reduce((sum, item) => sum + (item.qty || 0) * (item.price || 0), 0);
+    const totalValue = stockItems.reduce((sum, item) => sum + (item.qty || 0) * (item.buyPrice || item.price || 0), 0);
     return { totalItems, totalValue };
   }, [stockItems]);
 
   const handleAddSubmit = (e) => {
     e.preventDefault();
-    if (!newItem.name.trim() || newItem.qty <= 0 || newItem.price <= 0) {
-      toast.error('Mohon isi Nama, Jumlah > 0, dan Harga Beli > 0.');
+    if (!newItem.kodeBarang.trim() || !newItem.name.trim() || newItem.qty <= 0 || newItem.buyPrice <= 0 || newItem.sellPrice <= 0) {
+      toast.error('Mohon isi Kode, Nama, Jumlah > 0, Harga Beli & Jual > 0.');
       return;
     }
 
-    onAddStockItem({
+    const payload = {
       ...newItem,
       qty: parseInt(newItem.qty),
-      price: parseInt(newItem.price),
-    });
+      buyPrice: parseInt(newItem.buyPrice),
+      sellPrice: parseInt(newItem.sellPrice),
+    };
 
-    setNewItem({ name: '', qty: 0, unit: 'pcs', price: 0 });
+    if (editingId) {
+      onUpdateStockItem({ ...payload, id: editingId });
+      toast.success('Stok berhasil diperbarui!');
+    } else {
+      onAddStockItem({ ...payload, id: newItem.kodeBarang });
+      toast.success('Stok baru berhasil ditambahkan!');
+    }
+
+    setNewItem({ kodeBarang: '', name: '', qty: 0, unit: 'pcs', buyPrice: 0, sellPrice: 0 });
+    setEditingId(null);
     setShowAddForm(false);
-    toast.success('Stok baru berhasil ditambahkan!');
   };
 
   const handleDelete = (id) => {
     onDeleteStockItem(id);
     toast.info('Item stok dihapus.');
+  };
+
+  const startEdit = (item) => {
+    setShowAddForm(true);
+    setEditingId(item.id);
+    setNewItem({
+      kodeBarang: item.kodeBarang || '',
+      name: item.name || '',
+      qty: item.qty || 0,
+      unit: item.unit || 'pcs',
+      buyPrice: item.buyPrice || item.price || 0,
+      sellPrice: item.sellPrice || 0,
+    });
   };
 
   return (
@@ -72,21 +97,31 @@ export default function MenuStokBarang({
 
       {/* Summary Card */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="p-4 border border-slate-100 dark:border-slate-700 rounded-lg bg-indigo-50 dark:bg-slate-800">
-          <div className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Total Jenis Barang</div>
-          <div className="block text-xl font-bold text-slate-800 dark:text-slate-100 mt-1">{stockItems.length}</div>
+        <div className="p-4 border border-slate-100 dark:border-slate-700 rounded-lg">
+          <div className="block text-sm font-semibold text-slate-700 dark:text-slate-900">Total Jenis Barang</div>
+          <div className="block text-xl font-bold text-slate-800 dark:text-slate-900 mt-1">{stockItems.length}</div>
         </div>
-        <div className="p-4 border border-slate-100 dark:border-slate-700 rounded-lg bg-green-50 dark:bg-slate-800">
-          <div className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Total Nilai Stok</div>
-          <div className="block text-xl font-bold text-slate-800 dark:text-slate-100 mt-1">{currency(totals.totalValue)}</div>
+        <div className="p-4 border border-slate-100 dark:border-slate-700 rounded-lg">
+          <div className="block text-sm font-semibold text-slate-700 dark:text-slate-900">Total Nilai Stok</div>
+          <div className="block text-xl font-bold text-slate-800 dark:text-slate-900 mt-1">{currency(totals.totalValue)}</div>
         </div>
       </div>
 
       {/* Add Form */}
       {showAddForm && (
         <form onSubmit={handleAddSubmit} className="mb-6 p-4 border border-blue-300 rounded-lg bg-blue-50 dark:bg-slate-700 space-y-3">
-          <h4 className="text-lg font-bold text-blue-800 dark:text-blue-200 mb-3">Input Barang Baru</h4>
+          <h4 className="text-lg font-bold text-blue-800 dark:text-blue-200 mb-3">{editingId ? 'Edit Barang' : 'Input Barang Baru'}</h4>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Kode Barang</label>
+              <input
+                type="text"
+                value={newItem.kodeBarang}
+                onChange={(e) => setNewItem({ ...newItem, kodeBarang: e.target.value })}
+                placeholder="Cth: BRG001"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-800"
+              />
+            </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nama Barang</label>
               <input
@@ -117,23 +152,33 @@ export default function MenuStokBarang({
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-800"
               />
             </div>
-            <div className="md:col-span-2">
+            <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Harga Beli Satuan (Rp)</label>
               <input
                 type="number"
-                value={newItem.price}
-                onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
+                value={newItem.buyPrice}
+                onChange={(e) => setNewItem({ ...newItem, buyPrice: e.target.value })}
                 min="0"
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-800"
               />
             </div>
-            <div className='md:col-span-2 flex items-end'>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Harga Jual Satuan (Rp)</label>
+              <input
+                type="number"
+                value={newItem.sellPrice}
+                onChange={(e) => setNewItem({ ...newItem, sellPrice: e.target.value })}
+                min="0"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white text-slate-800"
+              />
+            </div>
+            <div className='md:col-span-4 flex items-end'>
                 <button
                     type="submit"
-                    disabled={!newItem.name.trim() || newItem.qty <= 0 || newItem.price <= 0}
+                    disabled={!newItem.kodeBarang.trim() || !newItem.name.trim() || newItem.qty <= 0 || newItem.buyPrice <= 0 || newItem.sellPrice <= 0}
                     className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white py-2 rounded-lg font-medium transition"
                 >
-                    Simpan Stok
+                    {editingId ? 'Perbarui Stok' : 'Simpan Stok'}
                 </button>
             </div>
           </div>
@@ -144,17 +189,19 @@ export default function MenuStokBarang({
       <div className="mb-6">
         <h3 className="text-lg font-bold mb-3">Daftar Inventaris ({totals.totalItems} unit)</h3>
         <div className="overflow-x-auto border border-slate-200 dark:border-slate-500 rounded-lg">
-          <table className="w-full text-sm">
-            <thead className="p-4 bg-slate-50 dark:bg-slate-700 text-left">
+          <table className="w-full text-sm ">
+            <thead className="p-4 border border-slate-100 dark:border-slate-100 rounded-lg text-left">
               <tr>
-                <th className="px-3 py-2 text-slate-700 dark:text-slate-200">Nama Barang</th>
-                <th className="px-3 py-2 text-slate-700 dark:text-slate-200">Jumlah</th>
-                <th className="px-3 py-2 text-slate-700 dark:text-slate-200">Harga Satuan Beli</th>
-                <th className="px-3 py-2 text-slate-700 dark:text-slate-200">Nilai Total</th>
-                <th className="px-3 py-2 text-slate-700 dark:text-slate-200">Aksi</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-900">Kode</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-900">Nama Barang</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-900">Jumlah</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-900">Harga Beli</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-900">Harga Jual</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-900">Nilai Total</th>
+                <th className="px-3 py-2 text-slate-700 dark:text-slate-900">Aksi</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-slate-800">
+            <tbody className="bg-white dark:bg-slate-50">
               {stockItems.length === 0 ? (
                 <tr>
                   <td colSpan="5" className="text-center py-4 text-slate-500 dark:text-slate-400">
@@ -164,18 +211,29 @@ export default function MenuStokBarang({
               ) : (
                 stockItems.map((item) => (
                   <tr key={item.id} className="border-t border-slate-100 dark:border-slate-700">
-                    <td className="px-3 py-2 font-medium text-slate-800 dark:text-slate-200">{item.name}</td>
-                    <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{item.qty} {item.unit}</td>
-                    <td className="px-3 py-2 text-slate-700 dark:text-slate-300">{currency(item.price)}</td>
-                    <td className="px-3 py-2 font-semibold text-green-700 dark:text-green-400">{currency(item.qty * item.price)}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{item.kodeBarang || '-'}</td>
+                    <td className="px-3 py-2 font-medium text-slate-800 dark:text-slate-900">{item.name}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{item.qty} {item.unit}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{currency(item.buyPrice || item.price || 0)}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{currency(item.sellPrice || 0)}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-900">{currency((item.qty || 0) * (item.buyPrice || item.price || 0))}</td>
                     <td className="px-3 py-2">
-                        <button 
-                            onClick={() => handleDelete(item.id)}
-                            className="text-red-500 hover:text-red-700"
-                            title="Hapus Item"
-                        >
-                            <i className="fas fa-trash-alt"></i>
-                        </button>
+                        <div className="flex gap-3">
+                          <button 
+                              onClick={() => startEdit(item)}
+                              className="text-blue-500 hover:text-blue-700"
+                              title="Edit Item"
+                          >
+                              <i className="fas fa-edit"></i>
+                          </button>
+                          <button 
+                              onClick={() => handleDelete(item.id)}
+                              className="text-red-500 hover:text-red-700"
+                              title="Hapus Item"
+                          >
+                              <i className="fas fa-trash-alt"></i>
+                          </button>
+                        </div>
                     </td>
                   </tr>
                 ))

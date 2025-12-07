@@ -37,6 +37,10 @@ export default function DashboardView({
   onAddStockItem,
   onUpdateStockItem,
   onDeleteStockItem,
+  salesHistory = [],
+  onRecordSale,
+  onAddMarketingExpense,
+  onAddOtherIncome,
 }) {
   const chartRef = useRef(null);
   const [selectedMenu, setSelectedMenu] = useState("beranda");
@@ -273,7 +277,7 @@ export default function DashboardView({
           {[
             { name: "Beranda", icon: "fa-home", menu: "beranda" },
             { name: "Pemasaran AI", icon: "fa-bullhorn", menu: "pemasaran" },
-            { name: "Keuangan", icon: "fa-calculator", menu: "keuangan" },
+            { name: "Laporan keuangan", icon: "fa-calculator", menu: "keuangan" },
             { name: "Stok Barang", icon: "fa-boxes", menu: "stok" },
             { name: "Riwayat Penjualan", icon: "fa-shopping-cart", menu: "riwayat" },
             { name: "Chat AI", icon: "fa-comments", menu: "chat" },
@@ -495,7 +499,11 @@ export default function DashboardView({
             <MenuRiwayatPenjualan
               businessName={businessName}
               period={marketData?.period || new Date().toISOString().slice(0, 7)}
-              salesHistoryData={marketData?.salesHistory || null}
+              salesHistoryData={salesHistory?.length ? salesHistory : marketData?.salesHistory || null}
+              onAddSale={onRecordSale}
+              stockItems={stockItems}
+              onAddMarketingExpense={onAddMarketingExpense}
+              onAddOtherIncome={onAddOtherIncome}
             />
           </div>
         ) : selectedMenu === "pengaturan" ? (

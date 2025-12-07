@@ -199,7 +199,7 @@ ${brandContextParts.map((p) => `- ${p}`).join('\n')}`
       return NextResponse.json({ success: true, reply: replyText });
     }
 
-    // 2. Setup Payload ke Kolosal AI
+    // 2. Setup Payload ke Groq (pengganti Kolosal)
     // System prompt berubah berdasarkan topik supaya client bisa meminta
     // teks analisis biasa (plain text) untuk `analysis`, atau JSON untuk
     // topik lain seperti `finance`.
@@ -259,7 +259,7 @@ Format jawaban sebagai teks biasa dengan struktur yang jelas. Berikan contoh kon
     ];
 
     // 3. Siapkan parameter permintaan ke Kolosal AI
-    const model = body.model || 'meta-llama/llama-4-maverick-17b-128e-instruct';
+    const model = body.model || 'llama-3.3-70b-versatile';
     const max_tokens = body.max_tokens || 1000;
     const temperature = typeof body.temperature !== 'undefined' ? body.temperature : 0.7;
 
@@ -288,24 +288,24 @@ Format jawaban sebagai teks biasa dengan struktur yang jelas. Berikan contoh kon
     if (!hasSystem) {
       messagesToSend = [{ role: 'system', content: systemPrompt }, ...messagesToSend];
     }
-    // 4. Request ke Kolosal AI Server
-    if (!process.env.KOLOSAL_API_KEY) {
-      console.error('[api/chat] Missing KOLOSAL_API_KEY');
-      return NextResponse.json({ success: false, error: 'Server missing KOLOSAL_API_KEY' }, { status: 500 });
+    // 4. Request ke Groq (OpenAI-compatible)
+    const groqApiKey = process.env.GROQ_API_KEY;
+    if (!groqApiKey) {
+      console.error('[api/chat] Missing GROQ_API_KEY');
+      return NextResponse.json({ success: false, error: 'Server missing GROQ_API_KEY' }, { status: 500 });
     }
 
-    // small timeout wrapper for node-fetch
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000); // 15s
+    const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
-    let kolosalRes;
-    let kolosalData;
+    let groqRes;
+    let groqData;
     try {
-      kolosalRes = await fetch('https://api.kolosal.ai/v1/chat/completions', {
+      groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.KOLOSAL_API_KEY}`
+          'Authorization': `Bearer ${groqApiKey}`
         },
         body: JSON.stringify({
           max_tokens,
@@ -316,31 +316,31 @@ Format jawaban sebagai teks biasa dengan struktur yang jelas. Berikan contoh kon
         signal: controller.signal
       });
 
-      kolosalData = await kolosalRes.json().catch((e) => {
-        console.error('[api/chat] failed parsing kolosal JSON', e);
+      groqData = await groqRes.json().catch((e) => {
+        console.error('[api/chat] failed parsing Groq JSON', e);
         return null;
       });
     } catch (err) {
       if (err.name === 'AbortError') {
-        console.error('[api/chat] kolosal request aborted (timeout)');
+        console.error('[api/chat] Groq request aborted (timeout)');
         return NextResponse.json({ success: false, error: 'AI provider request timed out' }, { status: 504 });
       }
-      console.error('[api/chat] error calling kolosal', err);
+      console.error('[api/chat] error calling Groq', err);
       return NextResponse.json({ success: false, error: String(err) }, { status: 502 });
     } finally {
       clearTimeout(timeout);
     }
 
-    console.log('[api/chat] kolosal status', kolosalRes.status, 'bodyPreview:', typeof kolosalData === 'object' ? JSON.stringify(kolosalData).slice(0,400) : String(kolosalData).slice(0,400), 'webDataUsed:', !!webData);
+    console.log('[api/chat] Groq status', groqRes.status, 'bodyPreview:', typeof groqData === 'object' ? JSON.stringify(groqData).slice(0,400) : String(groqData).slice(0,400), 'webDataUsed:', !!webData);
 
-    if (!kolosalRes.ok) {
-      console.error("Kolosal Error:", kolosalData);
+    if (!groqRes.ok) {
+      console.error("Groq Error:", groqData);
       // Return provider error payload to help debugging (do not leak secrets)
-      return NextResponse.json({ success: false, error: kolosalData?.error || 'Error from AI Provider', providerStatus: kolosalRes.status, providerBody: kolosalData }, { status: 502 });
+      return NextResponse.json({ success: false, error: groqData?.error || 'Error from AI Provider', providerStatus: groqRes.status, providerBody: groqData }, { status: 502 });
     }
 
-    // Use already-parsed kolosalData to avoid reading the body twice
-    const data = kolosalData || {};
+    // Use already-parsed groqData to avoid reading the body twice
+    const data = groqData || {};
 
     // 4. Bersihkan respons untuk Frontend
     // Mengambil konten pesan dari struktur OpenAI-compatible
