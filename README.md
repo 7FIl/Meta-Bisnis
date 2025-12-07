@@ -1,100 +1,161 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+Berdasarkan analisis mendalam terhadap kode sumber yang Anda unggah, berikut adalah README.md yang komprehensif dan profesional untuk proyek Meta Bisnis.
 
-## Getting Started
+Dokumen ini mencakup deskripsi proyek, fitur teknis, cara instalasi, dan struktur kode.
 
-First, run the development server:
+🚀 Meta Bisnis - Asisten Cerdas UMKM Indonesia
+Meta Bisnis adalah platform web terintegrasi berbasis AI yang dirancang untuk memberdayakan UMKM di Indonesia. Aplikasi ini membantu pengguna mulai dari tahap ideasi bisnis (konsultasi modal, lokasi, minat) hingga manajemen operasional sehari-hari (stok, keuangan, pemasaran, dan SDM).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Dibangun menggunakan Next.js dan ditenagai oleh Groq AI (Llama 3) serta Firebase, aplikasi ini menawarkan solusi all-in-one yang modern, responsif, dan mudah digunakan.
 
 ✨ Fitur Utama
+1. 🤖 Konsultasi & Pendirian Bisnis (AI-Powered)
+Rekomendasi Bisnis: Analisis peluang bisnis berdasarkan input modal, lokasi, dan minat pengguna.
 
-Meta Bisnis dirancang untuk membantu pengguna:
+Analisis Finansial Mendalam: Estimasi BEP (Break Even Point), ROI, dan margin keuntungan.
 
-Konsultasi Ide Bisnis & Analisis Modal AI
+Export Rincian Modal: Menghasilkan file Excel (.xlsx) berisi rincian belanja modal dan proyeksi keuangan secara otomatis.
 
-Pengguna dapat memasukkan modal, lokasi, dan minat, lalu AI akan merekomendasikan ide bisnis yang cuan (menguntungkan).
+Onboarding Fleksibel: Mendukung pengguna yang baru ingin memulai bisnis atau yang sudah memiliki bisnis berjalan.
 
-Hasil rekomendasi mencakup perkiraan modal (capital_est), target pasar, tantangan utama, dan laporan rincian modal dalam format Excel (XLSX).
+2. 📊 Dashboard Operasional
+Manajemen Stok (Inventory): CRUD (Create, Read, Update, Delete) barang dengan pelacakan harga beli dan harga jual.
 
-Fitur onboarding manual juga tersedia untuk pengguna yang sudah memiliki bisnis.
+Kasir & Riwayat Penjualan: Pencatatan transaksi penjualan real-time yang terhubung langsung dengan pengurangan stok.
 
-Dashboard Operasional
+Manajemen Karyawan: Sistem absensi sederhana (Hadir, Sakit, Izin, Alfa) dan manajemen data pegawai.
 
-Manajemen Stok Barang: Pencatatan dan pembaruan inventaris dengan harga beli dan harga jual.
+Kalender Kegiatan: Penjadwalan event manual atau rencana konten pemasaran.
 
-Riwayat Penjualan: Pencatatan transaksi penjualan, pengeluaran pemasaran, dan pendapatan lain-lain, dengan opsi ekspor ke CSV.
+3. 💰 Manajemen Keuangan
+Laporan Otomatis: Perhitungan otomatis untuk Penjualan Kotor, Pendapatan Lain, dan Pengeluaran Pemasaran.
 
-Kehadiran Karyawan: Pencatatan dan pengelolaan status kehadiran karyawan.
+Filter Periode: Filter laporan keuangan berdasarkan rentang tanggal atau bulan tertentu.
 
-Laporan dan Analisis Keuangan
+Ekspor Data: Kemampuan mengunduh laporan keuangan dalam format CSV.
 
-Menampilkan ringkasan dan rincian Laporan Keuangan (Penjualan, Pendapatan Lain, Pengeluaran Pemasaran) dengan filter periode bulanan atau rentang tanggal.
+4. 📢 Studio Pemasaran AI & Market Intelligence
+Generator Konten: Membuat caption Instagram, skrip TikTok, dan pesan broadcast WhatsApp menggunakan AI yang disesuaikan dengan tone brand.
 
-Chat AI & Pemasaran Otomatis
+Market Intelligence: Grafik trafik toko dan analisis tren pasar viral (menggunakan integrasi Tavily API untuk data real-time).
 
-Chat AI: Fitur chatbot yang dapat menjawab pertanyaan seputar Analisis Bisnis, Ide Keuangan, dan Strategi Penjualan berdasarkan konteks bisnis yang sedang berjalan.
+Chatbot Bisnis: Asisten virtual kontekstual yang memahami data bisnis pengguna untuk menjawab pertanyaan strategi.
 
-Web Search: Chat AI dapat diaktifkan dengan Web Search menggunakan Tavily API untuk mendapatkan data dan tren real-time.
+🛠️ Tech Stack
+Frontend: Next.js 16 (App Router), React 19
 
-Studio Pemasaran AI: Generator konten promosi (caption) yang disesuaikan untuk platform Instagram, TikTok, dan WhatsApp menggunakan konteks brand bisnis.
+Styling: Tailwind CSS v4
 
-🛠️ Teknologi yang Digunakan
+Backend / API: Next.js API Routes
 
-Frontend Framework: Next.js
+Database & Auth: Google Firebase (Firestore, Authentication, Storage)
 
-UI/Styling: React, Tailwind CSS
+AI Integration:
 
-Database & Backend-as-a-Service: Google Firebase
+Groq API (LLM Inference - Llama 3)
 
-Authentication: Firebase Auth (Email/Password, Google Sign-In)
+Tavily API (Real-time Web Search & Trends)
 
-Database: Cloud Firestore (untuk menyimpan data pengguna dan bisnis)
+Utilities:
 
-AI/LLM Providers:
+xlsx: Generasi file Excel.
 
-Groq API (untuk chat dan content generation)
+chart.js: Visualisasi data grafik.
 
-Tavily API (untuk web search data real-time)
+react-toastify (Custom implementation): Notifikasi UI.
 
-Data Processing: xlsx (untuk menghasilkan file Excel).
+⚙️ Persyaratan Sistem
+Node.js (versi 18.17 atau lebih baru)
 
-🧩 Skrip yang Tersedia
+npm / yarn / pnpm
 
-Dalam direktori proyek, Anda dapat menjalankan:
+Akun Firebase (untuk database dan autentikasi)
 
-dev (Perintah: next dev) untuk Menjalankan aplikasi dalam mode pengembangan.
+API Key Groq (untuk fitur AI)
 
-build (Perintah: next build) untuk Membuat build siap produksi.
+API Key Tavily (untuk fitur pencarian tren)
 
-start (Perintah: next start) untuk Menjalankan build produksi yang sudah dikompilasi.
+🚀 Cara Instalasi & Menjalankan
+Clone Repository
 
-lint (Perintah: eslint) untuk Menjalankan linter untuk memeriksa kode.
+Bash
+
+git clone https://github.com/username-anda/meta-bisnis.git
+cd meta-bisnis
+Install Dependencies
+
+Bash
+
+npm install
+# atau
+yarn install
+Konfigurasi Environment Variables Buat file .env.local di root folder dan isi dengan kredensial berikut (lihat Sample.env.txt):
+
+Cuplikan kode
+
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Firebase Config
+NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+
+# AI Providers
+TAVILY_API_KEY=tvly-xxxxxxxxxxxx
+GROQ_API_KEY=gsk_xxxxxxxxxxxx
+Jalankan Server Development
+
+Bash
+
+npm run dev
+Buka http://localhost:3000 di browser Anda.
+
+wm Struktur Proyek
+meta-bisnis/
+├── src/
+│   ├── app/                 # Next.js App Router
+│   │   ├── api/             # API Routes (Chat, News)
+│   │   ├── verify/          # Halaman Verifikasi Email
+│   │   ├── layout.js        # Root Layout & Providers
+│   │   └── page.js          # Main Controller (Logic Switching View)
+│   ├── components/          # Komponen UI Reusable
+│   │   ├── DashboardView.js # Tampilan Utama setelah Login
+│   │   ├── ConsultationView.js # Tampilan Awal (Landing/Konsultasi)
+│   │   ├── MarketingStudio.js  # Fitur Generasi Konten
+│   │   ├── MenuKeuangan.js     # Laporan Keuangan
+│   │   ├── MenuStokBarang.js   # Manajemen Inventaris
+│   │   └── ... (Komponen lainnya)
+│   └── lib/                 # Helper Functions & Configs
+│       ├── firebase.js      # Inisialisasi Firebase
+│       ├── auth.js          # Logic Login/Register
+│       ├── excelGenerator.js# Logic pembuatan file Excel
+│       └── businessData.js  # CRUD ke Firestore
+├── public/                  # Aset Statis (Gambar, Icon)
+├── .env.local               # Environment Variables (Jangan di-commit)
+└── package.json
+🔐 Aturan Keamanan & Privasi
+Autentikasi: Menggunakan Firebase Auth. Hanya domain email umum (Gmail, Yahoo, dll) yang diizinkan mendaftar untuk mencegah spam bot.
+
+Data Pengguna: Data bisnis dan profil disimpan di Firestore dengan aturan keamanan (Security Rules) yang membatasi akses hanya kepada pemilik data (users/{uid}).
+
+Verifikasi Email: Pengguna diwajibkan memverifikasi email sebelum bisa login sepenuhnya.
+
+🤝 Kontribusi
+Kontribusi sangat diterima! Silakan buat Pull Request atau laporkan Issues jika menemukan bug atau memiliki ide fitur baru.
+
+Fork repository ini.
+
+Buat branch fitur baru (git checkout -b fitur-keren).
+
+Commit perubahan Anda (git commit -m 'Menambahkan fitur keren').
+
+Push ke branch (git push origin fitur-keren).
+
+Buat Pull Request.
+
+📄 Lisensi
+Proyek ini dilisensikan di bawah MIT License.
+
+Dibuat dengan ❤️ untuk kemajuan UMKM Indonesia.
