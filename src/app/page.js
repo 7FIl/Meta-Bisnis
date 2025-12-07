@@ -32,7 +32,6 @@ export default function Home() {
   const alert = useAlert();
   const [user, setUser] = useState(null);
   const [currentView, setCurrentView] = useState('consultation'); // 'consultation', 'onboarding', atau 'dashboard'
-  const [shouldSkipOnboarding, setShouldSkipOnboarding] = useState(false); // Flag untuk skip onboarding jika dari AI
   const [businessData, setBusinessData] = useState(null);
   const [absences, setAbsences] = useState([]);
   const [calendarEvents, setCalendarEvents] = useState({}); // Calendar events: { 'YYYY-MM-DD': [{ id, title, type, content, source }] }
@@ -79,11 +78,7 @@ export default function Home() {
             // CEK TEMP DATA: Jika ada data temporary dari consultation view, transfer ke Firebase
             const tempData = getTempData('meta_bisnis_temp');
             if (tempData && tempData.businessName) {
-              // Cek apakah user dari AI recommendation (skipOnboarding = true)
-              if (tempData.skipOnboarding) {
-                setShouldSkipOnboarding(true);
-              }
-              // Merge dengan default settings
+              // Merge dengan default settings dan simpan skipOnboarding ke Firebase
               const mergedSettings = {
                 businessName: tempData.businessName,
                 userName: tempData.userName || currentUser.displayName || currentUser.email.split('@')[0],
@@ -100,6 +95,7 @@ export default function Home() {
                   businessType: tempData.businessType || ''
                 },
                 employees: [],
+                skipOnboarding: tempData.skipOnboarding || false, // Simpan flag ke Firebase
               };
               
               // Save ke Firebase
@@ -122,7 +118,7 @@ export default function Home() {
             if (!hasBusinessData) {
               const settings = await getUserSettings(currentUser.uid);
               
-              if (settings) {
+              if (settings && settings.businessName) {
                 // 1. Masukkan data dari Firebase ke State
                 setCurrentBusinessName(settings.businessName || 'Dashboard Bisnis');
                 setCurrentUserName(settings.userName || currentUser.displayName || 'Pengguna');
@@ -147,12 +143,11 @@ export default function Home() {
                 setCurrentView('dashboard');
                 setOnboardingCompleted(true);
               } else {
-                // Jika dokumen settings tidak ada di Firebase -> User Baru
-                // Cek apakah dari AI temp data dengan skipOnboarding flag
-                if (shouldSkipOnboarding) {
+                // User baru: cek flag skipOnboarding dari Firebase
+                if (settings?.skipOnboarding) {
                   // User dari AI di ConsultationView -> langsung ke dashboard tanpa onboarding
                   setCurrentView('dashboard');
-                  setOnboardingCompleted(false); // Masih dianggap baru tapi skip onboarding
+                  setOnboardingCompleted(false);
                 } else {
                   // User baru murni (dari registration flow) -> show onboarding
                   setCurrentView('onboarding');

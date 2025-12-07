@@ -432,6 +432,7 @@ export default function DashboardView({
             </div>
 
             <MenuChatAI
+              userId={user?.uid}
               businessName={businessName}
               onSend={async ({ topic, prompt, history = [] }) => {
                 // Integrasi: panggil API server `/api/chat` (sesuai route yang tersedia)

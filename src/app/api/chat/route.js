@@ -14,9 +14,11 @@ function extractPrimaryBusinessType(businessType = '') {
 async function searchWeb(query) {
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) {
-    console.warn("Tavily API Key belum diset!");
+    console.warn("[Tavily] API Key belum diset!");
     return null;
   }
+
+  console.log('[Tavily] Searching for:', query.substring(0, 100));
 
   try {
     const response = await fetch("https://api.tavily.com/search", {
@@ -31,19 +33,25 @@ async function searchWeb(query) {
       })
     });
     
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error('[Tavily] API error:', response.status);
+      return null;
+    }
     
     const data = await response.json();
+    console.log('[Tavily] Search completed. Answer:', data.answer?.substring(0, 100), '... Results:', data.results?.length);
     
     // Format hasil agar mudah dibaca oleh AI
-    return `
+    const formatted = `
 [DATA DARI INTERNET / REAL-TIME]:
 - Ringkasan: ${data.answer || 'Tidak ada ringkasan'}
 - Sumber Terkait:
-${data.results?.map(r => `  * ${r.title}: ${r.content}`).join('\n') || 'Tidak ada hasil'}
+${data.results?.map(r => `  * ${r.title}: ${r.content?.substring(0, 150)}...`).join('\n') || 'Tidak ada hasil'}
     `;
+    
+    return formatted;
   } catch (error) {
-    console.error("Error searching web:", error);
+    console.error("[Tavily] Error searching web:", error.message);
     return null;
   }
 }
@@ -272,6 +280,15 @@ Format jawaban sebagai teks biasa dengan struktur yang jelas. Berikan contoh kon
         messagesToSend = history;
       } else {
         messagesToSend = [];
+      }
+    }
+
+    // PENTING: Jika ada webData dari Tavily, tambahkan ke last user message
+    if (webData && messagesToSend.length > 0) {
+      const lastMsg = messagesToSend[messagesToSend.length - 1];
+      if (lastMsg.role === 'user') {
+        lastMsg.content = `${lastMsg.content}\n\n${webData}`;
+        console.log('[api/chat] Web data from Tavily added to user message');
       }
     }
 

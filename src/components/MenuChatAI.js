@@ -1,20 +1,54 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { saveUserSettings, getUserSettings } from '@/lib/userSettings';
 
-export default function MenuChatAI({ businessName, onSend }) {
+export default function MenuChatAI({ businessName, onSend, userId }) {
   const [topic, setTopic] = useState("analysis"); // 'analysis' | 'finance' | 'sales'
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState([]); // {id, role, text, topic}
   const [loading, setLoading] = useState(false);
   const [useWebSearch, setUseWebSearch] = useState(false); // Toggle untuk web search
   const [toast, setToast] = useState("");
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const toastRef = useRef(null);
   const listRef = useRef(null);
+  const saveTimerRef = useRef(null);
 
   useEffect(() => {
-    return () => clearTimeout(toastRef.current);
+    return () => {
+      clearTimeout(toastRef.current);
+      clearTimeout(saveTimerRef.current);
+    };
   }, []);
+
+  // Load chat history from Firebase on mount
+  useEffect(() => {
+    if (userId && !historyLoaded) {
+      loadChatHistory();
+    }
+  }, [userId, historyLoaded]);
+
+  // Auto-save chat history with debounce
+  useEffect(() => {
+    if (!userId || messages.length === 0 || !historyLoaded) return;
+
+    // Clear previous timer
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+
+    // Debounce: save after 2 seconds of no changes
+    saveTimerRef.current = setTimeout(() => {
+      saveChatHistory();
+    }, 2000);
+
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+    };
+  }, [messages, userId, historyLoaded]);
 
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
@@ -128,6 +162,34 @@ export default function MenuChatAI({ businessName, onSend }) {
 
   const handleQuick = (q) => setInput(q);
 
+  const loadChatHistory = async () => {
+    if (!userId) return;
+    
+    try {
+      const userData = await getUserSettings(userId);
+      if (userData?.chatHistory && Array.isArray(userData.chatHistory)) {
+        setMessages(userData.chatHistory);
+      }
+      setHistoryLoaded(true);
+    } catch (err) {
+      console.error('Failed to load chat history:', err);
+      setHistoryLoaded(true);
+    }
+  };
+
+  const saveChatHistory = async () => {
+    if (!userId || messages.length === 0) return;
+    
+    try {
+      await saveUserSettings(userId, {
+        chatHistory: messages,
+        lastChatUpdate: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error('Failed to save chat history:', err);
+    }
+  };
+
   const handleCopy = async (text) => {
     try {
       if (navigator.clipboard?.writeText) {
@@ -146,8 +208,21 @@ export default function MenuChatAI({ businessName, onSend }) {
     }
   };
 
-  const handleClear = () => {
+  const handleClear = async () => {
     setMessages([]);
+    
+    // Also clear from Firebase
+    if (userId) {
+      try {
+        await saveUserSettings(userId, {
+          chatHistory: [],
+          lastChatUpdate: new Date().toISOString(),
+        });
+      } catch (err) {
+        console.error('Failed to clear chat history:', err);
+      }
+    }
+    
     showToast("Percakapan dibersihkan");
   };
 
@@ -172,13 +247,13 @@ export default function MenuChatAI({ businessName, onSend }) {
         </div>
 
         <div className="flex gap-2 flex-wrap">
-          <button onClick={() => setTopic("analysis")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "analysis" ? "bg-indigo-600 text-white" : "bg-slate-00 text-slate-00 hover:bg-slate-500"}`}>
+          <button onClick={() => setTopic("analysis")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "analysis" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>
             <i className="fas fa-chart-line mr-2"></i>Analisis
           </button>
-          <button onClick={() => setTopic("finance")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "finance" ? "bg-indigo-600 text-white" : "bg-slate-00 text-slate-00 hover:bg-slate-500"}`}>
+          <button onClick={() => setTopic("finance")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "finance" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>
             <i className="fas fa-coins mr-2"></i>Ide Keuangan
           </button>
-          <button onClick={() => setTopic("sales")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "sales" ? "bg-indigo-600 text-white" : "bg-slate-00 text-slate-00 hover:bg-slate-500"}`}>
+          <button onClick={() => setTopic("sales")} className={`px-4 py-2 text-sm rounded-lg font-medium transition ${topic === "sales" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>
             <i className="fas fa-handshake mr-2"></i>Penjualan
           </button>
         </div>
