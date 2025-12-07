@@ -13,7 +13,6 @@ import { fetchBusinessData, saveBusinessData, DEFAULT_BUSINESS_DATA } from '@/li
 
 import ConsultationView from '@/components/ConsultationView';
 import DashboardView from '@/components/DashboardView';
-import OnboardingView from '@/components/OnboardingView'; // <-- IMPORTED
 
 const mapSalesHistoryToFinance = (history = []) =>
   history.map((s) => {
@@ -864,21 +863,6 @@ Berikan data yang AKURAT, REALISTIS, dan DAPAT DIVERIFIKASI.`
       setCurrentView('dashboard');
   }
 
-
-  // NEW VIEW: ONBOARDING
-  if (currentView === 'onboarding' && user && !onboardingCompleted) {
-    return (
-      <OnboardingView
-        user={user}
-        // MODIFIED: onConsultAI dipanggil tanpa 'fromOnboarding' karena transisi diurus tombol "Mulai"
-        onConsultAI={(input, setupBusiness) => handleConsultAI(input, setupBusiness, false)} 
-        onSetupComplete={handleSetupComplete} // manual setup, auto-switch to dashboard
-        businessData={businessData} // Kirim businessData agar OnboardingView bisa menampilkan hasil
-        loading={loading} // Kirim loading state
-        businessType={currentBusinessType}
-      />
-    );
-  }
 
   // Show dashboard if user requested it and is logged in.
   if (currentView === 'dashboard' && user) {
