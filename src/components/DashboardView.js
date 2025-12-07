@@ -614,7 +614,7 @@ export default function DashboardView({
           </div>
         ) : (
           <>
-            <div className="bg-white border border-slate-200 dark:border-slate-700 text-slate-900 rounded-2xl p-6 mb-8 shadow-lg flex justify-between items-center">
+            <div className="bg-white text-slate-900 rounded-2xl p-6 mb-8 border shadow-sm border-slate-200 flex justify-between items-center">
               <div>
                 <h1 className="text-xl font-bold">Halo, {userName}!</h1>
                 <p className="text-sm text-slate-700">
@@ -628,7 +628,7 @@ export default function DashboardView({
               {/* Kolom Kiri: Total Penjualan & Kehadiran Karyawan */}
               <div className="lg:col-span-1 space-y-6">
                 {/* KOTAK BARU: TOTAL PENJUALAN HARI INI */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 h-fit">
+                <div className="bg-white p-6 rounded-2xl shadow-sm border-slate-200 border h-fit">
                   <h3 className="font-bold text-slate-800 dark:text-slate-900 mb-4 flex items-center gap-2">
                     <i className="fas fa-sack-dollar text-green-600"></i> Total
                     Penjualan Hari Ini
