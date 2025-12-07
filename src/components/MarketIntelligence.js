@@ -213,8 +213,8 @@ export default function MarketIntelligence({ businessName, marketData, businessL
             <span className="text-[11px] text-slate-500">Sinkron dengan traffic {timeframe === 'daily' ? 'harian' : timeframe === 'weekly' ? 'mingguan' : 'bulanan'}</span>
           </div>
 
-          <div className="bg-slate-50 border border-slate-200 rounded-lg overflow-y-auto h-64">
-            <div className="p-3 border-b border-slate-200 bg-indigo-50/60">
+          <div className="bg-slate-50 dark:bg-slate-50 border border-slate-200 rounded-lg overflow-y-auto h-64">
+            <div className="p-3 border-b border-slate-200 bg-slate-50">
               <p className="text-[11px] font-semibold text-indigo-700 uppercase mb-1 flex items-center gap-1">
                 <i className="fas fa-chart-line"></i> Insight Traffic
               </p>

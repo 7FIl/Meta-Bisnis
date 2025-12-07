@@ -3,7 +3,12 @@
 
 import { useAuth } from "@/lib/auth";
 import { useEffect, useRef, useState } from "react";
-import { getTheme, setTheme, getCalendarEvents, saveCalendarEvents } from "@/lib/userSettings";
+import {
+  getTheme,
+  setTheme,
+  getCalendarEvents,
+  saveCalendarEvents,
+} from "@/lib/userSettings";
 import EmployeeAbsence from "./EmployeeAbsence";
 import MarketIntelligence from "./MarketIntelligence";
 import MenuPemasaranAI from "./MenuPemasaranAI";
@@ -11,7 +16,7 @@ import MenuChatAI from "./MenuChatAI";
 import MenuKeuangan from "./MenuKeuangan";
 import MenuPengaturan from "./MenuPengaturan";
 import MenuRiwayatPenjualan from "./MenuRiwayatPenjualan";
-import MenuStokBarang from "./MenuStokBarang"
+import MenuStokBarang from "./MenuStokBarang";
 
 export default function DashboardView({
   businessName,
@@ -48,32 +53,52 @@ export default function DashboardView({
   const [selectedDate, setSelectedDate] = useState(null); // Selected date for event panel
   const [newEvent, setNewEvent] = useState(""); // Input for new event
   const { user, loading: authLoading } = useAuth();
-  
+
   // Helper function untuk format mata uang
   const currency = (v) =>
-    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(v);
+    new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(v);
 
   // Hitung total penjualan hari ini
   const calculateTodaySales = () => {
     // Menggunakan tanggal mock '2025-12-07' untuk konsistensi dengan mock data dari page.js
-    const today = "2025-12-07"; 
-    
+    const today = "2025-12-07";
+
     // Ambil data sales dari marketData
     const sales = marketData?.sales || [];
-    
+
     // 1. Filter transaksi hari ini
-    const todaySales = sales.filter(item => item.date === today);
-    
+    const todaySales = sales.filter((item) => item.date === today);
+
     // 2. Hitung totalnya: qty * price
     const total = todaySales.reduce((sum, item) => {
-      const itemTotal = (item.qty && item.price) ? item.qty * item.price : item.amount || 0;
+      const itemTotal =
+        item.qty && item.price ? item.qty * item.price : item.amount || 0;
       return sum + itemTotal;
     }, 0);
-    
+
     return total;
   };
 
+  // NEW: Hitung total barang terjual hari ini
+  const calculateTotalItemsToday = () => {
+    const today = "2025-12-07";
+    const sales = marketData?.sales || [];
+
+    const todaySales = sales.filter((item) => item.date === today);
+
+    const totalItems = todaySales.reduce((sum, item) => {
+      return sum + (item.qty || 0);
+    }, 0);
+
+    return totalItems;
+  };
+
   const totalSalesToday = calculateTodaySales();
+  const totalItemsToday = calculateTotalItemsToday();
 
   // Theme initialization - default light, honor saved preference
   useEffect(() => {
@@ -88,16 +113,18 @@ export default function DashboardView({
           if (theme === "dark") {
             root.classList.add("dark");
           } else {
-            root.classList.remove("dark"); 
+            root.classList.remove("dark");
           }
         }
       });
       // Load calendar events from Firebase
-      getCalendarEvents(user.uid).then((loadedEvents) => {
-        setEvents(loadedEvents || {});
-      }).catch((err) => {
-        console.error("Failed to load calendar events:", err);
-      });
+      getCalendarEvents(user.uid)
+        .then((loadedEvents) => {
+          setEvents(loadedEvents || {});
+        })
+        .catch((err) => {
+          console.error("Failed to load calendar events:", err);
+        });
     } // Tambahkan user.uid dan authLoading ke dependency array
   }, [user, authLoading]);
 
@@ -189,7 +216,9 @@ export default function DashboardView({
   const handleDeleteEvent = (dateKey, id) => {
     setEvents((prev) => {
       const newEvents = { ...prev };
-      newEvents[dateKey] = (newEvents[dateKey] || []).filter((item) => item.id !== id);
+      newEvents[dateKey] = (newEvents[dateKey] || []).filter(
+        (item) => item.id !== id
+      );
       if (newEvents[dateKey]?.length === 0) delete newEvents[dateKey];
       // Save to Firebase
       if (user && user.uid) {
@@ -275,7 +304,11 @@ export default function DashboardView({
             { name: "Pemasaran AI", icon: "fa-bullhorn", menu: "pemasaran" },
             { name: "Keuangan", icon: "fa-calculator", menu: "keuangan" },
             { name: "Stok Barang", icon: "fa-boxes", menu: "stok" },
-            { name: "Riwayat Penjualan", icon: "fa-shopping-cart", menu: "riwayat" },
+            {
+              name: "Riwayat Penjualan",
+              icon: "fa-shopping-cart",
+              menu: "riwayat",
+            },
             { name: "Chat AI", icon: "fa-comments", menu: "chat" },
             { name: "Pengaturan", icon: "fa-cog", menu: "pengaturan" },
           ].map((item) => (
@@ -283,31 +316,34 @@ export default function DashboardView({
               key={item.menu}
               onClick={() => setSelectedMenu(item.menu)}
               className={`w-full text-left flex items-center justify-between gap-3 px-4 py-3 rounded-lg font-medium transition-colors
-            ${selectedMenu === item.menu
-                  ? // KONDISI KETIKA MENU AKTIF: Latar belakang biru muda, font-weight diatur di <span>
+            ${
+              selectedMenu === item.menu
+                ? // KONDISI KETIKA MENU AKTIF: Latar belakang biru muda, font-weight diatur di <span>
                   ""
-                  : // KONDISI KETIKA MENU TIDAK AKTIF: Teks abu-abu
+                : // KONDISI KETIKA MENU TIDAK AKTIF: Teks abu-abu
                   "text-slate-600 hover:bg-slate-100"
-                }
+            }
           `}
             >
               <div className="flex items-center gap-3">
                 {/* 1. KONTROL IKON: Warna biru ketika aktif, abu-abu ketika tidak */}
                 <i
                   className={`fas ${item.icon} w-5 
-                ${selectedMenu === item.menu
-                      ? "text-blue-700" // IKON TETAP BIRU
-                      : "text-slate-500"
-                    }
+                ${
+                  selectedMenu === item.menu
+                    ? "text-blue-700" // IKON TETAP BIRU
+                    : "text-slate-500"
+                }
               `}
                 ></i>
 
                 {/* 2. KONTROL TEKS: Bold dan warna hitam ketika aktif */}
                 <span
-                  className={`${selectedMenu === item.menu
+                  className={`${
+                    selectedMenu === item.menu
                       ? "font-bold text-slate-800" // TEKS JADI BOLD DAN WARNA HITAM
                       : "font-medium" // Teks tidak aktif
-                    }`}
+                  }`}
                 >
                   {item.name}
                 </span>
@@ -335,7 +371,7 @@ export default function DashboardView({
                 currentTheme === "dark"
                   ? "fa-moon text-indigo-700"
                   : "fa-sun text-yellow-500"
-                } w-5`}
+              } w-5`}
             ></i>
             {/* Ganti isDarkMode di sini */}
             {currentTheme === "dark" ? "Mode Gelap" : "Mode Terang"}
@@ -363,7 +399,7 @@ export default function DashboardView({
                 ← Kembali ke Dashboard
               </button>
             </div>
-            <MenuStokBarang 
+            <MenuStokBarang
               businessName={businessName}
               stockItems={stockItems}
               onAddStockItem={onAddStockItem}
@@ -371,7 +407,7 @@ export default function DashboardView({
               onDeleteStockItem={onDeleteStockItem}
             />
           </div>
-        ) :selectedMenu === "pemasaran" ? (
+        ) : selectedMenu === "pemasaran" ? (
           <MenuPemasaranAI
             businessName={businessName}
             businessLocation={businessLocation}
@@ -389,7 +425,7 @@ export default function DashboardView({
             onBack={() => setSelectedMenu("beranda")}
           />
         ) : selectedMenu === "chat" ? (
-          <div className="flex flex-col h-[calc(100vh-120px)]">
+          <div className="flex flex-col h-full">
             <div className="flex items-center gap-3 mb-4">
               <button
                 onClick={() => setSelectedMenu("beranda")}
@@ -494,7 +530,9 @@ export default function DashboardView({
             </div>
             <MenuRiwayatPenjualan
               businessName={businessName}
-              period={marketData?.period || new Date().toISOString().slice(0, 7)}
+              period={
+                marketData?.period || new Date().toISOString().slice(0, 7)
+              }
               salesHistoryData={marketData?.salesHistory || null}
             />
           </div>
@@ -525,7 +563,7 @@ export default function DashboardView({
           </div>
         ) : (
           <>
-           <div className="bg-white border border-slate-200 dark:border-slate-700 text-slate-900 rounded-2xl p-6 mb-8 shadow-lg flex justify-between items-center">
+            <div className="bg-white border border-slate-200 dark:border-slate-700 text-slate-900 rounded-2xl p-6 mb-8 shadow-lg flex justify-between items-center">
               <div>
                 <h1 className="text-xl font-bold">Halo, {userName}!</h1>
                 <p className="text-sm text-slate-700">
@@ -538,23 +576,41 @@ export default function DashboardView({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Kolom Kiri: Total Penjualan & Kehadiran Karyawan */}
               <div className="lg:col-span-1 space-y-6">
-                
                 {/* KOTAK BARU: TOTAL PENJUALAN HARI INI */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 h-fit">
                   <h3 className="font-bold text-slate-800 dark:text-slate-900 mb-4 flex items-center gap-2">
-                    <i className="fas fa-sack-dollar text-green-500"></i> Total Penjualan Hari Ini
+                    <i className="fas fa-sack-dollar text-green-600"></i> Total
+                    Penjualan Hari Ini
                   </h3>
-                  <div className="rounded-xl p-4 border">
-                    <p className="text-xs text-slate-800 dark:text-slate-900 uppercase font-semibold">Penjualan Kotor</p>
-                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-700 mt-1">
-                      {currency(totalSalesToday)}
-                    </h2>
-                    <p className="text-xs text-slate-600 dark:text-slate-600 mt-2">
-                      Per {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="rounded-xl p-4 border bg-slate-50 dark:border-blue-200 dark:bg-white">
+                      <p className="text-xs text-slate-800 dark:text-slate-700 uppercase font-semibold text-center">
+                        Penjualan Kotor
+                      </p>
+                      <h2 className="text-xl font-bold text-green-800 dark:text-green-600 mt-2 text-center">
+                        {currency(totalSalesToday)}
+                      </h2>
+                    </div>
+                    {/* NEW CARD: Total Produk Terjual */}
+                    <div className="rounded-xl p-4 border border-indigo-300 bg-slate-50 dark:border-blue-200 dark:bg-white">
+                      <p className="text-xs text-slate-800 dark:text-slate-700 uppercase font-semibold text-center">
+                        Total Produk Terjual
+                      </p>
+                      <h2 className="text-xl font-bold text-indigo-800 dark:text-red-600 mt-1 text-center">
+                        {totalItemsToday}
+                      </h2>
+                    </div>
                   </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-3 text-center">
+                    Per{" "}
+                    {new Date().toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </p>
                 </div>
-                
+
                 {/* KOMPONEN ASLI: Kehadiran Karyawan */}
                 <EmployeeAbsence
                   absences={absences}
@@ -616,15 +672,20 @@ export default function DashboardView({
                           const badgeClass = (() => {
                             switch (true) {
                               case eventCount === 1:
-                                return "bg-blue-100 text-blue-700";
+                                // REKOMENDASI 3: SLATE (Terang)
+                                return "bg-slate-200 text-slate-900";
                               case eventCount === 2:
-                                return "bg-cyan-100 text-cyan-700";
+                                // REKOMENDASI 3: BLUE
+                                return "bg-blue-100 text-blue-800";
                               case eventCount === 3:
-                                return "bg-amber-100 text-amber-700";
+                                // REKOMENDASI 3: BLUE MEDIUM
+                                return "bg-blue-300 text-blue-900";
                               case eventCount === 4:
-                                return "bg-orange-100 text-orange-700";
+                                // REKOMENDASI 3: INDIGO (Gelap)
+                                return "bg-indigo-600 text-white";
                               case eventCount >= 5:
-                                return "bg-red-100 text-red-700";
+                                // REKOMENDASI 3: RED (Kritis)
+                                return "bg-red-600 text-white";
                               default:
                                 return "";
                             }
@@ -650,7 +711,11 @@ export default function DashboardView({
                               {day}
                               {eventCount > 0 && (
                                 <div className="mt-1">
-                                  <div className={`${badgeClass} text-xs rounded-full px-2 py-0.5 font-semibold`}>{eventCount}</div>
+                                  <div
+                                    className={`${badgeClass} text-xs rounded-full px-2 py-0.5 font-semibold`}
+                                  >
+                                    {eventCount}
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -669,7 +734,7 @@ export default function DashboardView({
                             {(events[selectedDate] || []).map((event) => (
                               <div
                                 key={event.id}
-                                className="flex justify-between items-start bg-slate-100 dark:bg-slate-100 rounded px-2 py-2 gap-3"
+                                className="flex justify-between items-start dark:bg-slate-50 bg-white rounded px-2 py-2 gap-3"
                               >
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2">
@@ -689,7 +754,9 @@ export default function DashboardView({
                                   )}
                                 </div>
                                 <button
-                                  onClick={() => handleDeleteEvent(selectedDate, event.id)}
+                                  onClick={() =>
+                                    handleDeleteEvent(selectedDate, event.id)
+                                  }
                                   className="text-red-500 hover:text-red-700 text-sm"
                                   title="Hapus Acara"
                                 >
@@ -697,7 +764,8 @@ export default function DashboardView({
                                 </button>
                               </div>
                             ))}
-                            {(!events[selectedDate] || events[selectedDate].length === 0) && (
+                            {(!events[selectedDate] ||
+                              events[selectedDate].length === 0) && (
                               <p className="text-sm text-slate-500 dark:text-slate-600">
                                 Tidak ada acara untuk tanggal ini.
                               </p>

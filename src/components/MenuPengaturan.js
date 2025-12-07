@@ -441,7 +441,7 @@ export default function MenuPengaturan({
                   <i className="fab fa-instagram text-pink-600"></i> Instagram
                 </label>
                 <div className="flex items-center">
-                  <span className="px-3 py-2 bg-slate-100 border border-r-0 border-slate-300 rounded-l-lg text-sm text-slate-600">@</span>
+                  <span className="px-3 py-2 bg-slate-100 bg-white border border-r-0 border-slate-300 rounded-l-lg text-sm text-slate-600">@</span>
                   <input
                     type="text"
                     value={newInstagramUsername}
@@ -458,7 +458,7 @@ export default function MenuPengaturan({
                   <i className="fab fa-tiktok"></i> TikTok
                 </label>
                 <div className="flex items-center">
-                  <span className="px-3 py-2 bg-slate-100 border border-r-0 border-slate-300 rounded-l-lg text-sm text-slate-600">@</span>
+                  <span className="px-3 py-2 bg-slate-100 bg-white border border-r-0 border-slate-300 rounded-l-lg text-sm text-slate-600">@</span>
                   <input
                     type="text"
                     value={newTiktokUsername}
@@ -475,7 +475,7 @@ export default function MenuPengaturan({
                   <i className="fab fa-whatsapp text-green-600"></i> WhatsApp
                 </label>
                 <div className="flex items-center">
-                  <span className="px-3 py-2 bg-slate-100 border border-r-0 border-slate-300 rounded-l-lg text-sm text-slate-600">+62</span>
+                  <span className="px-3 py-2 bg-slate-100 bg-white border border-r-0 border-slate-300 rounded-l-lg text-sm text-slate-600">+62</span>
                   <input
                     type="text"
                     value={newWhatsappNumber}
